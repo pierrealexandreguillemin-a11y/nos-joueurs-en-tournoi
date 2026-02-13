@@ -6,19 +6,22 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 const STORAGE_KEY = 'nos-joueurs-en-tournoi';
 
 // Safe localStorage access that works in both client and server contexts
-const safeLocalStorage = typeof window !== 'undefined' ? window.localStorage : null;
+function getLocalStorage(): Storage | null {
+  return typeof window !== 'undefined' ? window.localStorage : null;
+}
 
 // Get all storage data
 export function getStorageData(): StorageData {
   try {
-    if (!safeLocalStorage) {
+    const storage = getLocalStorage();
+    if (!storage) {
       return {
         currentEventId: '',
         events: [],
         validations: {},
       };
     }
-    const data = safeLocalStorage.getItem(STORAGE_KEY);
+    const data = storage.getItem(STORAGE_KEY);
     if (!data) {
       return {
         currentEventId: '',
@@ -40,7 +43,7 @@ export function getStorageData(): StorageData {
 // Save all storage data
 export function setStorageData(data: StorageData): void {
   try {
-    safeLocalStorage?.setItem(STORAGE_KEY, JSON.stringify(data));
+    getLocalStorage()?.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     console.error('Error writing to localStorage:', error);
     throw new Error('Failed to save data. Storage might be full.');
@@ -148,7 +151,7 @@ export function getValidation(
 // Clear all data
 export function clearAllData(): void {
   try {
-    safeLocalStorage?.removeItem(STORAGE_KEY);
+    getLocalStorage()?.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Error clearing localStorage:', error);
   }

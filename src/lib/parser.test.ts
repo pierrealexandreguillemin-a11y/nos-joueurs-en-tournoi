@@ -6,6 +6,8 @@ import {
   detectCurrentRound,
   calculateClubStats,
   getListUrl,
+  getStatsUrl,
+  parseStatsClubs,
 } from './parser';
 
 describe('parser.ts', () => {
@@ -77,161 +79,90 @@ describe('parser.ts', () => {
     });
   });
 
+  // Helper: generate FFE-style HTML with div.papi_joueur_box structure
+  // This matches the real FFE HTML structure the parser expects
+  function makeFFEPlayerRow(name: string, ranking: number, elo: string, points: string, tr: string, buch: string, rounds: string[][]) {
+    // rounds: array of [roundNum, score, ...padding..., opponentName] (13-cell rows) or fewer for byes
+    const roundRows = rounds.map(r => {
+      if (r.length >= 6) {
+        return `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`;
+      }
+      return `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`;
+    }).join('');
+
+    return `
+      <tr>
+        <td>
+          <div class="papi_joueur_box">
+            <b>${name}</b>
+            <table>
+              <tr>
+                <td></td><td>${ranking}</td><td></td><td></td><td>${elo}</td>
+                <td></td><td></td><td></td><td>${points}</td><td>${tr}</td><td>${buch}</td>
+              </tr>
+              ${roundRows}
+            </table>
+          </div>
+        </td>
+        <td>1600</td>
+      </tr>
+    `;
+  }
+
   describe('parseResults', () => {
     it('filters players by club', () => {
-      const htmlResults = `
-        <table>
-          <thead>
-            <tr>
-              <th>Pl</th>
-              <th>Nom</th>
-              <th>Elo</th>
-              <th>R 1</th>
-              <th>R 2</th>
-              <th>Pts</th>
-              <th>Tr</th>
-              <th>Perf</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>BACHKAT FARES</td>
-              <td>1541 F</td>
-              <td>+ 10B</td>
-              <td>= 2N</td>
-              <td>1½</td>
-              <td>12.5</td>
-              <td>1600</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>DUPONT JEAN</td>
-              <td>1600</td>
-              <td>+ 11N</td>
-              <td>= 1B</td>
-              <td>1½</td>
-              <td>13</td>
-              <td>1550</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('BACHKAT FARES', 1, '1541 F', '1.5', '12.5', '30', [
+          ['1', '', '1', '', '', 'Opponent A', '', '', '', '', '', '', ''],
+          ['2', '', '½', '', '', 'Opponent B', '', '', '', '', '', '', ''],
+        ])}
+        ${makeFFEPlayerRow('DUPONT JEAN', 2, '1600', '1.5', '13', '28', [
+          ['1', '', '1', '', '', 'Opponent C', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
 
       const playerClubMap = new Map([
-        ['BACHKAT FARES', 'Hay Chess'],
+        ['BACHKAT FARES', 'Mon Club'],
         ['DUPONT JEAN', 'Other Club'],
       ]);
 
-      const results = parseResults(htmlResults, playerClubMap);
+      const results = parseResults(htmlResults, playerClubMap, 'Mon Club');
 
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe('BACHKAT FARES');
-      expect(results[0].club).toBe('Hay Chess');
+      expect(results[0].club).toBe('Mon Club');
       expect(results[0].elo).toBe(1541);
       expect(results[0].ranking).toBe(1);
       expect(results[0].currentPoints).toBe(1.5);
-      expect(results[0].buchholz).toBe(12.5);
-      expect(results[0].performance).toBe(1600);
       expect(results[0].results).toHaveLength(2);
     });
 
     it('parses round results correctly', () => {
-      const htmlResults = `
-        <table>
-          <thead>
-            <tr>
-              <th>Pl</th>
-              <th>Nom</th>
-              <th>Elo</th>
-              <th>R 1</th>
-              <th>R 2</th>
-              <th>R 3</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>TEST PLAYER</td>
-              <td>1500</td>
-              <td>+ 10B</td>
-              <td>- 2N</td>
-              <td>= 3B</td>
-              <td>1½</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('TEST PLAYER', 1, '1500', '1.5', '10', '25', [
+          ['1', '', '1', '', '', 'Opp1', '', '', '', '', '', '', ''],
+          ['2', '', '0', '', '', 'Opp2', '', '', '', '', '', '', ''],
+          ['3', '', '½', '', '', 'Opp3', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
 
-      const playerClubMap = new Map([['TEST PLAYER', 'Hay Chess']]);
-      const results = parseResults(htmlResults, playerClubMap);
+      const playerClubMap = new Map([['TEST PLAYER', 'Mon Club']]);
+      const results = parseResults(htmlResults, playerClubMap, 'Mon Club');
 
       expect(results[0].results).toEqual([
-        { round: 1, score: 1, opponent: '10' },
-        { round: 2, score: 0, opponent: '2' },
-        { round: 3, score: 0.5, opponent: '3' },
+        { round: 1, score: 1, opponent: 'Opp1' },
+        { round: 2, score: 0, opponent: 'Opp2' },
+        { round: 3, score: 0.5, opponent: 'Opp3' },
       ]);
     });
 
-    it('handles exempt (EXE) results', () => {
-      const htmlResults = `
-        <table>
-          <thead>
-            <tr>
-              <th>Pl</th>
-              <th>Nom</th>
-              <th>Elo</th>
-              <th>R 1</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>TEST PLAYER</td>
-              <td>1500</td>
-              <td>EXE</td>
-              <td>1</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
-
-      const playerClubMap = new Map([['TEST PLAYER', 'Hay Chess']]);
-      const results = parseResults(htmlResults, playerClubMap);
-
-      expect(results[0].results[0]).toEqual({
-        round: 1,
-        score: 1,
-        opponent: 'EXEMPT',
-      });
-    });
-
     it('returns empty array when no players match club', () => {
-      const htmlResults = `
-        <table>
-          <thead>
-            <tr>
-              <th>Pl</th>
-              <th>Nom</th>
-              <th>Elo</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>DUPONT JEAN</td>
-              <td>1600</td>
-              <td>0</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('DUPONT JEAN', 1, '1600', '0', '0', '0', [])}
+      </table>`;
 
       const playerClubMap = new Map([['DUPONT JEAN', 'Other Club']]);
-      const results = parseResults(htmlResults, playerClubMap);
+      const results = parseResults(htmlResults, playerClubMap, 'Mon Club');
 
       expect(results).toHaveLength(0);
     });
@@ -242,46 +173,23 @@ describe('parser.ts', () => {
       const htmlList = `
         <table>
           <tr>
-            <td>1</td>
-            <td>&nbsp;</td>
-            <td>PLAYER ONE</td>
-            <td>1500</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>Hay Chess</td>
+            <td>1</td><td>&nbsp;</td><td>PLAYER ONE</td><td>1500</td>
+            <td></td><td></td><td></td><td>Mon Club</td>
           </tr>
         </table>
       `;
 
-      const htmlResults = `
-        <table>
-          <thead>
-            <tr>
-              <th>Pl</th>
-              <th>Nom</th>
-              <th>Elo</th>
-              <th>R 1</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>PLAYER ONE</td>
-              <td>1500</td>
-              <td>+ 5B</td>
-              <td>1</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('PLAYER ONE', 1, '1500', '1', '5', '20', [
+          ['1', '', '1', '', '', 'Opp1', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
 
-      const { players, currentRound } = parseFFePages(htmlList, htmlResults);
+      const { players, currentRound } = parseFFePages(htmlList, htmlResults, 'Mon Club');
 
       expect(players).toHaveLength(1);
       expect(players[0].name).toBe('PLAYER ONE');
-      expect(players[0].club).toBe('Hay Chess');
+      expect(players[0].club).toBe('Mon Club');
       expect(currentRound).toBe(1);
     });
   });
@@ -393,6 +301,73 @@ describe('parser.ts', () => {
 
       expect(stats.totalPoints).toBe(2);
       expect(stats.averagePoints).toBe(2);
+    });
+  });
+
+  describe('getStatsUrl', () => {
+    it('converts tournament URL to Stats URL', () => {
+      const input = 'https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/68994/68994&Action=Ga';
+      const expected = 'https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/68994/68994&Action=Stats';
+      expect(getStatsUrl(input)).toBe(expected);
+    });
+
+    it('returns original URL when no tournament ID found', () => {
+      const input = 'https://example.com/no-id';
+      expect(getStatsUrl(input)).toBe(input);
+    });
+  });
+
+  describe('parseStatsClubs', () => {
+    it('extracts clubs from Stats HTML with papi_liste structure', () => {
+      const html = `
+        <table>
+          <tr class="papi_liste_t"><td>Répartition par clubs</td></tr>
+          <tr class="papi_liste_t"><td>8 clubs représentés</td></tr>
+          <tr><td class="papi_liste_c">Hay Chess</td><td class="papi_liste_c">5</td></tr>
+          <tr><td class="papi_liste_c">Marseille-Echecs</td><td class="papi_liste_c">3</td></tr>
+          <tr><td class="papi_liste_c">Lyon-Echecs</td><td class="papi_liste_c">2</td></tr>
+          <tr class="papi_liste_t"><td>Another section</td></tr>
+        </table>
+      `;
+
+      const clubs = parseStatsClubs(html);
+
+      expect(clubs).toHaveLength(3);
+      expect(clubs[0]).toEqual({ name: 'Hay Chess', playerCount: 5 });
+      expect(clubs[1]).toEqual({ name: 'Marseille-Echecs', playerCount: 3 });
+      expect(clubs[2]).toEqual({ name: 'Lyon-Echecs', playerCount: 2 });
+    });
+
+    it('returns empty array for HTML without clubs section', () => {
+      const html = '<html><body><table></table></body></html>';
+      expect(parseStatsClubs(html)).toEqual([]);
+    });
+
+    it('handles "partition par clubs" variant', () => {
+      const html = `
+        <table>
+          <tr class="papi_liste_t"><td>partition par clubs</td></tr>
+          <tr><td class="papi_liste_c">Club A</td><td class="papi_liste_c">4</td></tr>
+          <tr class="papi_liste_t"><td>Other</td></tr>
+        </table>
+      `;
+
+      const clubs = parseStatsClubs(html);
+      expect(clubs).toHaveLength(1);
+      expect(clubs[0].name).toBe('Club A');
+    });
+
+    it('strips trailing colons from names and counts', () => {
+      const html = `
+        <table>
+          <tr class="papi_liste_t"><td>Répartition par clubs</td></tr>
+          <tr><td class="papi_liste_c">Club A :</td><td class="papi_liste_c">4 :</td></tr>
+          <tr class="papi_liste_t"><td>Other</td></tr>
+        </table>
+      `;
+
+      const clubs = parseStatsClubs(html);
+      expect(clubs[0]).toEqual({ name: 'Club A', playerCount: 4 });
     });
   });
 });

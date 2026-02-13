@@ -1,10 +1,10 @@
+// @vitest-environment jsdom
 'use client';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen, fireEvent, waitFor } from '@testing-library/dom';
-import '@testing-library/jest-dom';
 import TournamentTabs from './TournamentTabs';
-import { parseFFePages, getListUrl } from '@/lib/parser';
+import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
 import { saveEvent } from '@/lib/storage';
 import type { Event, Tournament, Player } from '@/types';
 
@@ -12,6 +12,9 @@ import type { Event, Tournament, Player } from '@/types';
 vi.mock('@/lib/parser', () => ({
   parseFFePages: vi.fn(),
   getListUrl: vi.fn(),
+  getResultsUrl: vi.fn(),
+  getStatsUrl: vi.fn(),
+  parseStatsClubs: vi.fn(),
   calculateClubStats: vi.fn(() => ({
     round: 1,
     totalPoints: 1,
@@ -29,7 +32,7 @@ describe('TournamentTabs', () => {
     {
       name: 'Alice',
       elo: 1500,
-      club: 'Hay Chess',
+      club: 'Mon Club',
       results: [{ round: 1, score: 1 }],
       currentPoints: 1,
       ranking: 1,
@@ -53,11 +56,18 @@ describe('TournamentTabs', () => {
     players: mockPlayers,
   };
 
+  // Event without clubName (Phase 1 behavior)
   const mockEvent: Event = {
     id: 'evt_1',
     name: 'Test Event',
     createdAt: '2025-01-01',
     tournaments: [mockTournament1, mockTournament2],
+  };
+
+  // Event with clubName (Phase 2 behavior)
+  const mockEventWithClub: Event = {
+    ...mockEvent,
+    clubName: 'Mon Club',
   };
 
   const mockOnEventUpdate = vi.fn();
@@ -81,76 +91,116 @@ describe('TournamentTabs', () => {
     it('first tab is selected by default', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
-      // First tab (U12) should be accessible and visible
-      const u12Tab = screen.getByRole('tab', { name: 'U12' });
+      const u12Tab = screen.getByRole('tab', { name: /U12/i });
       expect(u12Tab).toBeInTheDocument();
-
-      // Check that first tab content is visible (empty state message)
-      expect(screen.getByText(/aucune donnée/i)).toBeInTheDocument();
     });
 
     it('renders content when tournament has players', () => {
       const eventWithPlayers: Event = {
-        ...mockEvent,
-        tournaments: [mockTournament2], // Only U14 with players
+        ...mockEventWithClub,
+        tournaments: [mockTournament2],
       };
 
       render(<TournamentTabs event={eventWithPlayers} onEventUpdate={mockOnEventUpdate} />);
 
-      // Should NOT show empty message since tournament has players
-      expect(screen.queryByText(/aucune donnée\. cliquez sur actualiser/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Aucune donnée/i)).not.toBeInTheDocument();
     });
 
-    it('shows empty message when tournament has no players', () => {
+    it('shows empty message when no club selected and no players', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
-      // U12 tab (no players) should be active by default
-      expect(screen.getByText(/aucune donnée/i)).toBeInTheDocument();
-      expect(screen.getByText(/cliquez sur actualiser/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cliquez sur Actualiser pour détecter les clubs/i)).toBeInTheDocument();
     });
   });
 
   describe('Navigation', () => {
-    it('switches tab content when tab is clicked', async () => {
+    it('switches tab content when tab is clicked', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
-      // Initially on U12 tab
-      expect(screen.getByText(/aucune donnée/i)).toBeInTheDocument();
-
-      // Click U14 tab
-      const u14Tab = screen.getByRole('tab', { name: 'U14' });
+      const u14Tab = screen.getByRole('tab', { name: /U14/i });
       fireEvent.click(u14Tab);
 
-      // Tab should be clickable
       expect(u14Tab).toBeInTheDocument();
     });
 
     it('renders all tabs correctly', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
-      const u12Tab = screen.getByRole('tab', { name: 'U12' });
-      const u14Tab = screen.getByRole('tab', { name: 'U14' });
+      const u12Tab = screen.getByRole('tab', { name: /U12/i });
+      const u14Tab = screen.getByRole('tab', { name: /U14/i });
 
-      // Both tabs should be in the document and clickable
       expect(u12Tab).toBeInTheDocument();
       expect(u14Tab).toBeInTheDocument();
 
-      // Click U14
       fireEvent.click(u14Tab);
-
-      // Should still be in document after click
       expect(u14Tab).toBeInTheDocument();
     });
   });
 
-  describe('Refresh Functionality', () => {
-    it('renders refresh button for each tournament', () => {
+  describe('Phase 1: Club Detection (no clubName)', () => {
+    it('renders refresh button', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButtons = screen.getAllByText('Actualiser');
       expect(refreshButtons.length).toBeGreaterThan(0);
     });
 
+    it('fetches Stats page when refreshing without clubName', async () => {
+      const mockFetch = vi.mocked(fetch);
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ html: '<html></html>' }),
+      } as Response);
+
+      const mockGetStatsUrl = vi.mocked(getStatsUrl);
+      mockGetStatsUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Stats');
+
+      const mockParseStatsClubs = vi.mocked(parseStatsClubs);
+      mockParseStatsClubs.mockReturnValue([
+        { name: 'Mon Club', playerCount: 5 },
+        { name: 'Autre Club', playerCount: 3 },
+      ]);
+
+      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+
+      const refreshButton = screen.getAllByText('Actualiser')[0];
+      fireEvent.click(refreshButton);
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      expect(mockGetStatsUrl).toHaveBeenCalledWith(mockTournament1.url);
+      expect(mockParseStatsClubs).toHaveBeenCalled();
+    });
+
+    it('updates event with detected clubs on successful Stats fetch', async () => {
+      const mockFetch = vi.mocked(fetch);
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ html: '<html></html>' }),
+      } as Response);
+
+      vi.mocked(getStatsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Stats');
+      vi.mocked(parseStatsClubs).mockReturnValue([
+        { name: 'Mon Club', playerCount: 5 },
+      ]);
+
+      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+
+      const refreshButton = screen.getAllByText('Actualiser')[0];
+      fireEvent.click(refreshButton);
+
+      await waitFor(() => {
+        expect(mockOnEventUpdate).toHaveBeenCalled();
+      });
+
+      const updatedEvent = mockOnEventUpdate.mock.calls[0][0];
+      expect(updatedEvent.availableClubs).toEqual([{ name: 'Mon Club', playerCount: 5 }]);
+    });
+  });
+
+  describe('Phase 2: Fetch Results (with clubName)', () => {
     it('shows loading state during refresh', async () => {
       const mockFetch = vi.mocked(fetch);
       mockFetch.mockImplementation(() =>
@@ -162,21 +212,15 @@ describe('TournamentTabs', () => {
         )
       );
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
+      vi.mocked(parseFFePages).mockReturnValue({ players: mockPlayers, currentRound: 1 });
 
-      const mockParseFFePages = vi.mocked(parseFFePages);
-      mockParseFFePages.mockReturnValue({
-        players: mockPlayers,
-        currentRound: 1,
-      });
-
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButton = screen.getAllByText('Actualiser')[0];
       fireEvent.click(refreshButton);
 
-      // Should show loading state (button disabled)
       await waitFor(() => {
         expect(refreshButton).toBeDisabled();
       });
@@ -189,16 +233,11 @@ describe('TournamentTabs', () => {
         json: () => Promise.resolve({ html: '<html></html>' }),
       } as Response);
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
+      vi.mocked(parseFFePages).mockReturnValue({ players: mockPlayers, currentRound: 1 });
 
-      const mockParseFFePages = vi.mocked(parseFFePages);
-      mockParseFFePages.mockReturnValue({
-        players: mockPlayers,
-        currentRound: 1,
-      });
-
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButton = screen.getAllByText('Actualiser')[0];
       fireEvent.click(refreshButton);
@@ -207,7 +246,6 @@ describe('TournamentTabs', () => {
         expect(mockFetch).toHaveBeenCalledTimes(2);
       });
 
-      // Should call with correct URLs
       expect(mockFetch).toHaveBeenCalledWith(
         '/api/scrape',
         expect.objectContaining({
@@ -224,18 +262,13 @@ describe('TournamentTabs', () => {
         json: () => Promise.resolve({ html: '<html></html>' }),
       } as Response);
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
-
-      const mockParseFFePages = vi.mocked(parseFFePages);
-      mockParseFFePages.mockReturnValue({
-        players: mockPlayers,
-        currentRound: 1,
-      });
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
+      vi.mocked(parseFFePages).mockReturnValue({ players: mockPlayers, currentRound: 1 });
 
       const mockSaveEvent = vi.mocked(saveEvent);
 
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButton = screen.getAllByText('Actualiser')[0];
       fireEvent.click(refreshButton);
@@ -244,10 +277,8 @@ describe('TournamentTabs', () => {
         expect(mockOnEventUpdate).toHaveBeenCalled();
       });
 
-      // Should have called saveEvent
       expect(mockSaveEvent).toHaveBeenCalled();
 
-      // Should have called onEventUpdate with updated event
       const updatedEvent = mockOnEventUpdate.mock.calls[0][0];
       expect(updatedEvent.tournaments[0].players).toEqual(mockPlayers);
     });
@@ -256,19 +287,20 @@ describe('TournamentTabs', () => {
       const mockFetch = vi.mocked(fetch);
       mockFetch.mockResolvedValue({
         ok: false,
+        status: 500,
         json: () => Promise.resolve({}),
       } as Response);
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
 
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButton = screen.getAllByText('Actualiser')[0];
       fireEvent.click(refreshButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/erreur/i)).toBeInTheDocument();
+        expect(screen.getByText(/serveur FFE rencontre des problèmes/i)).toBeInTheDocument();
       });
     });
 
@@ -276,10 +308,10 @@ describe('TournamentTabs', () => {
       const mockFetch = vi.mocked(fetch);
       mockFetch.mockRejectedValue(new Error('Network timeout'));
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
 
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
       const refreshButton = screen.getAllByText('Actualiser')[0];
       fireEvent.click(refreshButton);
@@ -292,37 +324,31 @@ describe('TournamentTabs', () => {
 
   describe('Display States', () => {
     it('renders PlayerTable when tournament has players', () => {
-      // Use event with only tournaments that have players
       const eventWithPlayers: Event = {
-        ...mockEvent,
-        tournaments: [mockTournament2], // Only U14 with players
+        ...mockEventWithClub,
+        tournaments: [mockTournament2],
       };
 
       render(<TournamentTabs event={eventWithPlayers} onEventUpdate={mockOnEventUpdate} />);
 
-      // Should show player data through PlayerTable component
-      // PlayerTable will render the player name
       expect(screen.getByText('Alice')).toBeInTheDocument();
     });
 
-    it('shows empty state for tournament with no players', () => {
-      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+    it('shows empty state for tournament with no players and clubName set', () => {
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 
-      // U12 tab has no players
-      expect(screen.getByText(/aucun joueur hay chess/i)).toBeInTheDocument();
+      expect(screen.getByText(/Aucun joueur Mon Club/i)).toBeInTheDocument();
     });
 
     it('displays last update timestamp when available', () => {
-      // Use event with only tournament that has lastUpdate and players
       const eventWithUpdate: Event = {
-        ...mockEvent,
-        tournaments: [mockTournament2], // U14 has lastUpdate
+        ...mockEventWithClub,
+        tournaments: [mockTournament2],
       };
 
       render(<TournamentTabs event={eventWithUpdate} onEventUpdate={mockOnEventUpdate} />);
 
-      // Should show last update text
-      expect(screen.getByText(/dernière mise à jour/i)).toBeInTheDocument();
+      expect(screen.getByText(/Dernière mise à jour/i)).toBeInTheDocument();
     });
   });
 
@@ -370,14 +396,10 @@ describe('TournamentTabs', () => {
         )
       );
 
-      const mockGetListUrl = vi.mocked(getListUrl);
-      mockGetListUrl.mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
-
-      const mockParseFFePages = vi.mocked(parseFFePages);
-      mockParseFFePages.mockReturnValue({
-        players: mockPlayers,
-        currentRound: 1,
-      });
+      vi.mocked(getStatsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Stats');
+      vi.mocked(parseStatsClubs).mockReturnValue([
+        { name: 'Mon Club', playerCount: 5 },
+      ]);
 
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 

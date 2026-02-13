@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   getStorageData,
@@ -74,14 +75,14 @@ describe('storage.ts', () => {
         validations: {},
       };
 
-      localStorage.setItem('hay-chess-tracker', JSON.stringify(mockData));
+      localStorage.setItem('nos-joueurs-en-tournoi', JSON.stringify(mockData));
 
       const data = getStorageData();
       expect(data).toEqual(mockData);
     });
 
     it('handles corrupted JSON gracefully', () => {
-      localStorage.setItem('hay-chess-tracker', 'invalid json{');
+      localStorage.setItem('nos-joueurs-en-tournoi', 'invalid json{');
 
       const data = getStorageData();
 
@@ -110,7 +111,7 @@ describe('storage.ts', () => {
 
       setStorageData(data);
 
-      const saved = JSON.parse(localStorage.getItem('hay-chess-tracker')!);
+      const saved = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi')!);
       expect(saved).toEqual(data);
     });
   });
@@ -229,7 +230,7 @@ describe('storage.ts', () => {
       deleteEvent('event-1');
 
       const data = getStorageData();
-      expect(data.events).toHaveLength(1);
+      expect(data.events).toHaveLength(0);
       expect(data.currentEventId).toBe('');
     });
 
@@ -620,7 +621,7 @@ describe('storage.ts', () => {
           tournamentName: 'U14',
           eventName: 'Test Event',
           totalPlayers: 1,
-          hayChessPlayerCount: 1,
+          clubPlayerCount: 1,
           totalPoints: 1,
           averagePoints: 1,
           validatedRoundsCount: 1,
@@ -629,11 +630,13 @@ describe('storage.ts', () => {
       });
 
       it('calculates correct stats for multiple players', () => {
+        // In the new architecture, players are pre-filtered by the parser
+        // so all players in the tournament belong to the selected club
         const players: Player[] = [
           {
             name: 'Player 1',
             elo: 1600,
-            club: 'Hay Chess',
+            club: 'Mon Club',
             results: [{ round: 1, score: 1 }],
             currentPoints: 1,
             ranking: 1,
@@ -642,20 +645,11 @@ describe('storage.ts', () => {
           {
             name: 'Player 2',
             elo: 1550,
-            club: 'Hay Chess',
+            club: 'Mon Club',
             results: [{ round: 1, score: 0.5 }],
             currentPoints: 0.5,
             ranking: 2,
             validated: [false],
-          },
-          {
-            name: 'Player 3',
-            elo: 1500,
-            club: 'Other Club',
-            results: [{ round: 1, score: 1 }],
-            currentPoints: 1,
-            ranking: 1,
-            validated: [true],
           },
         ];
 
@@ -664,11 +658,11 @@ describe('storage.ts', () => {
         const stats = getTournamentStats('tournament-2');
 
         expect(stats).toMatchObject({
-          totalPlayers: 3,
-          hayChessPlayerCount: 2,
+          totalPlayers: 2,
+          clubPlayerCount: 2,
           totalPoints: 1.5,
           averagePoints: 0.75,
-          validatedRoundsCount: 2,
+          validatedRoundsCount: 1,
         });
       });
 

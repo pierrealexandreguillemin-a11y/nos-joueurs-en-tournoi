@@ -56,7 +56,7 @@ assignees: ''
 
 **Application Version:**
 - Version: <!-- e.g., v1.0.0-beta -->
-- Deployment URL: <!-- e.g., https://hay-chess-tracker.vercel.app -->
+- Deployment URL: <!-- e.g., https://nos-joueurs-en-tournoi.vercel.app -->
 
 **Node.js Version (if applicable):**
 - Version: <!-- e.g., 20.11.0 -->
@@ -116,5 +116,5 @@ Related to #
 
 <!--
 For urgent security issues, please DO NOT open a public issue.
-Instead, email security@haychess.club following our Security Policy.
+Instead, follow our Security Policy.
 -->

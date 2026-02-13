@@ -15,7 +15,7 @@ import { Card } from '@/components/ui/card';
 
 export default function ShareButton() {
   const [copied, setCopied] = useState(false);
-  const appUrl = 'https://hay-chess-tracker.vercel.app';
+  const appUrl = 'https://nos-joueurs-en-tournoi.vercel.app';
 
   const handleCopy = async () => {
     try {
@@ -31,7 +31,7 @@ export default function ShareButton() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Hay Chess Tracker',
+          title: 'Nos Joueurs en Tournoi',
           text: 'Suivez les tournois d\'échecs en temps réel',
           url: appUrl,
         });
@@ -59,7 +59,7 @@ export default function ShareButton() {
             Partager l&apos;application
           </DialogTitle>
           <DialogDescription className="text-miami-navy/70">
-            Partagez Hay Chess Tracker avec d&apos;autres clubs ou joueurs
+            Partagez Nos Joueurs en Tournoi avec d&apos;autres clubs ou joueurs
           </DialogDescription>
         </DialogHeader>
 

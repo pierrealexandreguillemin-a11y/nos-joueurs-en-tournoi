@@ -1,4 +1,4 @@
-# 🎯 INSTRUCTIONS CORE - HAY CHESS TRACKER
+# INSTRUCTIONS CORE - NOS JOUEURS EN TOURNOI
 
 **RÈGLE ABSOLUE : HONNÊTETÉ BRUTALE - PAS D'OPTIMISME MENTEUR**
 
@@ -73,7 +73,7 @@ Honnêteté > Correction/Sécurité > Stabilité API > Performance > Style
 - Rate limiting client-side (max 1 req/2s FFE)
 - Timeouts explicites sur requêtes réseau
 
-## 🎯 CONTEXTE HAY CHESS TRACKER
+## CONTEXTE NOS JOUEURS EN TOURNOI
 
 ### Utilisateurs
 - Parents bénévoles (non-techniques)
@@ -103,5 +103,4 @@ Honnêteté > Correction/Sécurité > Stabilité API > Performance > Style
 ---
 
 Références complètes :
-- `🎯 PROMPT STANDARDS PROFESSIONNELS.txt`
-- `# 🎯 PROMPT ULTIME - HAY CHESS TRAC.txt`
+- `PROMPT STANDARDS PROFESSIONNELS.txt`

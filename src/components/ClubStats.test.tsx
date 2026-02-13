@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 'use client';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
@@ -154,7 +155,7 @@ describe('ClubStats', () => {
     expect(screen.getByText(/1.5 pts\/joueur/i)).toBeInTheDocument();
   });
 
-  it('displays stats icon emoji', () => {
+  it('displays stats heading with club name', () => {
     const mockCalculateClubStats = vi.mocked(calculateClubStats);
     mockCalculateClubStats.mockReturnValue({
       round: 2,
@@ -163,10 +164,9 @@ describe('ClubStats', () => {
       averagePoints: 1.25,
     });
 
-    render(<ClubStats players={mockPlayers} currentRound={2} />);
+    render(<ClubStats players={mockPlayers} currentRound={2} clubName="Mon Club" />);
 
-    const heading = screen.getByText(/📊 Stats Club/i);
-    expect(heading).toBeInTheDocument();
+    expect(screen.getByText(/Stats Mon Club/i)).toBeInTheDocument();
   });
 
   it('uses Badge component for player count', () => {

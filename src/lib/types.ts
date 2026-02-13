@@ -1,4 +1,4 @@
-// Core types for Hay Chess Tracker
+// Core types for Nos Joueurs en Tournoi
 
 export interface Event {
   id: string;

@@ -153,26 +153,24 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
   }, [event.clubName, fetchClubs, fetchResults]);
 
   // Handle club selection
-  const handleClubSelect = useCallback((clubName: string) => {
-    const updatedEvent: Event = {
+  const handleClubSelect = useCallback(async (clubName: string) => {
+    let currentEvent: Event = {
       ...event,
       clubName,
     };
-    saveEvent(updatedEvent);
-    onEventUpdate(updatedEvent);
+    saveEvent(currentEvent);
+    onEventUpdate(currentEvent);
 
-    // Auto-refresh all tournaments after club selection
-    updatedEvent.tournaments.forEach(tournament => {
-      // We need to trigger fetch with the updated event
-      // Use a small delay to let state propagate
-      setTimeout(() => {
-        const listUrl = getListUrl(tournament.url);
-        const resultsUrl = getResultsUrl(tournament.url);
-
+    // Auto-refresh all tournaments sequentially to avoid race conditions
+    for (const tournament of currentEvent.tournaments) {
+      try {
         setLoading(tournament.id);
         setError(null);
 
-        Promise.all([
+        const listUrl = getListUrl(tournament.url);
+        const resultsUrl = getResultsUrl(tournament.url);
+
+        const [responseList, responseResults] = await Promise.all([
           fetch('/api/scrape', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -183,39 +181,40 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: resultsUrl }),
           }),
-        ]).then(async ([responseList, responseResults]) => {
-          if (!responseList.ok || !responseResults.ok) {
-            throw new Error('Erreur lors du chargement des résultats FFE');
-          }
-          const [dataList, dataResults] = await Promise.all([
-            responseList.json(),
-            responseResults.json(),
-          ]);
-          const { players } = parseFFePages(dataList.html, dataResults.html, clubName);
+        ]);
 
-          const updatedTournament: Tournament = {
-            ...tournament,
-            players,
-            lastUpdate: new Date().toISOString(),
-          };
+        if (!responseList.ok || !responseResults.ok) {
+          throw new Error('Erreur lors du chargement des résultats FFE');
+        }
 
-          const newEvent: Event = {
-            ...updatedEvent,
-            tournaments: updatedEvent.tournaments.map(t =>
-              t.id === tournament.id ? updatedTournament : t
-            ),
-          };
+        const [dataList, dataResults] = await Promise.all([
+          responseList.json(),
+          responseResults.json(),
+        ]);
+        const { players } = parseFFePages(dataList.html, dataResults.html, clubName);
 
-          saveEvent(newEvent);
-          onEventUpdate(newEvent);
-        }).catch(err => {
-          console.error('Error auto-refreshing after club selection:', err);
-          setError(err instanceof Error ? err.message : 'Erreur inconnue');
-        }).finally(() => {
-          setLoading(null);
-        });
-      }, 100);
-    });
+        const updatedTournament: Tournament = {
+          ...tournament,
+          players,
+          lastUpdate: new Date().toISOString(),
+        };
+
+        currentEvent = {
+          ...currentEvent,
+          tournaments: currentEvent.tournaments.map(t =>
+            t.id === tournament.id ? updatedTournament : t
+          ),
+        };
+
+        saveEvent(currentEvent);
+        onEventUpdate(currentEvent);
+      } catch (err) {
+        console.error('Error auto-refreshing after club selection:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      } finally {
+        setLoading(null);
+      }
+    }
   }, [event, onEventUpdate]);
 
   // Keyboard shortcuts: Ctrl+R pour refresh

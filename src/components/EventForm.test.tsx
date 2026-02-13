@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 'use client';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render } from '@testing-library/react';
