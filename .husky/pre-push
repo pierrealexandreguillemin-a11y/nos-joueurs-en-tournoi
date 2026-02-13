@@ -1,0 +1,7 @@
+echo "Running pre-push checks..."
+
+# Run build to ensure everything compiles
+echo "Testing production build..."
+npm run build
+
+echo "Pre-push checks passed!"

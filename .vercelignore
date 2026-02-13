@@ -1,0 +1,23 @@
+# Test files
+*.test.ts
+*.test.tsx
+**/*.test.ts
+**/*.test.tsx
+
+# Test directories
+coverage/
+__tests__/
+
+# Development files
+*.local
+.env.local
+.env.development.local
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+docs/
+ROADMAP_TESTS.md
+CHECKLIST_TESTS_NORMES.md

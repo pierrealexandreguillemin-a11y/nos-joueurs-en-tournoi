@@ -1,0 +1,624 @@
+/* frontend/src/styles/globals.css */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Miami Vice Complete Color Palette */
+:root {
+  /* Couleurs principales */
+  --miami-aqua: #008E97;      /* Aqua/Teal principal */
+  --miami-orange: #FC4F00;    /* Orange vif */
+  --miami-navy: #013369;      /* Bleu marine profond */
+
+  /* Variations */
+  --miami-aqua-light: #00A8B5;   /* Aqua plus clair */
+  --miami-aqua-dark: #006B73;    /* Aqua plus foncé */
+  --miami-orange-light: #FF6B2B; /* Orange plus clair */
+
+  /* Neutres */
+  --miami-white: #FFFFFF;
+  --miami-gray: #8B9DC3;      /* Gris bleuté */
+
+  /* Extensions pour Miami Crystal UI System */
+  --miami-crystal-bg: #f8fafc;
+  --miami-crystal-surface: #ffffff;
+  --miami-crystal-border: #e2e8f0;
+  --miami-crystal-text: #1e293b;
+  --miami-crystal-text-muted: #64748b;
+}
+
+/* Base styles */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  }
+  
+  body {
+    @apply antialiased;
+  }
+  
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Button variants */
+  .btn-primary {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-danger {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Form elements */
+  .form-input {
+    @apply block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+  }
+  
+  .form-select {
+    @apply block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+  }
+  
+  .form-textarea {
+    @apply block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+  }
+  
+  .form-checkbox {
+    @apply h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded;
+  }
+  
+  .form-radio {
+    @apply h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-white overflow-hidden shadow rounded-lg;
+  }
+  
+  .card-header {
+    @apply px-4 py-5 sm:px-6 border-b border-gray-200;
+  }
+  
+  .card-body {
+    @apply px-4 py-5 sm:p-6;
+  }
+  
+  .card-footer {
+    @apply px-4 py-4 sm:px-6 bg-gray-50 border-t border-gray-200;
+  }
+  
+  /* Table styles */
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table-header {
+    @apply bg-gray-50;
+  }
+  
+  .table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+  
+  .table-body {
+    @apply bg-white divide-y divide-gray-200;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+  }
+  
+  /* Status badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-error {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .badge-info {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .badge-gray {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Drag and drop styles */
+  .drag-item {
+    @apply cursor-grab active:cursor-grabbing transition-transform;
+  }
+  
+  .drag-item:hover {
+    @apply transform scale-102;
+  }
+  
+  .drop-zone {
+    @apply border-2 border-dashed border-gray-300 rounded-lg transition-colors;
+  }
+  
+  .drop-zone-active {
+    @apply border-indigo-400 bg-indigo-50;
+  }
+  
+  /* Player status colors */
+  .player-core {
+    @apply bg-purple-100 text-purple-800 border-purple-200;
+  }
+  
+  .player-foreign {
+    @apply bg-orange-100 text-orange-800 border-orange-200;
+  }
+  
+  .player-homegrown {
+    @apply bg-indigo-100 text-indigo-800 border-indigo-200;
+  }
+  
+  .player-muted {
+    @apply bg-red-100 text-red-800 border-red-200;
+  }
+  
+  .player-reserve {
+    @apply bg-gray-100 text-gray-800 border-gray-200;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Accessibility - Screen Reader Only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Animations */
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    @apply transition-transform duration-200 ease-in-out;
+  }
+  
+  .hover-lift:hover {
+    @apply transform -translate-y-1;
+  }
+  
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Responsive containers */
+  .container-narrow {
+    @apply max-w-4xl mx-auto;
+  }
+  
+  .container-wide {
+    @apply max-w-7xl mx-auto;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-after: always;
+  }
+  
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    @apply border-2 border-gray-900;
+  }
+  
+  .btn-primary {
+    @apply border-2 border-indigo-800;
+  }
+}
+
+/* FORCE ANIMATIONS FOR DASHBOARD */
+.dashboard-clean * {
+  animation-duration: initial !important;
+  animation-iteration-count: initial !important;
+  transition-duration: initial !important;
+}
+
+/* Reduced motion support - COMPLETELY DISABLED */
+/* @media (prefers-reduced-motion: reduce) disabled */
+
+/* Dark mode support (future) */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles would go here */
+  /* Currently disabled, can be enabled in future versions */
+}
+
+/* 🎯 SHADER GLASSMORPHISM FORCE */
+.dashboard-shader {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(0, 142, 151, 0.2) !important;
+}
+
+.shader-glow {
+  animation: shader-pulse 3s ease-in-out infinite;
+}
+
+@keyframes shader-pulse {
+  0%, 100% {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 25px 50px rgba(0, 142, 151, 0.4),
+                inset 0 3px 0 rgba(255, 255, 255, 0.4);
+  }
+}
+
+/* Miami Crystal UI System - Global Shimmer Effects */
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+/* Miami Crystal UI System - Glassmorphism Utilities */
+.miami-glass-background {
+  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.miami-glass-foreground {
+  backdrop-filter: blur(15px) saturate(130%);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.miami-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.miami-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-30deg, transparent 40%, rgba(255,255,255,0.02) 50%, transparent 60%);
+  animation: shimmer 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Dark theme variants */
+.miami-glass-dark {
+  backdrop-filter: blur(15px);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.miami-shimmer-dark::before {
+  background: linear-gradient(-30deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
+}
+
+/* Miami Card avec opacité visible (12% au lieu de 1-5%) */
+.miami-card {
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  backdrop-filter: blur(15px) saturate(130%);
+  -webkit-backdrop-filter: blur(15px) saturate(130%);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15);
+}
+/* ========================================
+   CYBERPUNK ANIMATIONS - AUDIOWIDE STYLE
+   ======================================== */
+
+/* Cyberpunk Glow Effect - Neon pulsing */
+@keyframes cyberpunk-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px #00D4FF,
+      0 0 20px #00D4FF,
+      0 0 30px #00D4FF,
+      0 0 40px #FC4F00;
+  }
+  50% {
+    text-shadow:
+      0 0 20px #00D4FF,
+      0 0 30px #00D4FF,
+      0 0 40px #00D4FF,
+      0 0 50px #FC4F00,
+      0 0 60px #FC4F00;
+  }
+}
+
+/* Cyberpunk Glow - Reduced intensity for WCAG AA compliance */
+@keyframes cyberpunk-glow-reduced {
+  0%, 100% {
+    text-shadow:
+      0 0 8px rgba(0, 168, 204, 0.6),
+      0 0 16px rgba(224, 69, 0, 0.4);
+  }
+  50% {
+    text-shadow:
+      0 0 12px rgba(0, 168, 204, 0.7),
+      0 0 24px rgba(224, 69, 0, 0.5);
+  }
+}
+
+/* Gradient Shift Animation - Moving colors */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Glitch Effect - Subtle distortion */
+@keyframes glitch {
+  0%, 100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+}
+
+/* Cyberpunk Title Class - Main header style (WCAG AA compliant) */
+.cyberpunk-title {
+  font-family: var(--font-audiowide), 'Audiowide', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  /* Reduced brightness: #00D4FF -> #00A8CC, #FC4F00 -> #E04500 */
+  background: linear-gradient(
+    90deg,
+    #00A8CC 0%,
+    #E04500 25%,
+    #00A8CC 50%,
+    #E04500 75%,
+    #00A8CC 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation:
+    gradient-shift 3s ease infinite,
+    cyberpunk-glow-reduced 2s ease-in-out infinite;
+  /* Reduced drop-shadow opacity: 50% -> 25% */
+  filter: drop-shadow(0 0 12px rgba(0, 168, 204, 0.25));
+}
+
+/* Cyberpunk Title with Glitch - More intense */
+.cyberpunk-title-glitch {
+  font-family: var(--font-audiowide), 'Audiowide', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  background: linear-gradient(
+    90deg,
+    #00D4FF 0%,
+    #FC4F00 25%,
+    #00D4FF 50%,
+    #FC4F00 75%,
+    #00D4FF 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation:
+    gradient-shift 3s ease infinite,
+    cyberpunk-glow 2s ease-in-out infinite,
+    glitch 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
+}
+
+/* Cyberpunk Subtitle - Smaller accent text */
+.cyberpunk-subtitle {
+  font-family: var(--font-audiowide), 'Audiowide', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: #00D4FF;
+  text-shadow:
+    0 0 10px #00D4FF,
+    0 0 20px #00D4FF;
+  animation: cyberpunk-glow 2s ease-in-out infinite;
+}
+
+/* Loading Screen / Splash variants */
+.cyberpunk-loading {
+  font-family: var(--font-audiowide), 'Audiowide', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #00D4FF 50%,
+    transparent 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 1.5s ease infinite;
+}
+
+/* Cyberpunk Chess Logo Animation */
+.chess-logo {
+  animation:
+    logo-pulse 3s ease-in-out infinite,
+    logo-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(0, 168, 204, 0.4));
+  transition: transform 0.3s ease;
+}
+
+.chess-logo:hover {
+  transform: scale(1.1) rotate(-5deg);
+  filter: drop-shadow(0 0 12px rgba(224, 69, 0, 0.6));
+}
+
+/* Pulse animation */
+@keyframes logo-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* Glow animation */
+@keyframes logo-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(0, 168, 204, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(224, 69, 0, 0.5));
+  }
+}
+
+/* Gradient animation inside SVG */
+@keyframes chess-gradient-shift {
+  0% {
+    stop-color: #00A8CC;
+  }
+  50% {
+    stop-color: #E04500;
+  }
+  100% {
+    stop-color: #00A8CC;
+  }
+}
+
+/* Disable all animations when requested */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
