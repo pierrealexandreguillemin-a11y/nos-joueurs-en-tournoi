@@ -72,17 +72,17 @@ export default function Home() {
         } else {
           const result = importEvent(exportedData);
           if (result.success) {
-            toast.success('Event imported successfully!');
+            toast.success('Événement importé avec succès !');
             setCurrentEvent(getCurrentEvent());
             setShowEventForm(false);
           } else {
-            toast.error('Error importing event');
+            toast.error('Erreur lors de l\'import de l\'événement');
           }
         }
 
         window.history.replaceState({}, '', window.location.pathname);
       } else {
-        toast.error('Invalid share link');
+        toast.error('Lien de partage invalide');
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
@@ -103,7 +103,7 @@ export default function Home() {
     if (!pendingImport) return;
     const result = importEvent(pendingImport, { replaceIfExists: true });
     if (result.success) {
-      toast.success('Event replaced successfully!');
+      toast.success('Événement remplacé avec succès !');
       setCurrentEvent(getCurrentEvent());
       setShowEventForm(false);
     }
@@ -115,7 +115,7 @@ export default function Home() {
     if (!pendingImport) return;
     const result = importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
     if (result.success) {
-      toast.success('Event copy created!');
+      toast.success('Copie de l\'événement créée !');
       setCurrentEvent(getCurrentEvent());
       setShowEventForm(false);
     }
@@ -126,7 +126,7 @@ export default function Home() {
   const handleDuplicateCancel = () => {
     setDuplicateDialogOpen(false);
     setPendingImport(null);
-    toast.info('Import cancelled');
+    toast.info('Import annulé');
   };
 
   // Show loading state during hydration
@@ -225,10 +225,10 @@ export default function Home() {
             border: '1px solid rgba(255, 255, 255, 0.18)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15)'
           }}>
-            <h2 className="text-xl font-semibold mb-2">No active event</h2>
-            <p className="text-muted-foreground mb-4">Create a new event to get started</p>
+            <h2 className="text-xl font-semibold mb-2">Aucun événement actif</h2>
+            <p className="text-muted-foreground mb-4">Créez un nouvel événement pour commencer</p>
             <Button variant="miami" onClick={() => setShowEventForm(true)}>
-              Create Event
+              Créer un événement
             </Button>
           </div>
         )}

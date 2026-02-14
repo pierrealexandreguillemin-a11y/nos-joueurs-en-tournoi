@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security Vulnerability
-    url: https://github.com/hay-chess/hay-chess-tracker/security/advisories/new
+    url: https://github.com/pierrealexandreguillemin-a11y/nos-joueurs-en-tournoi/security/advisories/new
     about: Report a security vulnerability (DO NOT open a public issue)
   - name: Question / Discussion
-    url: https://github.com/hay-chess/hay-chess-tracker/discussions
+    url: https://github.com/pierrealexandreguillemin-a11y/nos-joueurs-en-tournoi/discussions
     about: Ask questions or discuss ideas
   - name: Documentation
-    url: https://github.com/hay-chess/hay-chess-tracker/tree/master/docs
+    url: https://github.com/pierrealexandreguillemin-a11y/nos-joueurs-en-tournoi/tree/master/docs
     about: Read the documentation

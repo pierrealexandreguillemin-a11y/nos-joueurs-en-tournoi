@@ -1,34 +1,35 @@
-# 🏆 Hay Chess Tracker
+# Nos Joueurs en Tournoi
 
-Application web Progressive (PWA) pour le suivi en temps réel des résultats des tournois d'échecs FFE pour le club "Hay Chess".
+Application web Progressive (PWA) pour le suivi en temps réel des résultats des tournois d'échecs FFE, avec choix dynamique du club.
 
-## 📋 Vue d'ensemble
+## Vue d'ensemble
 
-Hay Chess Tracker permet aux responsables de club et aux parents bénévoles de suivre facilement les résultats des joueurs du club lors des tournois FFE (Fédération Française des Échecs), avec synchronisation multi-appareils et partage par QR code.
+Nos Joueurs en Tournoi permet aux responsables de club et aux parents bénévoles de suivre facilement les résultats des joueurs de **n'importe quel club** lors des tournois FFE (Fédération Française des Échecs), avec synchronisation multi-appareils et partage par QR code.
 
 ### Fonctionnalités principales
 
-- ✅ **Scraping automatique** des résultats FFE (parsing HTML optimisé)
-- 📊 **Affichage filtré** des joueurs du club uniquement
-- 🔄 **Synchronisation multi-appareils** via Upstash Redis KV
-- 📱 **Progressive Web App** - Installation sur mobile/desktop
-- 🎯 **Multi-événements** - Gérer plusieurs tournois simultanément
-- 📤 **Export/Import JSON** - Sauvegarde et partage offline
-- 🔗 **Partage QR Code** - Partage d'événements par scan
-- 🎨 **Interface Cyberpunk** - Design Miami Vice glassmorphism
-- ⚡ **Mode économie d'énergie** - Désactivation animations optionnelle
-- 💾 **Sauvegarde locale** - localStorage + sync cloud
-- 📈 **Statistiques automatiques** - Stats club par ronde
-- 🌐 **Responsive** - Mobile-first design
+- **Choix dynamique du club** - Détection automatique des clubs depuis la page FFE Stats
+- **Scraping automatique** des résultats FFE (parsing HTML optimisé)
+- **Affichage filtré** des joueurs du club sélectionné
+- **Synchronisation multi-appareils** via Upstash Redis KV
+- **Progressive Web App** - Installation sur mobile/desktop
+- **Multi-événements** - Gérer plusieurs tournois simultanément
+- **Export/Import JSON** - Sauvegarde et partage offline
+- **Partage QR Code** - Partage d'événements par scan
+- **Interface Cyberpunk** - Design Miami Vice glassmorphism
+- **Mode économie d'énergie** - Désactivation animations optionnelle
+- **Sauvegarde locale** - localStorage + sync cloud
+- **Statistiques automatiques** - Stats club par ronde
+- **Responsive** - Mobile-first design
 
-## 🛠️ Stack technique
+## Stack technique
 
 ### Frontend
 - **Next.js 16** (App Router + Turbopack)
 - **React 19** + **TypeScript 5.5**
 - **Tailwind CSS 3.4** - Styling
 - **shadcn/ui** - Composants UI
-- **Lucide React 0.553** - Icônes
+- **Lucide React** - Icônes
 - **Sonner** - Toast notifications
 - **QRCode.react** - Génération QR codes
 
@@ -42,10 +43,10 @@ Hay Chess Tracker permet aux responsables de club et aux parents bénévoles de 
 - **localStorage** - Données événements et validations (offline-first)
 - **Upstash KV** - Synchronisation cloud optionnelle
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
-hay-chess-tracker/
+nos-joueurs-en-tournoi/
 ├── app/
 │   ├── layout.tsx               # Root layout (Audiowide + Inter fonts)
 │   ├── page.tsx                 # Page principale
@@ -54,15 +55,16 @@ hay-chess-tracker/
 │   │   ├── events/
 │   │   │   ├── sync/route.ts    # Sync Upstash KV
 │   │   │   └── fetch/route.ts   # Fetch depuis KV
-│   └── manifest.json            # PWA manifest (2024 standards)
+│   └── manifest.json            # PWA manifest
 ├── src/
 │   ├── components/
 │   │   ├── ui/                  # shadcn/ui components
 │   │   ├── common/
 │   │   │   └── FloatingParticles.tsx
+│   │   ├── ClubSelector.tsx     # Sélection dynamique du club
 │   │   ├── EventForm.tsx        # Formulaire création événement
 │   │   ├── EventsManager.tsx    # Gestion multi-événements
-│   │   ├── TournamentTabs.tsx   # Onglets tournois
+│   │   ├── TournamentTabs.tsx   # Onglets tournois (2 phases)
 │   │   ├── PlayerTable.tsx      # Tableau joueurs
 │   │   ├── ClubStats.tsx        # Stats club + titre événement
 │   │   ├── ShareButton.tsx      # Bouton partage global
@@ -74,50 +76,36 @@ hay-chess-tracker/
 │   ├── contexts/
 │   │   └── AnimationsContext.tsx # Context global animations
 │   ├── lib/
-│   │   ├── parser.ts            # Parser HTML FFE (deduplicate players)
+│   │   ├── parser.ts            # Parser HTML FFE (Stats + Ls + Ga)
 │   │   ├── storage.ts           # localStorage management + export/import
 │   │   ├── sync.ts              # Auto-sync avec Upstash
 │   │   ├── kv.ts                # Upstash Redis client
 │   │   └── utils.ts             # Utilitaires
 │   ├── types/
-│   │   └── index.ts             # Types TypeScript
+│   │   └── index.ts             # Types TypeScript (ClubInfo, Event, etc.)
 │   └── styles/
 │       ├── globals.css          # Styles cyberpunk + .no-animations
 │       └── chess-logo.css       # Animations logo
-├── docs/                        # Documentation technique
-│   ├── architecture/
-│   │   ├── API.md               # Documentation API
-│   │   ├── ARCHITECTURE.md      # Architecture système
-│   │   └── FFE-PARSER-REFERENCE.md # Référence parser FFE
-│   ├── deployment/
-│   │   ├── DEPLOYMENT.md        # Guide déploiement
-│   │   ├── SECURITY.md          # Sécurité
-│   │   └── UPSTASH-REDIS-SETUP.md # Configuration Redis
-│   └── guides/
-│       ├── CHECKLIST_TESTS_NORMES.md # Checklist tests
-│       ├── GUIDE-RESPONSABLE-CLUB.md # Guide utilisateur
-│       ├── IMPLEMENTATION-QUICK-WINS.md # Quick wins
-│       ├── ROADMAP_TESTS.md     # Roadmap tests
-│       ├── SESSION-NOTES.md     # Notes sessions
-│       ├── SOLUTIONS-PARTAGE.md # Solutions partage
-│       └── TOURNOIS-A-SUIVRE.md # Tournois à suivre
 ├── public/
 │   ├── chess-logo.png           # Logo principal
+│   ├── manifest.json            # PWA manifest
 │   ├── favicon*.png             # Multiple sizes (16/32/96)
 │   └── apple-icon.png           # Apple touch icon
 ├── .husky/
 │   ├── pre-commit               # ESLint check
 │   └── pre-push                 # Full build test
+├── vitest.config.ts
+├── vitest.setup.ts
 ├── package.json
 ├── tsconfig.json
 ├── next.config.ts
 ├── tailwind.config.ts
 ├── postcss.config.mjs
 ├── .npmrc                       # legacy-peer-deps=true
-└── vercel.json                  # Framework: nextjs
+└── vercel.json                  # Framework: nextjs + security headers
 ```
 
-## 🚀 Installation
+## Installation
 
 ### Prérequis
 - Node.js >= 22.x
@@ -129,8 +117,8 @@ hay-chess-tracker/
 
 1. **Cloner le repository**
 ```bash
-git clone https://github.com/pierrealexandreguillemin-a11y/hay-chess-tracker.git
-cd hay-chess-tracker
+git clone https://github.com/pierrealexandreguillemin-a11y/nos-joueurs-en-tournoi.git
+cd nos-joueurs-en-tournoi
 ```
 
 2. **Installer les dépendances**
@@ -157,61 +145,56 @@ L'application sera accessible sur `http://localhost:3000`
 npm run build
 ```
 
-## 🌐 Déploiement Vercel
+## Déploiement Vercel
 
-### Configuration automatique
+### Configuration
 
-1. **Push sur GitHub**
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin <your-repo-url>
-git push -u origin master
-```
-
-2. **Connecter à Vercel**
+1. **Connecter à Vercel**
 - Aller sur [vercel.com](https://vercel.com)
 - Cliquer "Import Project"
 - Sélectionner le repository GitHub
 - **IMPORTANT**: Choisir branche **`master`** comme Production Branch
 
-3. **Configuration Vercel**
-- Framework Preset: **Next.js** (PAS Vite!)
+2. **Configuration Vercel**
+- Framework Preset: **Next.js**
 - Root Directory: `.`
 - Build Command: `npm run build` (auto-détecté)
 - Output Directory: `.next` (auto-détecté)
-- Install Command: `npm install`
 
-4. **Connecter Upstash KV Storage (optionnel)**
-- Dans Vercel Dashboard → Storage → Create → KV
-- Connecter au projet hay-chess-tracker
+3. **Connecter Upstash KV Storage (optionnel)**
+- Dans Vercel Dashboard > Storage > Create > KV
+- Connecter au projet nos-joueurs-en-tournoi
 - Les env vars sont ajoutées automatiquement
 
-5. **Déployer**
-- Push sur `master` → déploiement automatique
-- URL de production: `https://hay-chess-tracker.vercel.app`
+4. **Déployer**
+- Push sur `master` > déploiement automatique
+- URL de production: `https://nos-joueurs-en-tournoi.vercel.app`
 
-## 📖 Utilisation
+## Utilisation
 
 ### 1. Créer un événement
 
-1. Cliquer sur "Nouvel événement"
+1. Cliquer sur "Créer un événement"
 2. Entrer le nom de l'événement (ex: "Rapide de Salon 11 novembre")
-3. Ajouter des tournois :
-   - Nom de l'onglet (ex: "A", "B", "C")
-   - URL FFE résultats (format `Action=Ga`)
-4. Cliquer "Créer l'événement"
+3. Optionnel : entrer le nom du club (sinon détecté automatiquement)
+4. Ajouter des tournois :
+   - Nom de l'onglet (ex: "U12", "U14")
+   - URL FFE résultats
+5. Cliquer "Créer l'événement"
 
-### 2. Suivre les résultats
+### 2. Suivre les résultats (flux en 2 phases)
 
-1. Le titre de l'événement s'affiche en **Audiowide** dans la card Stats Club
-2. Sélectionner un onglet tournoi
-3. Cliquer "Actualiser" pour charger les résultats FFE
-4. Les joueurs "Hay Chess" sont automatiquement filtrés
-5. Visualiser :
+**Phase 1 - Détection des clubs :**
+1. Cliquer "Actualiser" sur un tournoi
+2. L'app détecte automatiquement tous les clubs du tournoi via la page FFE Stats
+3. Un dropdown apparaît avec la liste des clubs et leur nombre de joueurs
+
+**Phase 2 - Résultats du club :**
+4. Sélectionner votre club dans le dropdown
+5. L'app charge automatiquement les résultats pour ce club
+6. Visualiser :
    - Classement et ELO
-   - Résultats par ronde (V/D/N)
+   - Résultats par ronde (1/0/0.5)
    - Points cumulés
    - Buchholz et Performance
    - Stats club (total, moyenne)
@@ -221,72 +204,42 @@ git push -u origin master
 
 1. Cliquer "Gérer les événements"
 2. **Changer d'événement** : Cliquer sur un événement dans la liste
-3. **Exporter** : Icône Upload → télécharge JSON
-4. **Partager** : Icône Share → génère QR code + lien partage
+3. **Exporter** : Icône Upload > télécharge JSON
+4. **Partager** : Icône Share > génère QR code + lien partage
 5. **Supprimer** : Icône Trash (confirmation requise)
-6. **Importer** : Icône Download → sélectionner fichier JSON
-   - Si doublon détecté : choisir "Remplacer" ou "Conserver les deux"
+6. **Importer** : Icône Download > sélectionner fichier JSON
 
 ### 4. Partager un événement
 
 **Via QR Code** :
 1. Cliquer icône Share sur un événement
 2. Scanner le QR code avec un téléphone
-3. L'événement s'ouvre automatiquement
+3. L'événement s'ouvre automatiquement (le choix du club est inclus)
 
 **Via URL** :
 1. Copier le lien de partage
 2. L'envoyer par email/SMS
 3. Le destinataire importe l'événement en 1 clic
 
-### 5. Économiser la batterie
+## Architecture technique
 
-1. Cliquer sur l'icône ⚡ (à gauche du bouton Partager)
-2. Les animations sont désactivées (particules, glows, transitions)
-3. Re-cliquer pour réactiver
+### Parser FFE (3 pages)
 
-## 🔧 Architecture technique
+Le parser utilise **3 pages FFE** :
 
-### Parser FFE
-
-Le parser nécessite **2 pages FFE** :
-
-1. **Action=Ls** : Liste des joueurs avec clubs
-2. **Action=Ga** : Grille américaine avec résultats
+1. **Action=Stats** : Statistiques du tournoi (liste des clubs)
+2. **Action=Ls** : Liste des joueurs avec clubs
+3. **Action=Ga** : Grille américaine avec résultats
 
 ```typescript
-// 1. Fetch via API route (proxy CORS)
+// Phase 1: Détection des clubs
+const statsUrl = getStatsUrl(tournament.url);
+const clubs = parseStatsClubs(htmlStats);
+
+// Phase 2: Résultats filtrés par club
 const listUrl = getListUrl(tournament.url);
 const resultsUrl = getResultsUrl(tournament.url);
-
-const [responseList, responseResults] = await Promise.all([
-  fetch('/api/scrape', {
-    method: 'POST',
-    body: JSON.stringify({ url: listUrl })
-  }),
-  fetch('/api/scrape', {
-    method: 'POST',
-    body: JSON.stringify({ url: resultsUrl })
-  })
-]);
-
-// 2. Parse et croisement + déduplication
-const { players, currentRound } = parseFFePages(htmlList, htmlResults);
-```
-
-### Déduplication joueurs
-
-Un joueur peut apparaître plusieurs fois dans le HTML FFE. Le parser déduplique par nom :
-
-```typescript
-const seenNames = new Set<string>();
-const players = playersRaw.filter(player => {
-  if (seenNames.has(player.name)) {
-    return false; // Skip duplicate
-  }
-  seenNames.add(player.name);
-  return true;
-});
+const { players, currentRound } = parseFFePages(htmlList, htmlResults, clubName);
 ```
 
 ### Stockage localStorage
@@ -298,115 +251,50 @@ const players = playersRaw.filter(player => {
     {
       id: "evt_123",
       name: "Rapide de Salon 11 novembre",
+      clubName: "Mon Club",           // club sélectionné
+      availableClubs: [               // clubs détectés
+        { name: "Mon Club", playerCount: 5 },
+        { name: "Autre Club", playerCount: 3 }
+      ],
       createdAt: "2025-11-10T...",
-      tournaments: [
-        {
-          id: "tour_456",
-          name: "Tournoi A",
-          url: "https://...",
-          players: [...],
-          lastUpdate: "2025-11-10T..."
-        }
-      ]
+      tournaments: [...]
     }
-  ]
+  ],
+  validations: { ... }
 }
 ```
 
 ### Synchronisation Cloud (Multi-Device)
 
-La synchronisation multi-appareils est disponible via **Upstash Redis** avec contrôle manuel à la demande.
+Via **Upstash Redis** avec contrôle manuel :
 
-#### Fonctionnement
+| Action | Boutons |
+|--------|---------|
+| Sauvegarder vers cloud | CloudUpload (dans EventsManager) |
+| Récupérer depuis cloud | CloudDownload (header EventsManager) |
+| Exporter en local | Upload (par événement) |
+| Importer depuis local | Download (header EventsManager) |
 
-1. **Synchronisation manuelle** : Via boutons dans EventsManager modal
-   - 📥 **Download** (header) : Import depuis fichier JSON local
-   - ☁️↓ **CloudDownload** (header) : Télécharger depuis Upstash Redis
-   - 📤 **Upload** (par événement) : Export vers fichier JSON local
-   - ☁️↑ **CloudUpload** (par événement) : Envoyer tous les événements vers Upstash Redis
-
-2. **Stratégie de merge** :
-   - Les événements distants sont prioritaires lors du download cloud
-   - Les événements locaux non-synchronisés sont ajoutés
-   - Les validations sont fusionnées (union)
-   - Le currentEventId distant est prioritaire
-
-3. **Workflows typiques** :
-
-| Action | Boutons à utiliser |
-|--------|-------------------|
-| Sauvegarder vers cloud | ☁️↑ CloudUpload (dans EventsManager) |
-| Récupérer depuis cloud | ☁️↓ CloudDownload (header EventsManager) |
-| Exporter en local | 📤 Upload (par événement) |
-| Importer depuis local | 📥 Download (header EventsManager) |
-
-#### Configuration Vercel
-
-Les variables d'environnement sont **automatiquement configurées** lors de la connexion d'Upstash KV :
-
-1. **Via Vercel Dashboard** :
-   - Storage → Create → KV
-   - Connecter au projet `hay-chess-tracker`
-   - Variables ajoutées automatiquement :
-     - `KV_REST_API_URL`
-     - `KV_REST_API_TOKEN`
-
-2. **Détection automatique** :
-```typescript
-// src/lib/kv.ts (ligne 5)
-const kv = Redis.fromEnv(); // Auto-détecte les env vars
-```
-
-#### Logs de debug
-
-Tous les logs sont préfixés `[Upstash Sync]` pour faciliter le debug en console :
-
-```
-[Upstash Sync] Starting upload... { eventsCount: 3, validationsCount: 5, ... }
-[Upstash Sync] ✅ Upload successful: 3 events synced
-[Upstash Sync] Starting download...
-[Upstash Sync] Merging data... { remoteEvents: 3, localEvents: 3 }
-[Upstash Sync] ✅ Download successful: 3 total events after merge
-```
-
-#### Workflow multi-device
-
-1. **Device A** : Créer un événement → cliquer ☁️↑ CloudUpload
-2. **Device B** : Ouvrir l'app → cliquer ☁️↓ CloudDownload → événement apparaît
-3. **Vérifier Upstash Dashboard** :
-   - Aller sur [upstash.com](https://console.upstash.com)
-   - Database → `hay-chess-tracker:events`
-   - Voir les données synchronisées
-
-#### Fallback offline
-
-- Si Upstash n'est pas disponible, l'app continue de fonctionner en mode **offline-first**
-- Les données restent dans localStorage
-- La sync cloud est accessible dès que la connexion revient
-
-## 🎨 Style Cyberpunk UI
+## Style UI
 
 L'application utilise le style "Miami Vice" cyberpunk glassmorphism.
 
 ### Couleurs
-- **Miami Aqua**: `#008E97` (bleu turquoise)
-- **Miami Orange**: `#E04500` (orange vif)
-- **Miami Navy**: `#013369` (bleu marine)
+- **Miami Aqua**: `#008E97`
+- **Miami Orange**: `#E04500`
+- **Miami Navy**: `#013369`
 
 ### Typography
-- **Audiowide** - Titres principaux (HAY CHESS TRACKER, titres événements)
+- **Audiowide** - Titres principaux (NOS JOUEURS EN TOURNOI, titres événements)
 - **Inter** - Corps de texte
 
 ### Effets
 - **Glassmorphism** : `backdrop-filter: blur(15px) saturate(130%)`
-- **Gradient text** : `background: linear-gradient(90deg, #00A8CC, #E04500)` + `bg-clip-text`
 - **Floating Particles** : 30 particules animées (Canvas 2D)
 - **Halftone Waves** : Vagues WebGL animées
-- **Background Paths** : Chemins SVG animés
-- **Chess Logo** : Animation pulse + glow + rotation au hover
-- **Désactivable** : Classe `.no-animations` pour économie batterie
+- **Désactivable** : Mode économie d'énergie
 
-## 📝 Scripts disponibles
+## Scripts disponibles
 
 ```bash
 # Développement
@@ -416,137 +304,80 @@ npm run dev          # Next.js dev server (port 3000)
 npm run build        # Build Next.js
 npm run start        # Start production server
 
+# Tests
+npm test             # Vitest (142 tests)
+
 # Code quality
 npm run lint         # ESLint check
 
-# Git hooks (automatiques)
-npm run prepare      # Installer Husky
-# Pre-commit: ESLint
-# Pre-push: Full build test
-
-# Vercel
+# Déploiement
 vercel --prod        # Deploy to production
-vercel inspect       # Inspecter un déploiement
 ```
 
-## ✅ Qualité du code
+## Qualité du code
 
 ### Tests
-- ⚠️ **Tests à migrer** - Suite de tests Vitest à migrer vers Jest (Next.js)
-- ✅ **0 ESLint errors** - 4 warnings seulement (fast-refresh)
-- ✅ **Git hooks** - pre-commit (lint) + pre-push (build)
+- **142 tests Vitest** - 6 suites (parser, storage, 4 composants)
+- **0 ESLint errors**
+- **Git hooks** - pre-commit (lint) + pre-push (build)
 
 ### Sécurité
-- ✅ **0 vulnérabilités npm** en production
-- ✅ Validation URLs FFE (whitelist echecs.asso.fr)
-- ✅ User-Agent headers (anti-bot FFE)
-- TODO: Rate limiting API scrape
-- TODO: Headers sécurité CSP
+- Validation URLs FFE (whitelist echecs.asso.fr)
+- Security headers dans vercel.json
+- User-Agent headers (anti-bot FFE)
 
-### Performance
-- ✅ **Next.js 16 Turbopack** - Build ultra-rapide
-- ✅ **Static pages** - Homepage prérendue
-- ✅ **Server-side scraping** - Pas de CORS client-side
-- ⚠️ **Animations lourdes** - Mode économie d'énergie disponible
-- TODO: Lazy loading des composants visuels
-
-### Robustesse
-- ✅ **Parser FFE testé** sur vraies pages FFE
-- ✅ **Déduplication joueurs** (fix KOCH DAMIEN)
-- ✅ **Gestion erreurs** - Messages contextuels
-- ✅ **Offline-first** - localStorage + sync optionnelle
-- TODO: Retry logic sur échecs réseau
-- TODO: Logging/monitoring production
-
-## 🐛 Dépannage
-
-### Erreur "No Output Directory named 'dist' found"
-- **Cause** : Vercel déploie la mauvaise branche ou Framework Preset = Vite
-- **Solution** :
-  1. Aller dans Vercel → Settings → Git
-  2. Changer Production Branch → `master`
-  3. Framework Preset → `Next.js` (PAS Vite!)
-  4. Redéployer
-
-### Erreur "WebGL2 not supported"
-- HalftoneWaves nécessite WebGL2
-- Si navigateur trop ancien, le composant ne s'affiche pas (graceful degradation)
-- Désactiver les animations avec le bouton ⚡
-
-### localStorage plein
-- Limite: 5-10MB selon navigateur
-- Solution:
-  1. Exporter les événements importants (JSON)
-  2. Supprimer les vieux événements
-  3. Réimporter si besoin
+## Dépannage
 
 ### Parser FFE échoue
-- Vérifier que l'URL contient `Action=Ga`
-- Vérifier structure HTML FFE (peut changer)
 - Messages d'erreur contextuels :
   - "Tournoi introuvable" (404)
   - "Le serveur FFE rencontre des problèmes" (500)
-  - "Aucun joueur trouvé. Le tournoi n'a peut-être pas encore commencé."
+  - "Aucun club détecté. Le tournoi n'a peut-être pas encore commencé."
+  - "Aucun joueur {club} trouvé"
 - Regarder la console pour logs détaillés
 
 ### Upstash sync ne fonctionne pas
-- **Vérifier les env vars** : Vercel Dashboard → Settings → Environment Variables
-  - `KV_REST_API_URL` doit être présent
-  - `KV_REST_API_TOKEN` doit être présent
-- **Vérifier Upstash KV** : Dashboard → Storage → doit voir une instance KV connectée
-- **Vérifier les logs console** : Rechercher `[Upstash Sync]` pour voir les erreurs
-- **Tester les routes API** :
+- Vérifier les env vars dans Vercel Dashboard
+- Vérifier les logs console `[Upstash Sync]`
+- Tester les routes API :
   ```bash
-  # Upload test
-  curl -X POST https://hay-chess-tracker.vercel.app/api/events/sync \
+  curl -X POST https://nos-joueurs-en-tournoi.vercel.app/api/events/sync \
     -H "Content-Type: application/json" \
     -d '{"events":[],"validations":{},"currentEventId":""}'
 
-  # Download test
-  curl https://hay-chess-tracker.vercel.app/api/events/fetch
+  curl https://nos-joueurs-en-tournoi.vercel.app/api/events/fetch
   ```
-- **Fallback** : Si la sync échoue, l'app continue en mode offline avec localStorage
 
 ### Build errors
 ```bash
-# Nettoyer et réinstaller
 rm -rf node_modules .next
 npm install
 npm run build
 ```
 
-## 🤝 Contribution
+## Contribution
 
 ### Standards de code
 - **TypeScript strict** activé
 - **ESLint** configuré (0 errors tolérés)
-- **Prettier** recommandé
 - Commits conventionnels: `feat:`, `fix:`, `docs:`, `chore:`
 
 ### Avant de commit
-1. ✅ Le build passe : `npm run build`
-2. ✅ ESLint passe : `npm run lint`
-3. ✅ Tester manuellement les fonctionnalités
-4. ✅ Les hooks git s'exécutent automatiquement
+1. Le build passe : `npm run build`
+2. Les tests passent : `npm test`
+3. ESLint passe : `npm run lint`
 
-### Branches
-- **`master`** - Production (protected)
-- Supprimer les branches après merge
+## Licence
 
-## 📄 Licence
+Propriétaire - Pierre Alexandre Guillemin
 
-Propriétaire - Hay Chess Club
-
-## 📧 Support
+## Support
 
 Pour toute question technique :
 - Ouvrir une issue sur GitHub
-- Contacter le responsable technique du club
 
 ---
 
-**Status du projet** : ✅ PRODUCTION - Next.js 16, PWA, Sync multi-appareils
+**Status du projet** : PRODUCTION - Next.js 16, PWA, Sync multi-appareils
 
-**Dernière mise à jour** : 10 Novembre 2025
-
-**URL de production** : https://hay-chess-tracker.vercel.app
+**URL de production** : https://nos-joueurs-en-tournoi.vercel.app
