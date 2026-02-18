@@ -378,6 +378,59 @@ describe('TournamentTabs', () => {
     });
   });
 
+  describe('Change Club', () => {
+    it('affiche le bouton Changer de club quand clubName et availableClubs sont définis', () => {
+      const eventWithClubAndAvailable: Event = {
+        ...mockEventWithClub,
+        availableClubs: [
+          { name: 'Mon Club', playerCount: 5 },
+          { name: 'Autre Club', playerCount: 3 },
+        ],
+        tournaments: [mockTournament2],
+      };
+
+      render(<TournamentTabs event={eventWithClubAndAvailable} onEventUpdate={mockOnEventUpdate} />);
+
+      expect(screen.getByRole('button', { name: /Changer de club/i })).toBeInTheDocument();
+    });
+
+    it('masque le bouton Changer de club quand availableClubs est absent', () => {
+      render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
+
+      expect(screen.queryByRole('button', { name: /Changer de club/i })).not.toBeInTheDocument();
+    });
+
+    it('cliquer sur Changer de club supprime clubName et vide les players', () => {
+      const eventWithClubAndAvailable: Event = {
+        ...mockEventWithClub,
+        availableClubs: [
+          { name: 'Mon Club', playerCount: 5 },
+          { name: 'Autre Club', playerCount: 3 },
+        ],
+        tournaments: [
+          { ...mockTournament1, players: mockPlayers },
+          mockTournament2,
+        ],
+      };
+
+      render(<TournamentTabs event={eventWithClubAndAvailable} onEventUpdate={mockOnEventUpdate} />);
+
+      const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
+      fireEvent.click(changeClubButton);
+
+      expect(mockOnEventUpdate).toHaveBeenCalledTimes(1);
+
+      const updatedEvent = mockOnEventUpdate.mock.calls[0][0];
+      expect(updatedEvent.clubName).toBeUndefined();
+      expect(updatedEvent.availableClubs).toEqual([
+        { name: 'Mon Club', playerCount: 5 },
+        { name: 'Autre Club', playerCount: 3 },
+      ]);
+      expect(updatedEvent.tournaments.every((t: Tournament) => t.players.length === 0)).toBe(true);
+      expect(mockSaveEvent).toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('handles event with single tournament', () => {
       const singleTournamentEvent: Event = {

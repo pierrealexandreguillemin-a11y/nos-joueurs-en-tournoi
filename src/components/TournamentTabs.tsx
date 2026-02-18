@@ -6,7 +6,7 @@ import ClubStats from '@/components/ClubStats';
 import ClubSelector from '@/components/ClubSelector';
 import PlayerTable from '@/components/PlayerTable';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ArrowLeftRight } from 'lucide-react';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
 import { createClubStorage } from '@/lib/storage';
 import { useClub } from '@/contexts/ClubContext';
@@ -222,6 +222,22 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
     }
   }, [event, onEventUpdate, storage]);
 
+  // Handle club change: reset to Phase 1
+  const handleChangeClub = useCallback(() => {
+    const updatedEvent: Event = {
+      ...event,
+      clubName: undefined,
+      tournaments: event.tournaments.map(t => ({
+        ...t,
+        players: [],
+        lastUpdate: '',
+      })),
+    };
+
+    storage?.saveEvent(updatedEvent);
+    onEventUpdate(updatedEvent);
+  }, [event, onEventUpdate, storage]);
+
   // Keyboard shortcuts: Ctrl+R pour refresh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -240,6 +256,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
 
   // Show club selector if clubs detected but no club chosen
   const needsClubSelection = event.availableClubs && event.availableClubs.length > 0 && !event.clubName;
+  const canChangeClub = !!event.clubName && !!event.availableClubs && event.availableClubs.length > 0;
 
   return (
     <Tabs
@@ -296,6 +313,18 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
                   <p className="text-sm text-muted-foreground">
                     Aucune donnée. Cliquez sur Actualiser pour charger les résultats.
                   </p>
+                )}
+                {canChangeClub && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleChangeClub}
+                    className="text-xs text-muted-foreground mt-1"
+                    aria-label="Changer de club"
+                  >
+                    <ArrowLeftRight className="h-3 w-3 mr-1" aria-hidden="true" />
+                    Changer de club
+                  </Button>
                 )}
               </div>
 
