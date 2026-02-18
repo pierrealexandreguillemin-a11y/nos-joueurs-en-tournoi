@@ -5,7 +5,6 @@ import { render } from '@testing-library/react';
 import { screen, fireEvent, waitFor } from '@testing-library/dom';
 import TournamentTabs from './TournamentTabs';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
-import { saveEvent } from '@/lib/storage';
 import type { Event, Tournament, Player } from '@/types';
 
 // Mock dependencies
@@ -22,7 +21,37 @@ vi.mock('@/lib/parser', () => ({
     averagePoints: 1,
   })),
 }));
-vi.mock('@/lib/storage');
+const mockSaveEvent = vi.fn();
+const mockStorageInstance = {
+  saveEvent: mockSaveEvent,
+  getStorageData: vi.fn(() => ({ events: [], validations: {}, currentEventId: '' })),
+  getAllEvents: vi.fn(() => []),
+  getCurrentEvent: vi.fn(() => null),
+  setCurrentEvent: vi.fn(),
+  deleteEvent: vi.fn(),
+  getValidationState: vi.fn(() => ({})),
+  setValidation: vi.fn(),
+  getValidation: vi.fn(() => false),
+  clearAllData: vi.fn(),
+  exportData: vi.fn(() => '{}'),
+  importData: vi.fn(() => true),
+  exportEvent: vi.fn(() => null),
+  checkEventExists: vi.fn(() => false),
+  importEvent: vi.fn(() => ({ success: true, eventId: '', isDuplicate: false })),
+  encodeEventToURL: vi.fn(() => null),
+  generateShareURL: vi.fn(() => null),
+};
+vi.mock('@/lib/storage', () => ({
+  createClubStorage: vi.fn(() => mockStorageInstance),
+}));
+vi.mock('@/contexts/ClubContext', () => ({
+  useClub: vi.fn(() => ({
+    identity: { clubName: 'Test Club', clubSlug: 'test-club', createdAt: '2025-01-01' },
+    isLoaded: true,
+    setClub: vi.fn(),
+    clearClub: vi.fn(),
+  })),
+}));
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -265,8 +294,6 @@ describe('TournamentTabs', () => {
       vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
       vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
       vi.mocked(parseFFePages).mockReturnValue({ players: mockPlayers, currentRound: 1 });
-
-      const mockSaveEvent = vi.mocked(saveEvent);
 
       render(<TournamentTabs event={mockEventWithClub} onEventUpdate={mockOnEventUpdate} />);
 

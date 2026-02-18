@@ -4,13 +4,40 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen, fireEvent } from '@testing-library/dom';
 import PlayerTable from './PlayerTable';
-import { setValidation, getValidation } from '@/lib/storage';
 import type { Tournament, Player, Result } from '@/types';
 
 // Mock storage functions
+const mockSetValidation = vi.fn();
+const mockGetValidation = vi.fn(() => false);
+
 vi.mock('@/lib/storage', () => ({
-  setValidation: vi.fn(),
-  getValidation: vi.fn(() => false),
+  createClubStorage: vi.fn(() => ({
+    setValidation: mockSetValidation,
+    getValidation: mockGetValidation,
+    getStorageData: vi.fn(() => ({ events: [], validations: {}, currentEventId: '' })),
+    getAllEvents: vi.fn(() => []),
+    getCurrentEvent: vi.fn(() => null),
+    setCurrentEvent: vi.fn(),
+    saveEvent: vi.fn(),
+    deleteEvent: vi.fn(),
+    getValidationState: vi.fn(() => ({})),
+    clearAllData: vi.fn(),
+    exportData: vi.fn(() => '{}'),
+    importData: vi.fn(() => true),
+    exportEvent: vi.fn(() => null),
+    checkEventExists: vi.fn(() => false),
+    importEvent: vi.fn(() => ({ success: true, eventId: '', isDuplicate: false })),
+    encodeEventToURL: vi.fn(() => null),
+    generateShareURL: vi.fn(() => null),
+  })),
+}));
+vi.mock('@/contexts/ClubContext', () => ({
+  useClub: vi.fn(() => ({
+    identity: { clubName: 'Test Club', clubSlug: 'test-club', createdAt: '2025-01-01' },
+    isLoaded: true,
+    setClub: vi.fn(),
+    clearClub: vi.fn(),
+  })),
 }));
 
 describe('PlayerTable', () => {
@@ -198,7 +225,6 @@ describe('PlayerTable', () => {
     });
 
     it('loads validation state from storage on mount', () => {
-      const mockGetValidation = vi.mocked(getValidation);
       mockGetValidation.mockReturnValue(true);
 
       render(<PlayerTable tournament={mockTournament} />);
@@ -208,8 +234,6 @@ describe('PlayerTable', () => {
     });
 
     it('saves validation state when checkbox is checked', () => {
-      const mockSetValidation = vi.mocked(setValidation);
-      const mockGetValidation = vi.mocked(getValidation);
       mockGetValidation.mockReturnValue(false); // Initially unchecked
 
       render(<PlayerTable tournament={mockTournament} />);
@@ -230,11 +254,9 @@ describe('PlayerTable', () => {
     });
 
     it('saves validation state when checkbox is unchecked', () => {
-      const mockSetValidation = vi.mocked(setValidation);
-      const mockGetValidation = vi.mocked(getValidation);
-
       // Mock to return true for the specific checkbox we'll click
-      mockGetValidation.mockImplementation((tournamentId, playerName, round) => {
+      mockGetValidation.mockImplementation((...args: unknown[]) => {
+        const [tournamentId, playerName, round] = args;
         return tournamentId === 'trn_123' && playerName === 'Alice Dupont' && round === 1;
       });
 
@@ -257,7 +279,6 @@ describe('PlayerTable', () => {
     });
 
     it('persists validation state after tournament change', () => {
-      const mockGetValidation = vi.mocked(getValidation);
       mockGetValidation.mockReturnValue(false);
 
       const { rerender } = render(<PlayerTable tournament={mockTournament} />);
