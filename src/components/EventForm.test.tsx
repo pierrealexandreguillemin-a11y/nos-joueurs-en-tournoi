@@ -6,6 +6,22 @@ import userEvent from '@testing-library/user-event';
 import EventForm from './EventForm';
 import type { Event } from '@/types';
 
+// Helper: set input value via fireEvent.change (instant, no per-keystroke re-renders)
+function fillInput(element: HTMLElement, value: string) {
+  fireEvent.change(element, { target: { value } });
+}
+
+// Helper: fill a complete valid form (event name + 1 tournament)
+function fillValidForm(
+  eventName = 'Test Event',
+  tournamentName = 'U12',
+  tournamentUrl = 'https://echecs.asso.fr/Resultats.aspx?Action=Ga',
+) {
+  fillInput(screen.getByPlaceholderText(/championnat départemental/i), eventName);
+  fillInput(screen.getByLabelText(/nom \(ex: u12, u14\)/i), tournamentName);
+  fillInput(screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i), tournamentUrl);
+}
+
 describe('EventForm', () => {
   let mockOnEventCreated: Mock;
 
@@ -44,7 +60,6 @@ describe('EventForm', () => {
     it('does not show remove button when only one tournament', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      // X button should not be visible with only 1 tournament
       const buttons = screen.queryAllByRole('button');
       const removeButtons = buttons.filter((btn: HTMLElement) => btn.querySelector('.lucide-x'));
       expect(removeButtons.length).toBe(0);
@@ -55,137 +70,110 @@ describe('EventForm', () => {
     it('shows error when submitting with empty event name', async () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
-      // Error should appear after state update
       const errorAlert = await screen.findByRole('alert');
       expect(errorAlert).toHaveTextContent(/événement est requis/i);
       expect(mockOnEventCreated).not.toHaveBeenCalled();
     });
 
-    it('accepts event name with valid text', async () => {
-      const user = userEvent.setup();
+    it('accepts event name with valid text', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      fillInput(input, 'Test Event');
 
-      expect(eventNameInput).toHaveValue('Test Event');
+      expect(input).toHaveValue('Test Event');
     });
 
-    it('allows event names with special characters', async () => {
-      const user = userEvent.setup();
+    it('allows event names with special characters', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Événement 2025 - Test!');
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      fillInput(input, 'Événement 2025 - Test!');
 
-      expect(eventNameInput).toHaveValue('Événement 2025 - Test!');
+      expect(input).toHaveValue('Événement 2025 - Test!');
     });
 
-    it('allows very long event names', async () => {
-      const user = userEvent.setup();
+    it('allows very long event names', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       const longName = 'A'.repeat(200);
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, longName);
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      fillInput(input, longName);
 
-      expect(eventNameInput).toHaveValue(longName);
+      expect(input).toHaveValue(longName);
     });
   });
 
   describe('Tournament Management', () => {
-    it('adds a new tournament when add button is clicked', async () => {
+    it('adds a new tournament when add button is clicked', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-      fireEvent.click(addButton);
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
-      const tournamentInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      expect(tournamentInputs.length).toBe(2);
+      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(2);
     });
 
     it('shows remove button when multiple tournaments exist', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      // Initially should have 2 buttons (add tournament + submit)
-      let buttons = screen.getAllByRole('button');
-      const initialButtonCount = buttons.length;
+      const initialButtonCount = screen.getAllByRole('button').length;
 
-      const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-      fireEvent.click(addButton);
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
-      // After adding a tournament, should have additional remove buttons (2 remove + add + submit = 4 total)
-      buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBeGreaterThan(initialButtonCount);
+      expect(screen.getAllByRole('button').length).toBeGreaterThan(initialButtonCount);
     });
 
     it('removes tournament when remove button is clicked', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      // Add a second tournament
-      const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-      fireEvent.click(addButton);
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
+      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(2);
 
-      let tournamentInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      expect(tournamentInputs.length).toBe(2);
-
-      // Find remove buttons (they should be icon buttons without text, size icon, variant ghost)
       const buttons = screen.getAllByRole('button');
-      // Remove buttons are the ones that are NOT "add tournament" or "submit" buttons
       const removeButtons = buttons.filter((btn: HTMLElement) =>
         !btn.textContent?.includes('Ajouter un tournoi') &&
         !btn.textContent?.includes('Créer l\'événement')
       );
       expect(removeButtons.length).toBeGreaterThan(0);
 
-      // Click the first remove button
       fireEvent.click(removeButtons[0]);
 
-      // After removal, should have 1 tournament left
-      tournamentInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      expect(tournamentInputs.length).toBe(1);
+      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(1);
     });
 
-    it('does not remove last tournament when remove is attempted', async () => {
+    it('does not remove last tournament when remove is attempted', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const tournamentInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      expect(tournamentInputs.length).toBe(1);
+      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(1);
     });
 
-    it('can add multiple tournaments (5+)', async () => {
+    it('can add multiple tournaments (5+)', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-
-      // Add 5 more tournaments (total 6)
       for (let i = 0; i < 5; i++) {
         fireEvent.click(addButton);
       }
 
-      const tournamentInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      expect(tournamentInputs.length).toBe(6);
+      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(6);
     });
 
-    it('updates tournament name correctly', async () => {
-      const user = userEvent.setup();
+    it('updates tournament name correctly', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
+      fillInput(nameInput, 'U12');
 
       expect(nameInput).toHaveValue('U12');
     });
 
-    it('updates tournament URL correctly', async () => {
-      const user = userEvent.setup();
+    it('updates tournament URL correctly', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
+      fillInput(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
 
       expect(urlInput).toHaveValue('https://echecs.asso.fr/Resultats.aspx?Action=Ga');
     });
@@ -193,14 +181,11 @@ describe('EventForm', () => {
 
   describe('Tournament Validation', () => {
     it('shows error when no tournaments have data', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
 
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/au moins un tournoi est requis/i)).toBeInTheDocument();
@@ -209,17 +194,12 @@ describe('EventForm', () => {
     });
 
     it('shows error when tournament has name but no URL', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
+      fillInput(screen.getByLabelText(/nom \(ex: u12, u14\)/i), 'U12');
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/au moins un tournoi est requis/i)).toBeInTheDocument();
@@ -227,20 +207,11 @@ describe('EventForm', () => {
     });
 
     it('shows error for invalid URL (not echecs.asso.fr)', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillValidForm('Test Event', 'U12', 'https://google.com');
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://google.com');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/les urls doivent provenir de echecs\.asso\.fr/i)).toBeInTheDocument();
@@ -249,20 +220,11 @@ describe('EventForm', () => {
     });
 
     it('accepts valid FFE URL', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillValidForm('Test Event', 'U12', 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=1234');
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=1234');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -270,25 +232,21 @@ describe('EventForm', () => {
     });
 
     it('filters out incomplete tournaments on submit', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
 
       // Add second tournament but leave it incomplete
-      const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-      fireEvent.click(addButton);
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
       // Fill first tournament completely
       const nameInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInputs[0], 'U12');
+      fillInput(nameInputs[0], 'U12');
 
       const urlInputs = screen.getAllByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInputs[0], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
+      fillInput(urlInputs[0], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
 
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -301,20 +259,10 @@ describe('EventForm', () => {
 
   describe('Form Submission', () => {
     it('calls onEventCreated with correct event structure', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
-
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fillValidForm();
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalledTimes(1);
@@ -329,20 +277,10 @@ describe('EventForm', () => {
     });
 
     it('generates unique event ID with timestamp format', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
-
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fillValidForm();
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -353,20 +291,10 @@ describe('EventForm', () => {
     });
 
     it('generates unique tournament IDs with correct format', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
-
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fillValidForm();
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -377,20 +305,10 @@ describe('EventForm', () => {
     });
 
     it('initializes tournament with empty players array', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
-
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fillValidForm();
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -402,26 +320,21 @@ describe('EventForm', () => {
     });
 
     it('creates event with multiple valid tournaments', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
 
-      // Add second tournament
-      const addButton = screen.getByRole('button', { name: /ajouter un tournoi/i });
-      fireEvent.click(addButton);
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
       const nameInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInputs[0], 'U12');
-      await user.type(nameInputs[1], 'U14');
+      fillInput(nameInputs[0], 'U12');
+      fillInput(nameInputs[1], 'U14');
 
       const urlInputs = screen.getAllByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInputs[0], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=1');
-      await user.type(urlInputs[1], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=2');
+      fillInput(urlInputs[0], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=1');
+      fillInput(urlInputs[1], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=2');
 
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
@@ -434,30 +347,18 @@ describe('EventForm', () => {
     });
 
     it('clears error message on successful validation', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      // First try to submit invalid form
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      // First submit invalid form
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
-      // Wait for error to appear
       const errorAlert = await screen.findByRole('alert');
       expect(errorAlert).toHaveTextContent(/événement est requis/i);
 
-      // Now fill valid data
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      // Now fill valid data and resubmit
+      fillValidForm();
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      fireEvent.click(submitButton);
-
-      // Should call callback and not show error
       await waitFor(() => {
         expect(mockOnEventCreated).toHaveBeenCalled();
       });
@@ -466,20 +367,11 @@ describe('EventForm', () => {
 
   describe('Edge Cases', () => {
     it('handles whitespace-only event name as invalid', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, '   ');
+      fillValidForm('   ', 'U12', 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, 'U12');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/événement est requis/i)).toBeInTheDocument();
@@ -488,20 +380,11 @@ describe('EventForm', () => {
     });
 
     it('handles whitespace-only tournament name as empty', async () => {
-      const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
-      await user.type(eventNameInput, 'Test Event');
+      fillValidForm('Test Event', '   ', 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
-      await user.type(nameInput, '   ');
-
-      const urlInput = screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
-      await user.type(urlInput, 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
-
-      const submitButton = screen.getByRole('button', { name: /créer l'événement/i });
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/au moins un tournoi est requis/i)).toBeInTheDocument();
@@ -509,13 +392,13 @@ describe('EventForm', () => {
     });
 
     it('prevents form submission with Enter key in input fields', async () => {
+      // userEvent.type needed here: tests actual keyboard Enter behavior
       const user = userEvent.setup();
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       const eventNameInput = screen.getByPlaceholderText(/championnat départemental/i);
       await user.type(eventNameInput, 'Test Event{Enter}');
 
-      // Should show validation error, not call onEventCreated
       await waitFor(() => {
         expect(screen.getByText(/au moins un tournoi est requis/i)).toBeInTheDocument();
       });
