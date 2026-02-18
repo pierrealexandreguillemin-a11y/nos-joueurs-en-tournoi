@@ -62,6 +62,47 @@ describe('club.ts', () => {
     });
   });
 
+  describe('slugifyClubName — BVA: limites de longueur', () => {
+    it('39 caractères → non tronqué', () => {
+      const input = 'a'.repeat(39);
+      const slug = slugifyClubName(input);
+      expect(slug).toBe('a'.repeat(39));
+      expect(slug.length).toBe(39);
+    });
+
+    it('40 caractères → longueur exacte 40 (limite)', () => {
+      const input = 'a'.repeat(40);
+      const slug = slugifyClubName(input);
+      expect(slug.length).toBe(40);
+    });
+
+    it('41 caractères → tronqué à ≤ 40', () => {
+      const input = 'a'.repeat(41);
+      const slug = slugifyClubName(input);
+      expect(slug.length).toBeLessThanOrEqual(40);
+    });
+  });
+
+  describe('slugifyClubName — EP: entrées spéciales', () => {
+    it('entrée numérique seule "12345" → "12345"', () => {
+      expect(slugifyClubName('12345')).toBe('12345');
+    });
+
+    it('entrée emoji "♟️ Club" → slug valide sans emoji', () => {
+      const slug = slugifyClubName('♟️ Club');
+      expect(slug).toBe('club');
+      expect(slug.length).toBeGreaterThan(0);
+    });
+
+    it('entrée unicode non-latin "клуб" → lance une erreur', () => {
+      expect(() => slugifyClubName('клуб')).toThrow();
+    });
+
+    it('entrée avec uniquement des caractères spéciaux "!!!" → lance une erreur', () => {
+      expect(() => slugifyClubName('!!!')).toThrow();
+    });
+  });
+
   describe('getStorageKeyForSlug', () => {
     it('retourne "nos-joueurs-en-tournoi:{slug}"', () => {
       expect(getStorageKeyForSlug('hay-chess')).toBe('nos-joueurs-en-tournoi:hay-chess');

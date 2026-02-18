@@ -751,4 +751,32 @@ describe('storage.ts', () => {
       });
     });
   });
+
+  describe('BVA: validation limites', () => {
+    it('setValidation round=0 persiste correctement', () => {
+      setValidation('tournament-1', 'Player 1', 0, true);
+      expect(getValidation('tournament-1', 'Player 1', 0)).toBe(true);
+    });
+
+    it('setValidation round négatif persiste correctement', () => {
+      setValidation('tournament-1', 'Player 1', -1, true);
+      expect(getValidation('tournament-1', 'Player 1', -1)).toBe(true);
+    });
+
+    it('createClubStorage("") fonctionne avec clé vide', () => {
+      const storage = createClubStorage('');
+      storage.saveEvent({
+        id: 'e1',
+        name: 'Test',
+        createdAt: '2024-01-01',
+        tournaments: [],
+      });
+      expect(storage.getAllEvents()).toHaveLength(1);
+    });
+
+    it('setValidation playerName vide persiste correctement', () => {
+      setValidation('tournament-1', '', 1, true);
+      expect(getValidation('tournament-1', '', 1)).toBe(true);
+    });
+  });
 });
