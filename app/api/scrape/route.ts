@@ -26,8 +26,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate that the URL is from FFE
-    if (!url.includes('echecs.asso.fr')) {
+    // Validate that the URL is from FFE (strict hostname check to prevent SSRF)
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid URL format' },
+        { status: 400, headers }
+      );
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (hostname !== 'echecs.asso.fr' && hostname !== 'www.echecs.asso.fr') {
       return NextResponse.json(
         { error: 'Only FFE URLs are allowed' },
         { status: 403, headers }
