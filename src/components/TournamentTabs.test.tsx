@@ -441,7 +441,7 @@ describe('TournamentTabs', () => {
 
       await waitFor(() => {
         expect(refreshButton).not.toBeDisabled();
-      }, { timeout: 3000 });
+      });
     });
   });
 });
