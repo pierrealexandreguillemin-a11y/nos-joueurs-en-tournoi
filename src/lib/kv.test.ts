@@ -124,4 +124,51 @@ describe('kv.ts namespacé — QG-4: isolation KV', () => {
       expect(validB).toEqual({});
     });
   });
+
+  describe('edge cases', () => {
+    it('saveEvents avec events vide → no-op', async () => {
+      await saveEvents([], 'club-a');
+      const events = await getEvents('club-a');
+      expect(events).toHaveLength(0);
+    });
+
+    it('getValidations retourne {} si aucune validation n\'existe', async () => {
+      const validations = await getValidations('nonexistent-club');
+      expect(validations).toEqual({});
+    });
+
+    it('getEvents retourne [] pour un club sans events', async () => {
+      const events = await getEvents('empty-club');
+      expect(events).toHaveLength(0);
+    });
+
+    it('saveEvents puis getEvents préserve la structure complète', async () => {
+      const event: Event = {
+        id: 'e1',
+        name: 'Full Event',
+        createdAt: '2024-01-01',
+        tournaments: [{
+          id: 'trn_1',
+          name: 'U12',
+          url: 'https://echecs.asso.fr/test',
+          lastUpdate: '2024-01-01',
+          players: [{
+            name: 'Alice',
+            elo: 1500,
+            club: 'Test',
+            results: [{ round: 1, score: 1 }],
+            currentPoints: 1,
+            ranking: 1,
+            validated: [false],
+          }],
+        }],
+      };
+
+      await saveEvents([event], 'club-a');
+      const retrieved = await getEvents('club-a');
+
+      expect(retrieved).toHaveLength(1);
+      expect(retrieved[0].tournaments[0].players[0].name).toBe('Alice');
+    });
+  });
 });

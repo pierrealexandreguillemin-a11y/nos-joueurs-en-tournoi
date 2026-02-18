@@ -156,4 +156,150 @@ describe('sync.ts — QG-6: scope du sync', () => {
       expect(clubBData.events[0].name).toBe('Event B');
     });
   });
+
+  describe('error paths', () => {
+    it('syncToMongoDB retourne false si fetch throw', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: '', events: [], validations: {},
+      }));
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await syncToMongoDB('test-club');
+      expect(result).toBe(false);
+    });
+
+    it('syncToMongoDB retourne false si response 500', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: '', events: [], validations: {},
+      }));
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
+
+      const result = await syncToMongoDB('test-club');
+      expect(result).toBe(false);
+    });
+
+    it('fetchFromMongoDB retourne false si fetch throw', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: '', events: [], validations: {},
+      }));
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await fetchFromMongoDB('test-club');
+      expect(result).toBe(false);
+    });
+
+    it('fetchFromMongoDB retourne false si response 500', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: '', events: [], validations: {},
+      }));
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
+
+      const result = await fetchFromMongoDB('test-club');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('fetchFromMongoDB — decision table: merge', () => {
+    it('remote [A], local [] → merged = [A]', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: '', events: [], validations: {},
+      }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            events: [{ id: 'e1', name: 'Remote', createdAt: '2024-01-01', tournaments: [] }],
+            validations: {},
+            currentEventId: 'e1',
+          },
+        }),
+      });
+
+      await fetchFromMongoDB('test-club');
+
+      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
+      expect(data.events).toHaveLength(1);
+      expect(data.events[0].name).toBe('Remote');
+    });
+
+    it('remote [], local [B] → merged = [B]', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: 'e2',
+        events: [{ id: 'e2', name: 'Local', createdAt: '2024-01-01', tournaments: [] }],
+        validations: {},
+      }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            events: [],
+            validations: {},
+            currentEventId: '',
+          },
+        }),
+      });
+
+      await fetchFromMongoDB('test-club');
+
+      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
+      expect(data.events).toHaveLength(1);
+      expect(data.events[0].name).toBe('Local');
+    });
+
+    it('remote [A], local [B] → merged = [A, B]', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: 'e2',
+        events: [{ id: 'e2', name: 'Local', createdAt: '2024-01-01', tournaments: [] }],
+        validations: {},
+      }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            events: [{ id: 'e1', name: 'Remote', createdAt: '2024-01-01', tournaments: [] }],
+            validations: {},
+            currentEventId: 'e1',
+          },
+        }),
+      });
+
+      await fetchFromMongoDB('test-club');
+
+      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
+      expect(data.events).toHaveLength(2);
+      expect(data.events.map((e: { name: string }) => e.name).sort()).toEqual(['Local', 'Remote']);
+    });
+
+    it('remote [A-v1], local [A-v2] → remote gagne', async () => {
+      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
+        currentEventId: 'e1',
+        events: [{ id: 'e1', name: 'Local Version', createdAt: '2024-01-01', tournaments: [] }],
+        validations: {},
+      }));
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            events: [{ id: 'e1', name: 'Remote Version', createdAt: '2024-01-01', tournaments: [] }],
+            validations: {},
+            currentEventId: 'e1',
+          },
+        }),
+      });
+
+      await fetchFromMongoDB('test-club');
+
+      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
+      expect(data.events).toHaveLength(1);
+      expect(data.events[0].name).toBe('Remote Version');
+    });
+  });
 });
