@@ -42,7 +42,7 @@ export function getStorageKeyForSlug(slug: string): string {
  * Get the current club identity from localStorage.
  */
 export function getClubIdentity(): ClubIdentity | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' && typeof globalThis.localStorage === 'undefined') return null;
 
   const data = localStorage.getItem(CLUB_IDENTITY_KEY);
   if (!data) return null;

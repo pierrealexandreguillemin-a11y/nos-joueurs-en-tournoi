@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-'use client';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen } from '@testing-library/dom';

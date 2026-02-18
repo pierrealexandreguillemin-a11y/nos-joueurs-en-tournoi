@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   getStorageData,
@@ -25,26 +24,6 @@ import {
   createClubStorage,
 } from './storage';
 import type { Event, StorageData, Player } from '@/types';
-
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value;
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    },
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 describe('storage.ts', () => {
   beforeEach(() => {

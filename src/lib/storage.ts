@@ -5,9 +5,11 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 
 const STORAGE_KEY = 'nos-joueurs-en-tournoi';
 
-// Safe localStorage access that works in both client and server contexts
+// Safe localStorage access that works in client, server, and test contexts
 function getLocalStorage(): Storage | null {
-  return typeof window !== 'undefined' ? window.localStorage : null;
+  if (typeof window !== 'undefined') return window.localStorage;
+  if (typeof globalThis.localStorage !== 'undefined') return globalThis.localStorage;
+  return null;
 }
 
 function emptyData(): StorageData {
