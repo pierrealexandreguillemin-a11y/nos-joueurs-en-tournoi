@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,16 +10,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getStorageData, generateShareURL } from '@/lib/storage';
+import { createClubStorage } from '@/lib/storage';
+import { useClub } from '@/contexts/ClubContext';
 
 export default function DebugPanel() {
+  const { identity } = useClub();
   const [open, setOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
+  const storage = useMemo(() => identity ? createClubStorage(identity.clubSlug) : null, [identity]);
+
   const handleDebug = () => {
-    const data = getStorageData();
+    if (!storage) return;
+    const data = storage.getStorageData();
 
     const info: Record<string, unknown> = {
+      clubSlug: identity?.clubSlug,
       totalEvents: data.events.length,
       currentEventId: data.currentEventId,
       events: data.events.map(e => ({
@@ -35,7 +41,7 @@ export default function DebugPanel() {
 
     // Test generateShareURL for current event
     if (data.currentEventId) {
-      const shareResult = generateShareURL(data.currentEventId);
+      const shareResult = storage.generateShareURL(data.currentEventId);
       info.shareURLTest = shareResult ? {
         urlLength: shareResult.size,
         urlPreview: shareResult.url.substring(0, 100) + '...',
@@ -46,7 +52,8 @@ export default function DebugPanel() {
   };
 
   const handleCopyAll = () => {
-    const fullData = getStorageData();
+    if (!storage) return;
+    const fullData = storage.getStorageData();
     navigator.clipboard.writeText(JSON.stringify(fullData, null, 2));
   };
 

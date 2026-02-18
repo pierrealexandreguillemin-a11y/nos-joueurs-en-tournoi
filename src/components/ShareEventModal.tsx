@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { generateShareURL } from '@/lib/storage';
+import { createClubStorage } from '@/lib/storage';
+import { useClub } from '@/contexts/ClubContext';
 
 interface ShareEventModalProps {
   eventId: string;
@@ -22,16 +23,16 @@ interface ShareEventModalProps {
 }
 
 export default function ShareEventModal({ eventId, eventName, trigger }: ShareEventModalProps) {
+  const { identity } = useClub();
   const [open, setOpen] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; size: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [qrSize, setQrSize] = useState(240);
 
   useEffect(() => {
-    if (open) {
-      console.log('ShareEventModal: Generating URL for eventId:', eventId);
-      const data = generateShareURL(eventId);
-      console.log('ShareEventModal: Generated data:', data);
+    if (open && identity) {
+      const storage = createClubStorage(identity.clubSlug);
+      const data = storage.generateShareURL(eventId);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShareData(data);
 
@@ -39,7 +40,7 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
         toast.error('Impossible de générer le lien de partage');
       }
     }
-  }, [open, eventId]);
+  }, [open, eventId, identity]);
 
   useEffect(() => {
     const updateQRSize = () => {

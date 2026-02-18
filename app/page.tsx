@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import NextDynamic from 'next/dynamic';
 import { toast } from 'sonner';
-import { createClubStorage, decodeEventFromURL, importEvent } from '@/lib/storage';
+import { createClubStorage, decodeEventFromURL } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import EventForm from '@/components/EventForm';
 import TournamentTabs from '@/components/TournamentTabs';
@@ -88,7 +88,7 @@ export default function Home() {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setDuplicateDialogOpen(true);
         } else {
-          const result = importEvent(exportedData);
+          const result = storage.importEvent(exportedData);
           if (result.success) {
             toast.success('Événement importé avec succès !');
             setCurrentEvent(storage.getCurrentEvent());
@@ -123,11 +123,12 @@ export default function Home() {
 
   const handleDuplicateReplace = () => {
     if (!pendingImport) return;
-    const result = importEvent(pendingImport, { replaceIfExists: true });
+    const storage = getStorage();
+    if (!storage) return;
+    const result = storage.importEvent(pendingImport, { replaceIfExists: true });
     if (result.success) {
       toast.success('Événement remplacé avec succès !');
-      const storage = getStorage();
-      if (storage) setCurrentEvent(storage.getCurrentEvent());
+      setCurrentEvent(storage.getCurrentEvent());
       setShowEventForm(false);
     }
     setDuplicateDialogOpen(false);
@@ -136,11 +137,12 @@ export default function Home() {
 
   const handleDuplicateKeepBoth = () => {
     if (!pendingImport) return;
-    const result = importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
+    const storage = getStorage();
+    if (!storage) return;
+    const result = storage.importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
     if (result.success) {
       toast.success('Copie de l\'événement créée !');
-      const storage = getStorage();
-      if (storage) setCurrentEvent(storage.getCurrentEvent());
+      setCurrentEvent(storage.getCurrentEvent());
       setShowEventForm(false);
     }
     setDuplicateDialogOpen(false);

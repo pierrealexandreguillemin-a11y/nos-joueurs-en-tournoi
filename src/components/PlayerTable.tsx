@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -12,7 +12,8 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 // Icons removed - displaying text scores (1/0/0.5) instead
-import { setValidation, getValidation } from '@/lib/storage';
+import { createClubStorage } from '@/lib/storage';
+import { useClub } from '@/contexts/ClubContext';
 import type { Tournament } from '@/types';
 
 interface PlayerTableProps {
@@ -20,13 +21,18 @@ interface PlayerTableProps {
 }
 
 export default function PlayerTable({ tournament }: PlayerTableProps) {
+  const { identity } = useClub();
+  const clubSlug = identity?.clubSlug || '';
+  const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
+
   // Load validation state using lazy initialization
   const [validationState, setValidationState] = useState<Record<string, Record<number, boolean>>>(() => {
+    if (!storage) return {};
     const state: Record<string, Record<number, boolean>> = {};
     tournament.players.forEach(player => {
       state[player.name] = {};
       player.results.forEach((_, roundIndex) => {
-        state[player.name][roundIndex + 1] = getValidation(
+        state[player.name][roundIndex + 1] = storage.getValidation(
           tournament.id,
           player.name,
           roundIndex + 1
@@ -38,11 +44,12 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
 
   // Update validation state when tournament changes (sync with localStorage)
   useEffect(() => {
+    if (!storage) return;
     const state: Record<string, Record<number, boolean>> = {};
     tournament.players.forEach(player => {
       state[player.name] = {};
       player.results.forEach((_, roundIndex) => {
-        state[player.name][roundIndex + 1] = getValidation(
+        state[player.name][roundIndex + 1] = storage.getValidation(
           tournament.id,
           player.name,
           roundIndex + 1
@@ -51,10 +58,10 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
     });
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValidationState(state);
-  }, [tournament.id, tournament.players]);
+  }, [tournament.id, tournament.players, storage]);
 
   const handleValidationChange = (playerName: string, round: number, checked: boolean) => {
-    setValidation(tournament.id, playerName, round, checked);
+    storage?.setValidation(tournament.id, playerName, round, checked);
     setValidationState(prev => ({
       ...prev,
       [playerName]: {

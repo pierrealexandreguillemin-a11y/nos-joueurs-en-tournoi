@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Trash2, CheckCircle2, Download, Upload, Share2, CloudDownload, CloudUpload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -25,9 +25,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   createClubStorage,
-  exportEvent,
-  importEvent,
-  checkEventExists,
   type ExportedEvent,
 } from '@/lib/storage';
 import { syncToMongoDB, fetchFromMongoDB } from '@/lib/sync';
@@ -52,7 +49,7 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const clubSlug = identity?.clubSlug || '';
-  const storage = clubSlug ? createClubStorage(clubSlug) : null;
+  const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
   const events = storage?.getAllEvents() || [];
 
   const handleSwitchEvent = (eventId: string) => {
@@ -83,7 +80,7 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleExportEvent = (eventId: string) => {
-    const exportedData = exportEvent(eventId);
+    const exportedData = storage?.exportEvent(eventId);
     if (!exportedData) {
       toast.error('Erreur lors de l\'export de l\'événement');
       return;
@@ -122,15 +119,15 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
       }
 
       // Check for duplicates
-      const isDuplicate = checkEventExists(exportedData.event.id);
+      const isDuplicate = storage?.checkEventExists(exportedData.event.id) ?? false;
 
       if (isDuplicate) {
         setPendingImport(exportedData);
         setDuplicateDialogOpen(true);
       } else {
         // Import directly
-        const result = importEvent(exportedData);
-        if (result.success) {
+        const result = storage?.importEvent(exportedData);
+        if (result?.success) {
           toast.success(`Événement "${exportedData.event.name}" importé avec succès !`);
           onEventChange();
         } else {
@@ -149,9 +146,9 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleDuplicateReplace = () => {
-    if (!pendingImport) return;
+    if (!pendingImport || !storage) return;
 
-    const result = importEvent(pendingImport, { replaceIfExists: true });
+    const result = storage.importEvent(pendingImport, { replaceIfExists: true });
     if (result.success) {
       toast.success(`Événement "${pendingImport.event.name}" remplacé avec succès !`);
       onEventChange();
@@ -162,9 +159,9 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleDuplicateKeepBoth = () => {
-    if (!pendingImport) return;
+    if (!pendingImport || !storage) return;
 
-    const result = importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
+    const result = storage.importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
     if (result.success) {
       toast.success(`Copie de "${pendingImport.event.name}" créée avec succès !`);
       onEventChange();

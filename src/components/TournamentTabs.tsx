@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import ClubStats from '@/components/ClubStats';
@@ -8,7 +8,8 @@ import PlayerTable from '@/components/PlayerTable';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
-import { saveEvent } from '@/lib/storage';
+import { createClubStorage } from '@/lib/storage';
+import { useClub } from '@/contexts/ClubContext';
 import type { Event, Tournament } from '@/types';
 
 interface TournamentTabsProps {
@@ -17,9 +18,13 @@ interface TournamentTabsProps {
 }
 
 export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsProps) {
+  const { identity } = useClub();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(event.tournaments[0]?.id || '');
+
+  const clubSlug = identity?.clubSlug || '';
+  const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
 
   // Phase 1: Fetch Stats page to detect available clubs
   const fetchClubs = useCallback(async (tournament: Tournament) => {
@@ -58,7 +63,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
         availableClubs: clubs,
       };
 
-      saveEvent(updatedEvent);
+      storage?.saveEvent(updatedEvent);
       onEventUpdate(updatedEvent);
     } catch (err) {
       console.error('Error fetching clubs:', err);
@@ -66,7 +71,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
     } finally {
       setLoading(null);
     }
-  }, [event, onEventUpdate]);
+  }, [event, onEventUpdate, storage]);
 
   // Phase 2: Fetch results for the selected club
   const fetchResults = useCallback(async (tournament: Tournament) => {
@@ -131,7 +136,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
         ),
       };
 
-      saveEvent(updatedEvent);
+      storage?.saveEvent(updatedEvent);
       onEventUpdate(updatedEvent);
     } catch (err) {
       console.error('Error refreshing tournament:', err);
@@ -139,7 +144,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
     } finally {
       setLoading(null);
     }
-  }, [event, onEventUpdate]);
+  }, [event, onEventUpdate, storage]);
 
   // handleRefresh: dispatches to Phase 1 or Phase 2
   const handleRefresh = useCallback(async (tournament: Tournament) => {
@@ -158,7 +163,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
       ...event,
       clubName,
     };
-    saveEvent(currentEvent);
+    storage?.saveEvent(currentEvent);
     onEventUpdate(currentEvent);
 
     // Auto-refresh all tournaments sequentially to avoid race conditions
@@ -206,7 +211,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
           ),
         };
 
-        saveEvent(currentEvent);
+        storage?.saveEvent(currentEvent);
         onEventUpdate(currentEvent);
       } catch (err) {
         console.error('Error auto-refreshing after club selection:', err);
@@ -215,7 +220,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
         setLoading(null);
       }
     }
-  }, [event, onEventUpdate]);
+  }, [event, onEventUpdate, storage]);
 
   // Keyboard shortcuts: Ctrl+R pour refresh
   useEffect(() => {
