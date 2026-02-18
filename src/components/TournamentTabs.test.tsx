@@ -21,6 +21,7 @@ vi.mock('@/lib/parser', () => ({
   })),
 }));
 const mockSaveEvent = vi.fn();
+const mockClearTournamentValidations = vi.fn();
 const mockStorageInstance = {
   saveEvent: mockSaveEvent,
   getStorageData: vi.fn(() => ({ events: [], validations: {}, currentEventId: '' })),
@@ -31,6 +32,7 @@ const mockStorageInstance = {
   getValidationState: vi.fn(() => ({})),
   setValidation: vi.fn(),
   getValidation: vi.fn(() => false),
+  clearTournamentValidations: mockClearTournamentValidations,
   clearAllData: vi.fn(),
   exportData: vi.fn(() => '{}'),
   importData: vi.fn(() => true),
@@ -400,7 +402,50 @@ describe('TournamentTabs', () => {
       expect(screen.queryByRole('button', { name: /Changer de club/i })).not.toBeInTheDocument();
     });
 
-    it('cliquer sur Changer de club supprime clubName et vide les players', () => {
+    it('cliquer sur Changer de club ouvre le dialog, confirmer supprime clubName et vide les players', async () => {
+      const eventWithClubAndAvailable: Event = {
+        ...mockEventWithClub,
+        availableClubs: [
+          { name: 'Mon Club', playerCount: 5 },
+          { name: 'Autre Club', playerCount: 3 },
+        ],
+        tournaments: [
+          { ...mockTournament1, players: mockPlayers },
+          mockTournament2,
+        ],
+      };
+
+      render(<TournamentTabs event={eventWithClubAndAvailable} onEventUpdate={mockOnEventUpdate} />);
+
+      // Click "Changer de club" -> should open dialog
+      const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
+      fireEvent.click(changeClubButton);
+
+      // Dialog should appear with player count
+      await waitFor(() => {
+        expect(screen.getByText(/2 joueur\(s\) chargés/i)).toBeInTheDocument();
+      });
+
+      // Confirm the action
+      const confirmButton = screen.getByRole('button', { name: /Confirmer/i });
+      fireEvent.click(confirmButton);
+
+      expect(mockOnEventUpdate).toHaveBeenCalledTimes(1);
+
+      const updatedEvent = mockOnEventUpdate.mock.calls[0][0];
+      expect(updatedEvent.clubName).toBeUndefined();
+      expect(updatedEvent.availableClubs).toEqual([
+        { name: 'Mon Club', playerCount: 5 },
+        { name: 'Autre Club', playerCount: 3 },
+      ]);
+      expect(updatedEvent.tournaments.every((t: Tournament) => t.players.length === 0)).toBe(true);
+      expect(mockClearTournamentValidations).toHaveBeenCalledTimes(2);
+      expect(mockClearTournamentValidations).toHaveBeenCalledWith('trn_1');
+      expect(mockClearTournamentValidations).toHaveBeenCalledWith('trn_2');
+      expect(mockSaveEvent).toHaveBeenCalled();
+    });
+
+    it('annule le changement de club si l\'utilisateur clique Annuler dans le dialog', async () => {
       const eventWithClubAndAvailable: Event = {
         ...mockEventWithClub,
         availableClubs: [
@@ -418,16 +463,68 @@ describe('TournamentTabs', () => {
       const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
       fireEvent.click(changeClubButton);
 
-      expect(mockOnEventUpdate).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(screen.getByText(/2 joueur\(s\) chargés/i)).toBeInTheDocument();
+      });
 
-      const updatedEvent = mockOnEventUpdate.mock.calls[0][0];
-      expect(updatedEvent.clubName).toBeUndefined();
-      expect(updatedEvent.availableClubs).toEqual([
-        { name: 'Mon Club', playerCount: 5 },
-        { name: 'Autre Club', playerCount: 3 },
-      ]);
-      expect(updatedEvent.tournaments.every((t: Tournament) => t.players.length === 0)).toBe(true);
-      expect(mockSaveEvent).toHaveBeenCalled();
+      // Cancel
+      const cancelButton = screen.getByRole('button', { name: /Annuler/i });
+      fireEvent.click(cancelButton);
+
+      expect(mockOnEventUpdate).not.toHaveBeenCalled();
+      expect(mockSaveEvent).not.toHaveBeenCalled();
+    });
+
+    it('ne demande pas de confirmation quand aucun joueur n\'est chargé', () => {
+      const eventWithClubNoPlayers: Event = {
+        ...mockEventWithClub,
+        availableClubs: [
+          { name: 'Mon Club', playerCount: 5 },
+        ],
+        tournaments: [mockTournament1],
+      };
+
+      render(<TournamentTabs event={eventWithClubNoPlayers} onEventUpdate={mockOnEventUpdate} />);
+
+      const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
+      fireEvent.click(changeClubButton);
+
+      // No dialog should appear, direct action
+      expect(screen.queryByText(/joueur\(s\) chargés/i)).not.toBeInTheDocument();
+      expect(mockOnEventUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('désactive le bouton Changer de club pendant le chargement', async () => {
+      const mockFetch = vi.mocked(fetch);
+      mockFetch.mockImplementation(() =>
+        new Promise(resolve =>
+          setTimeout(() => resolve({
+            ok: true,
+            json: () => Promise.resolve({ html: '<html></html>' }),
+          } as Response), 200)
+        )
+      );
+
+      vi.mocked(getListUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ls');
+      vi.mocked(getResultsUrl).mockReturnValue('https://echecs.asso.fr/test?Action=Ga');
+
+      const eventWithClubAndAvailable: Event = {
+        ...mockEventWithClub,
+        availableClubs: [
+          { name: 'Mon Club', playerCount: 5 },
+        ],
+        tournaments: [mockTournament2],
+      };
+
+      render(<TournamentTabs event={eventWithClubAndAvailable} onEventUpdate={mockOnEventUpdate} />);
+
+      const refreshButton = screen.getAllByText('Actualiser')[0];
+      fireEvent.click(refreshButton);
+
+      await waitFor(() => {
+        const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
+        expect(changeClubButton).toBeDisabled();
+      });
     });
   });
 
