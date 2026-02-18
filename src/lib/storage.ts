@@ -559,6 +559,11 @@ export interface ClubStorage {
   clearAllData: () => void;
   exportData: () => string;
   importData: (jsonString: string) => boolean;
+  exportEvent: (eventId: string, includeValidations?: boolean) => ExportedEvent | null;
+  checkEventExists: (eventId: string) => boolean;
+  importEvent: (exportedData: ExportedEvent, options?: { replaceIfExists: boolean; generateNewId?: boolean }) => { success: boolean; eventId: string; isDuplicate: boolean };
+  encodeEventToURL: (eventId: string) => string | null;
+  generateShareURL: (eventId: string) => { url: string; size: number } | null;
 }
 
 /**
@@ -650,6 +655,113 @@ export function createClubStorage(slug: string): ClubStorage {
         console.error('Error importing data:', error);
         return false;
       }
+    },
+
+    exportEvent: (eventId: string, includeValidations: boolean = true): ExportedEvent | null => {
+      const data = get();
+      const event = data.events.find(e => e.id === eventId);
+      if (!event) return null;
+
+      const eventValidations: ValidationState = {};
+      if (includeValidations) {
+        event.tournaments.forEach(tournament => {
+          if (data.validations[tournament.id]) {
+            eventValidations[tournament.id] = data.validations[tournament.id];
+          }
+        });
+      }
+
+      return {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        event,
+        validations: eventValidations,
+      };
+    },
+
+    checkEventExists: (eventId: string): boolean => {
+      const data = get();
+      return data.events.some(e => e.id === eventId);
+    },
+
+    importEvent: (
+      exportedData: ExportedEvent,
+      options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false }
+    ): { success: boolean; eventId: string; isDuplicate: boolean } => {
+      try {
+        const data = get();
+        const { event, validations } = exportedData;
+
+        const existingIndex = data.events.findIndex(e => e.id === event.id);
+        const isDuplicate = existingIndex >= 0;
+
+        let finalEvent = { ...event };
+
+        if (isDuplicate) {
+          if (options.replaceIfExists) {
+            data.events[existingIndex] = finalEvent;
+          } else if (options.generateNewId) {
+            finalEvent = {
+              ...event,
+              id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              name: `${event.name} (copie)`,
+              tournaments: event.tournaments.map(t => ({
+                ...t,
+                id: `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              })),
+            };
+            data.events.push(finalEvent);
+          } else {
+            return { success: false, eventId: event.id, isDuplicate: true };
+          }
+        } else {
+          data.events.push(finalEvent);
+        }
+
+        Object.entries(validations).forEach(([tournamentId, tournamentValidations]) => {
+          if (options.generateNewId && isDuplicate) {
+            const oldTournamentIndex = event.tournaments.findIndex(t => t.id === tournamentId);
+            if (oldTournamentIndex >= 0 && finalEvent.tournaments[oldTournamentIndex]) {
+              const newTournamentId = finalEvent.tournaments[oldTournamentIndex].id;
+              data.validations[newTournamentId] = tournamentValidations;
+            }
+          } else {
+            data.validations[tournamentId] = tournamentValidations;
+          }
+        });
+
+        data.currentEventId = finalEvent.id;
+        set(data);
+
+        return { success: true, eventId: finalEvent.id, isDuplicate };
+      } catch (error) {
+        console.error('Error importing event:', error);
+        return { success: false, eventId: '', isDuplicate: false };
+      }
+    },
+
+    encodeEventToURL: function(eventId: string): string | null {
+      const exportedData = this.exportEvent(eventId, false);
+      if (!exportedData) return null;
+
+      try {
+        const json = JSON.stringify(exportedData);
+        const compressed = compressToEncodedURIComponent(json);
+        return compressed;
+      } catch (error) {
+        console.error('Error encoding event to URL:', error);
+        return null;
+      }
+    },
+
+    generateShareURL: function(eventId: string): { url: string; size: number } | null {
+      const encoded = this.encodeEventToURL(eventId);
+      if (!encoded) return null;
+
+      const baseURL = window.location.origin + window.location.pathname;
+      const url = `${baseURL}?share=${encoded}`;
+
+      return { url, size: url.length };
     },
   };
 }
