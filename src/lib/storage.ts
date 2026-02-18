@@ -558,6 +558,7 @@ export interface ClubStorage {
   getValidationState: () => ValidationState;
   setValidation: (tournamentId: string, playerName: string, round: number, isValid: boolean) => void;
   getValidation: (tournamentId: string, playerName: string, round: number) => boolean;
+  clearTournamentValidations: (tournamentId: string) => void;
   clearAllData: () => void;
   exportData: () => string;
   importData: (jsonString: string) => boolean;
@@ -636,6 +637,12 @@ export function createClubStorage(slug: string): ClubStorage {
     getValidation: (tournamentId: string, playerName: string, round: number) => {
       const data = get();
       return data.validations[tournamentId]?.[playerName]?.[`round_${round}`] || false;
+    },
+
+    clearTournamentValidations: (tournamentId: string) => {
+      const data = get();
+      delete data.validations[tournamentId];
+      set(data);
     },
 
     clearAllData: () => {
