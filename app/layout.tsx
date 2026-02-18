@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Audiowide, Inter } from 'next/font/google';
 import '../src/styles/globals.css';
 import { AnimationsProvider } from '@/contexts/AnimationsContext';
+import { ClubProvider } from '@/contexts/ClubContext';
 
 const audiowide = Audiowide({
   weight: '400',
@@ -91,9 +92,11 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${audiowide.variable}`}>
       <body className={inter.className}>
-        <AnimationsProvider>
-          {children}
-        </AnimationsProvider>
+        <ClubProvider>
+          <AnimationsProvider>
+            {children}
+          </AnimationsProvider>
+        </ClubProvider>
       </body>
     </html>
   );

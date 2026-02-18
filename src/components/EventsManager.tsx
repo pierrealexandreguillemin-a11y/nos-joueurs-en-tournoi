@@ -24,9 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  getAllEvents,
-  setCurrentEvent,
-  deleteEvent,
+  createClubStorage,
   exportEvent,
   importEvent,
   checkEventExists,
@@ -35,6 +33,7 @@ import {
 import { syncToMongoDB, fetchFromMongoDB } from '@/lib/sync';
 import DuplicateEventDialog from '@/components/DuplicateEventDialog';
 import ShareEventModal from '@/components/ShareEventModal';
+import { useClub } from '@/contexts/ClubContext';
 import type { Event } from '@/types';
 
 interface EventsManagerProps {
@@ -44,17 +43,21 @@ interface EventsManagerProps {
 }
 
 export default function EventsManager({ currentEventId, onEventChange, onNewEventClick }: EventsManagerProps) {
+  const { identity } = useClub();
   const [open, setOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ExportedEvent | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const events = getAllEvents();
+
+  const clubSlug = identity?.clubSlug || '';
+  const storage = clubSlug ? createClubStorage(clubSlug) : null;
+  const events = storage?.getAllEvents() || [];
 
   const handleSwitchEvent = (eventId: string) => {
-    if (eventId !== currentEventId) {
-      setCurrentEvent(eventId);
+    if (eventId !== currentEventId && storage) {
+      storage.setCurrentEvent(eventId);
       onEventChange();
       setOpen(false);
     }
@@ -66,8 +69,8 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleDeleteConfirm = () => {
-    if (eventToDelete) {
-      deleteEvent(eventToDelete);
+    if (eventToDelete && storage) {
+      storage.deleteEvent(eventToDelete);
       onEventChange();
       setDeleteDialogOpen(false);
       setEventToDelete(null);
@@ -178,9 +181,10 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleCloudDownload = async () => {
+    if (!clubSlug) return;
     try {
       toast.info('Téléchargement depuis le cloud...');
-      const success = await fetchFromMongoDB();
+      const success = await fetchFromMongoDB(clubSlug);
       if (success) {
         toast.success('Événements téléchargés depuis le cloud avec succès !');
         onEventChange();
@@ -194,9 +198,10 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   };
 
   const handleCloudUpload = async () => {
+    if (!clubSlug) return;
     try {
       toast.info('Envoi vers le cloud...');
-      const success = await syncToMongoDB();
+      const success = await syncToMongoDB(clubSlug);
       if (success) {
         toast.success('Événements envoyés vers le cloud avec succès !');
       } else {

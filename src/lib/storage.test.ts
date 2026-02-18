@@ -4,6 +4,7 @@ import {
   getStorageData,
   setStorageData,
   getCurrentEvent,
+  getAllEvents,
   saveEvent,
   deleteEvent,
   getValidationState,
@@ -21,6 +22,7 @@ import {
   updateTournamentPlayers,
   searchTournaments,
   getTournamentStats,
+  createClubStorage,
 } from './storage';
 import type { Event, StorageData, Player } from '@/types';
 
@@ -669,6 +671,104 @@ describe('storage.ts', () => {
       it('returns null for non-existent tournament', () => {
         const stats = getTournamentStats('nonexistent');
         expect(stats).toBeNull();
+      });
+    });
+  });
+
+  describe('createClubStorage — QG-3: isolation inter-clubs', () => {
+    const storageA = () => createClubStorage('club-a');
+    const storageB = () => createClubStorage('club-b');
+
+    const makeEvent = (id: string, name: string): Event => ({
+      id,
+      name,
+      createdAt: new Date().toISOString(),
+      tournaments: [],
+    });
+
+    describe('isolation lecture', () => {
+      it('Club A sauvegarde un event → Club B ne le voit pas', () => {
+        storageA().saveEvent(makeEvent('event-1', 'Event A'));
+
+        const eventsB = storageB().getAllEvents();
+        expect(eventsB).toHaveLength(0);
+
+        const eventsA = storageA().getAllEvents();
+        expect(eventsA).toHaveLength(1);
+        expect(eventsA[0].name).toBe('Event A');
+      });
+
+      it('Club A et Club B peuvent avoir des events avec le même ID sans conflit', () => {
+        storageA().saveEvent(makeEvent('event-1', 'Event from A'));
+        storageB().saveEvent(makeEvent('event-1', 'Event from B'));
+
+        const eventsA = storageA().getAllEvents();
+        const eventsB = storageB().getAllEvents();
+
+        expect(eventsA).toHaveLength(1);
+        expect(eventsA[0].name).toBe('Event from A');
+        expect(eventsB).toHaveLength(1);
+        expect(eventsB[0].name).toBe('Event from B');
+      });
+
+      it('clearAllData de Club A ne touche pas les données de Club B', () => {
+        storageA().saveEvent(makeEvent('event-1', 'Event A'));
+        storageB().saveEvent(makeEvent('event-2', 'Event B'));
+
+        storageA().clearAllData();
+
+        expect(storageA().getAllEvents()).toHaveLength(0);
+        expect(storageB().getAllEvents()).toHaveLength(1);
+        expect(storageB().getAllEvents()[0].name).toBe('Event B');
+      });
+    });
+
+    describe('isolation validations', () => {
+      it('validation de Club A invisible depuis le storage de Club B', () => {
+        storageA().setValidation('tournament-1', 'Player 1', 1, true);
+
+        expect(storageA().getValidation('tournament-1', 'Player 1', 1)).toBe(true);
+        expect(storageB().getValidation('tournament-1', 'Player 1', 1)).toBe(false);
+      });
+    });
+
+    describe('isolation export/import', () => {
+      it('exportData de Club A ne contient pas les events de Club B', () => {
+        storageA().saveEvent(makeEvent('event-1', 'Event A'));
+        storageB().saveEvent(makeEvent('event-2', 'Event B'));
+
+        const exported = JSON.parse(storageA().exportData());
+        expect(exported.events).toHaveLength(1);
+        expect(exported.events[0].name).toBe('Event A');
+      });
+
+      it('importData dans Club A n\'écrase pas les données de Club B', () => {
+        storageB().saveEvent(makeEvent('event-2', 'Event B'));
+
+        const importPayload = JSON.stringify({
+          currentEventId: 'event-3',
+          events: [makeEvent('event-3', 'Imported into A')],
+          validations: {},
+        });
+
+        storageA().importData(importPayload);
+
+        expect(storageB().getAllEvents()).toHaveLength(1);
+        expect(storageB().getAllEvents()[0].name).toBe('Event B');
+
+        expect(storageA().getAllEvents()).toHaveLength(1);
+        expect(storageA().getAllEvents()[0].name).toBe('Imported into A');
+      });
+    });
+
+    describe('backward compat', () => {
+      it('les fonctions sans namespace continuent de fonctionner (clé par défaut)', () => {
+        const event = makeEvent('event-1', 'Default event');
+        saveEvent(event);
+
+        const events = getAllEvents();
+        expect(events).toHaveLength(1);
+        expect(events[0].name).toBe('Default event');
       });
     });
   });

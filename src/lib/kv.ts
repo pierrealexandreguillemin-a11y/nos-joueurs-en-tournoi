@@ -4,15 +4,23 @@ import type { StorageData, Event, ValidationState } from '@/types';
 // Use Redis.fromEnv() to automatically detect KV_REST_API_URL and KV_REST_API_TOKEN
 const kv = Redis.fromEnv();
 
-const STORAGE_KEY = 'nos-joueurs-en-tournoi';
-const EVENTS_KEY = `${STORAGE_KEY}:events`;
-const VALIDATIONS_KEY = `${STORAGE_KEY}:validations`;
-const SETTINGS_KEY = `${STORAGE_KEY}:settings`;
+// Namespaced key generators
+export function eventsKey(slug: string): string {
+  return `nos-joueurs:${slug}:events`;
+}
+
+export function validationsKey(slug: string): string {
+  return `nos-joueurs:${slug}:validations`;
+}
+
+export function settingsKey(slug: string): string {
+  return `nos-joueurs:${slug}:settings`;
+}
 
 /**
  * Save events to Vercel KV
  */
-export async function saveEvents(events: Event[]): Promise<void> {
+export async function saveEvents(events: Event[], clubSlug: string): Promise<void> {
   // Store each event individually for easier querying
   if (events.length === 0) {
     return; // Skip if no events to save
@@ -21,7 +29,7 @@ export async function saveEvents(events: Event[]): Promise<void> {
   const pipeline = kv.pipeline();
 
   events.forEach((event) => {
-    pipeline.hset(`${EVENTS_KEY}`, { [event.id]: JSON.stringify(event) });
+    pipeline.hset(eventsKey(clubSlug), { [event.id]: JSON.stringify(event) });
   });
 
   await pipeline.exec();
@@ -30,8 +38,8 @@ export async function saveEvents(events: Event[]): Promise<void> {
 /**
  * Get all events from Vercel KV
  */
-export async function getEvents(): Promise<Event[]> {
-  const eventsHash = await kv.hgetall(`${EVENTS_KEY}`);
+export async function getEvents(clubSlug: string): Promise<Event[]> {
+  const eventsHash = await kv.hgetall(eventsKey(clubSlug));
 
   if (!eventsHash) {
     return [];
@@ -49,29 +57,29 @@ export async function getEvents(): Promise<Event[]> {
 /**
  * Save a single event to Vercel KV
  */
-export async function saveEvent(event: Event): Promise<void> {
-  await kv.hset(`${EVENTS_KEY}`, { [event.id]: JSON.stringify(event) });
+export async function saveEvent(event: Event, clubSlug: string): Promise<void> {
+  await kv.hset(eventsKey(clubSlug), { [event.id]: JSON.stringify(event) });
 }
 
 /**
  * Delete an event from Vercel KV
  */
-export async function deleteEvent(eventId: string): Promise<void> {
-  await kv.hdel(`${EVENTS_KEY}`, eventId);
+export async function deleteEvent(eventId: string, clubSlug: string): Promise<void> {
+  await kv.hdel(eventsKey(clubSlug), eventId);
 }
 
 /**
  * Save validations to Vercel KV
  */
-export async function saveValidations(validations: ValidationState): Promise<void> {
-  await kv.set(VALIDATIONS_KEY, JSON.stringify(validations));
+export async function saveValidations(validations: ValidationState, clubSlug: string): Promise<void> {
+  await kv.set(validationsKey(clubSlug), JSON.stringify(validations));
 }
 
 /**
  * Get validations from Vercel KV
  */
-export async function getValidations(): Promise<ValidationState> {
-  const validationsData = await kv.get(VALIDATIONS_KEY);
+export async function getValidations(clubSlug: string): Promise<ValidationState> {
+  const validationsData = await kv.get(validationsKey(clubSlug));
 
   if (!validationsData) {
     return {};
@@ -88,15 +96,15 @@ export async function getValidations(): Promise<ValidationState> {
 /**
  * Save current event ID to Vercel KV
  */
-export async function saveCurrentEventId(eventId: string): Promise<void> {
-  await kv.set(SETTINGS_KEY, JSON.stringify({ currentEventId: eventId }));
+export async function saveCurrentEventId(eventId: string, clubSlug: string): Promise<void> {
+  await kv.set(settingsKey(clubSlug), JSON.stringify({ currentEventId: eventId }));
 }
 
 /**
  * Get current event ID from Vercel KV
  */
-export async function getCurrentEventId(): Promise<string> {
-  const settingsData = await kv.get(SETTINGS_KEY);
+export async function getCurrentEventId(clubSlug: string): Promise<string> {
+  const settingsData = await kv.get(settingsKey(clubSlug));
 
   if (!settingsData) {
     return '';
@@ -116,22 +124,22 @@ export async function getCurrentEventId(): Promise<string> {
 /**
  * Save all storage data to Vercel KV
  */
-export async function saveStorageData(data: StorageData): Promise<void> {
+export async function saveStorageData(data: StorageData, clubSlug: string): Promise<void> {
   await Promise.all([
-    saveEvents(data.events),
-    saveValidations(data.validations),
-    saveCurrentEventId(data.currentEventId || ''),
+    saveEvents(data.events, clubSlug),
+    saveValidations(data.validations, clubSlug),
+    saveCurrentEventId(data.currentEventId || '', clubSlug),
   ]);
 }
 
 /**
  * Get all storage data from Vercel KV
  */
-export async function getStorageData(): Promise<StorageData> {
+export async function getStorageData(clubSlug: string): Promise<StorageData> {
   const [events, validations, currentEventId] = await Promise.all([
-    getEvents(),
-    getValidations(),
-    getCurrentEventId(),
+    getEvents(clubSlug),
+    getValidations(clubSlug),
+    getCurrentEventId(clubSlug),
   ]);
 
   return {

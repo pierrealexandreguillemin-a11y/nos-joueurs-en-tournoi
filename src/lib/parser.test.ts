@@ -370,4 +370,49 @@ describe('parser.ts', () => {
       expect(clubs[0]).toEqual({ name: 'Club A', playerCount: 4 });
     });
   });
+
+  describe('parseResults — QG-8: invariance FFE', () => {
+    it('le filtrage par clubName est indépendant du slug namespace', () => {
+      // The FFE clubName "Hay Chess" should work regardless of what slug is used for storage
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('BACHKAT FARES', 1, '1541 F', '1', '10', '25', [
+          ['1', '', '1', '', '', 'Opponent A', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
+
+      const playerClubMap = new Map([['BACHKAT FARES', 'Hay Chess']]);
+
+      // Filtering by the exact FFE club name works
+      const results = parseResults(htmlResults, playerClubMap, 'Hay Chess');
+      expect(results).toHaveLength(1);
+      expect(results[0].club).toBe('Hay Chess');
+    });
+
+    it('"Hay Chess" (FFE) matche "Hay Chess" (event.clubName) — exact match', () => {
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('PLAYER ONE', 1, '1500', '1', '5', '20', [
+          ['1', '', '1', '', '', 'Opp1', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
+
+      const playerClubMap = new Map([['PLAYER ONE', 'Hay Chess']]);
+
+      const results = parseResults(htmlResults, playerClubMap, 'Hay Chess');
+      expect(results).toHaveLength(1);
+    });
+
+    it('"Hay Chess" (FFE) ne matche PAS "hay-chess" (slug) — prouve la séparation', () => {
+      const htmlResults = `<table>
+        ${makeFFEPlayerRow('PLAYER ONE', 1, '1500', '1', '5', '20', [
+          ['1', '', '1', '', '', 'Opp1', '', '', '', '', '', '', ''],
+        ])}
+      </table>`;
+
+      const playerClubMap = new Map([['PLAYER ONE', 'Hay Chess']]);
+
+      // Using slug "hay-chess" as clubName should NOT match "Hay Chess" in FFE data
+      const results = parseResults(htmlResults, playerClubMap, 'hay-chess');
+      expect(results).toHaveLength(0);
+    });
+  });
 });

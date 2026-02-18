@@ -73,6 +73,13 @@ export interface ParsedFFEData {
   totalRounds: number;
 }
 
+// Club Identity (namespace isolation)
+export interface ClubIdentity {
+  clubName: string;    // "Hay Chess"
+  clubSlug: string;    // "hay-chess"
+  createdAt: string;
+}
+
 // Club Stats
 export interface ClubStats {
   round: number;

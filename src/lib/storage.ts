@@ -10,44 +10,46 @@ function getLocalStorage(): Storage | null {
   return typeof window !== 'undefined' ? window.localStorage : null;
 }
 
-// Get all storage data
-export function getStorageData(): StorageData {
+function emptyData(): StorageData {
+  return { currentEventId: '', events: [], validations: {} };
+}
+
+// Internal: get storage data for a given key
+function _getStorageData(key: string): StorageData {
   try {
     const storage = getLocalStorage();
-    if (!storage) {
-      return {
-        currentEventId: '',
-        events: [],
-        validations: {},
-      };
-    }
-    const data = storage.getItem(STORAGE_KEY);
-    if (!data) {
-      return {
-        currentEventId: '',
-        events: [],
-        validations: {},
-      };
-    }
+    if (!storage) return emptyData();
+    const data = storage.getItem(key);
+    if (!data) return emptyData();
     return JSON.parse(data);
   } catch (error) {
     console.error('Error reading from localStorage:', error);
-    return {
-      currentEventId: '',
-      events: [],
-      validations: {},
-    };
+    return emptyData();
   }
 }
 
-// Save all storage data
-export function setStorageData(data: StorageData): void {
+// Internal: save storage data for a given key
+function _setStorageData(data: StorageData, key: string): void {
   try {
-    getLocalStorage()?.setItem(STORAGE_KEY, JSON.stringify(data));
+    getLocalStorage()?.setItem(key, JSON.stringify(data));
   } catch (error) {
     console.error('Error writing to localStorage:', error);
     throw new Error('Failed to save data. Storage might be full.');
   }
+}
+
+// ========================================
+// PUBLIC API (backward compat, default key)
+// ========================================
+
+// Get all storage data
+export function getStorageData(): StorageData {
+  return _getStorageData(STORAGE_KEY);
+}
+
+// Save all storage data
+export function setStorageData(data: StorageData): void {
+  _setStorageData(data, STORAGE_KEY);
 }
 
 // Get all events
@@ -536,5 +538,118 @@ export function getTournamentStats(tournamentId: string) {
     averagePoints: Math.round(averagePoints * 100) / 100,
     lastUpdate: tournament.lastUpdate,
     validatedRoundsCount: validatedRounds.length,
+  };
+}
+
+// ========================================
+// NAMESPACED CLUB STORAGE
+// ========================================
+
+export interface ClubStorage {
+  getStorageData: () => StorageData;
+  setStorageData: (data: StorageData) => void;
+  getAllEvents: () => Event[];
+  getCurrentEvent: () => Event | null;
+  setCurrentEvent: (eventId: string) => void;
+  saveEvent: (event: Event) => void;
+  deleteEvent: (eventId: string) => void;
+  getValidationState: () => ValidationState;
+  setValidation: (tournamentId: string, playerName: string, round: number, isValid: boolean) => void;
+  getValidation: (tournamentId: string, playerName: string, round: number) => boolean;
+  clearAllData: () => void;
+  exportData: () => string;
+  importData: (jsonString: string) => boolean;
+}
+
+/**
+ * Create a namespaced storage instance for a club.
+ * All operations are isolated to the club's storage key.
+ */
+export function createClubStorage(slug: string): ClubStorage {
+  const key = `${STORAGE_KEY}:${slug}`;
+
+  const get = (): StorageData => _getStorageData(key);
+  const set = (data: StorageData): void => _setStorageData(data, key);
+
+  return {
+    getStorageData: get,
+    setStorageData: set,
+
+    getAllEvents: () => get().events,
+
+    getCurrentEvent: () => {
+      const data = get();
+      if (!data.currentEventId) return null;
+      return data.events.find(e => e.id === data.currentEventId) || null;
+    },
+
+    setCurrentEvent: (eventId: string) => {
+      const data = get();
+      const event = data.events.find(e => e.id === eventId);
+      if (!event) throw new Error(`Event with id ${eventId} not found`);
+      data.currentEventId = eventId;
+      set(data);
+    },
+
+    saveEvent: (event: Event) => {
+      const data = get();
+      const existingIndex = data.events.findIndex(e => e.id === event.id);
+      if (existingIndex >= 0) {
+        data.events[existingIndex] = event;
+      } else {
+        data.events.push(event);
+      }
+      data.currentEventId = event.id;
+      set(data);
+    },
+
+    deleteEvent: (eventId: string) => {
+      const data = get();
+      data.events = data.events.filter(e => e.id !== eventId);
+      if (data.currentEventId === eventId) {
+        data.currentEventId = data.events[0]?.id || '';
+      }
+      const event = data.events.find(e => e.id === eventId);
+      if (event) {
+        event.tournaments.forEach(t => { delete data.validations[t.id]; });
+      }
+      set(data);
+    },
+
+    getValidationState: () => get().validations,
+
+    setValidation: (tournamentId: string, playerName: string, round: number, isValid: boolean) => {
+      const data = get();
+      if (!data.validations[tournamentId]) data.validations[tournamentId] = {};
+      if (!data.validations[tournamentId][playerName]) data.validations[tournamentId][playerName] = {};
+      data.validations[tournamentId][playerName][`round_${round}`] = isValid;
+      set(data);
+    },
+
+    getValidation: (tournamentId: string, playerName: string, round: number) => {
+      const data = get();
+      return data.validations[tournamentId]?.[playerName]?.[`round_${round}`] || false;
+    },
+
+    clearAllData: () => {
+      try {
+        getLocalStorage()?.removeItem(key);
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
+      }
+    },
+
+    exportData: () => JSON.stringify(get(), null, 2),
+
+    importData: (jsonString: string) => {
+      try {
+        const data = JSON.parse(jsonString) as StorageData;
+        set(data);
+        return true;
+      } catch (error) {
+        console.error('Error importing data:', error);
+        return false;
+      }
+    },
   };
 }

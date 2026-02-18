@@ -2,19 +2,22 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import NextDynamic from 'next/dynamic';
 import { toast } from 'sonner';
-import { getCurrentEvent, saveEvent, decodeEventFromURL, importEvent } from '@/lib/storage';
+import { createClubStorage, decodeEventFromURL, importEvent } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import EventForm from '@/components/EventForm';
 import TournamentTabs from '@/components/TournamentTabs';
 import EventsManager from '@/components/EventsManager';
 import ShareButton from '@/components/ShareButton';
 import AnimationsToggle from '@/components/AnimationsToggle';
+import ClubOnboarding from '@/components/ClubOnboarding';
+import ClubHeader from '@/components/ClubHeader';
 import DuplicateEventDialog from '@/components/DuplicateEventDialog';
 import { useAnimations } from '@/contexts/AnimationsContext';
+import { useClub } from '@/contexts/ClubContext';
 import { Toaster } from 'sonner';
 import type { Event } from '@/types';
 import type { ExportedEvent } from '@/lib/storage';
@@ -35,6 +38,7 @@ const FloatingParticles = NextDynamic(() => import('@/components/common/Floating
 
 export default function Home() {
   const { animationsEnabled } = useAnimations();
+  const { identity, isLoaded } = useClub();
 
   // Initialize with null to avoid hydration mismatch
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
@@ -43,26 +47,40 @@ export default function Home() {
   const [pendingImport, setPendingImport] = useState<ExportedEvent | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Get club-scoped storage
+  const getStorage = useCallback(() => {
+    if (!identity) return null;
+    return createClubStorage(identity.clubSlug);
+  }, [identity]);
+
   // Load state from localStorage after mount (client-side only)
   useEffect(() => {
-    const event = getCurrentEvent();
+    if (!isLoaded || !identity) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMounted(isLoaded);
+      return;
+    }
+    const storage = createClubStorage(identity.clubSlug);
+    const event = storage.getCurrentEvent();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentEvent(event);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowEventForm(!event);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-  }, []);
+  }, [isLoaded, identity]);
 
   useEffect(() => {
+    if (!identity) return;
     const params = new URLSearchParams(window.location.search);
     const shareParam = params.get('share');
 
     if (shareParam) {
       const exportedData = decodeEventFromURL(shareParam);
+      const storage = createClubStorage(identity.clubSlug);
 
       if (exportedData) {
-        const isDuplicate = exportedData.event && getCurrentEvent()?.id === exportedData.event.id;
+        const isDuplicate = exportedData.event && storage.getCurrentEvent()?.id === exportedData.event.id;
 
         if (isDuplicate) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -73,7 +91,7 @@ export default function Home() {
           const result = importEvent(exportedData);
           if (result.success) {
             toast.success('Événement importé avec succès !');
-            setCurrentEvent(getCurrentEvent());
+            setCurrentEvent(storage.getCurrentEvent());
             setShowEventForm(false);
           } else {
             toast.error('Erreur lors de l\'import de l\'événement');
@@ -86,16 +104,20 @@ export default function Home() {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
-  }, []);
+  }, [identity]);
 
   const handleEventCreated = (event: Event) => {
-    saveEvent(event);
+    const storage = getStorage();
+    if (!storage) return;
+    storage.saveEvent(event);
     setCurrentEvent(event);
     setShowEventForm(false);
   };
 
   const handleEventChange = () => {
-    setCurrentEvent(getCurrentEvent());
+    const storage = getStorage();
+    if (!storage) return;
+    setCurrentEvent(storage.getCurrentEvent());
     setShowEventForm(false);
   };
 
@@ -104,7 +126,8 @@ export default function Home() {
     const result = importEvent(pendingImport, { replaceIfExists: true });
     if (result.success) {
       toast.success('Événement remplacé avec succès !');
-      setCurrentEvent(getCurrentEvent());
+      const storage = getStorage();
+      if (storage) setCurrentEvent(storage.getCurrentEvent());
       setShowEventForm(false);
     }
     setDuplicateDialogOpen(false);
@@ -116,7 +139,8 @@ export default function Home() {
     const result = importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
     if (result.success) {
       toast.success('Copie de l\'événement créée !');
-      setCurrentEvent(getCurrentEvent());
+      const storage = getStorage();
+      if (storage) setCurrentEvent(storage.getCurrentEvent());
       setShowEventForm(false);
     }
     setDuplicateDialogOpen(false);
@@ -128,6 +152,26 @@ export default function Home() {
     setPendingImport(null);
     toast.info('Import annulé');
   };
+
+  // Wait for club context to load
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)'
+      }}>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-white text-xl">Loading...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Gate: no club identity → show onboarding
+  if (!identity) {
+    return <ClubOnboarding />;
+  }
 
   // Show loading state during hydration
   if (!mounted) {
@@ -192,6 +236,7 @@ export default function Home() {
                 />
               </div>
               <div className="flex items-center gap-2">
+                <ClubHeader />
                 <AnimationsToggle />
                 <ShareButton />
                 <EventsManager
