@@ -1,8 +1,11 @@
 import { Redis } from '@upstash/redis';
 import type { StorageData, Event, ValidationState } from '@/types';
 
-// Use Redis.fromEnv() to automatically detect KV_REST_API_URL and KV_REST_API_TOKEN
-const kv = Redis.fromEnv();
+// Use explicit config to trim any whitespace/newline from env vars
+const kv = new Redis({
+  url: (process.env.KV_REST_API_URL || '').trim(),
+  token: (process.env.KV_REST_API_TOKEN || '').trim(),
+});
 
 // Namespaced key generators
 export function eventsKey(slug: string): string {
