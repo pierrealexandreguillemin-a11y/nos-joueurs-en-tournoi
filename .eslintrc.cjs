@@ -11,6 +11,8 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:react/jsx-runtime',
+    'plugin:security/recommended-legacy',
+    'plugin:sonarjs/recommended-legacy',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -20,8 +22,22 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ['react', '@typescript-eslint', 'react-hooks', 'react-refresh'],
+  plugins: ['react', '@typescript-eslint', 'react-hooks', 'react-refresh', 'security', 'sonarjs'],
   rules: {
+    // --- ISO 5055 Maintainability ---
+    'complexity': ['error', { max: 15 }],
+    'max-depth': ['warn', { max: 4 }],
+    'max-lines-per-function': ['warn', { max: 80, skipBlankLines: true, skipComments: true }],
+
+    // --- ISO 5055 Reliability (sonarjs overrides) ---
+    'sonarjs/cognitive-complexity': ['warn', 15],
+    'sonarjs/no-duplicate-string': 'off',
+    'sonarjs/pseudo-random': 'off',             // Math.random() for UI animations is safe
+    'sonarjs/no-nested-functions': 'off',       // standard React pattern (handlers in components)
+    'sonarjs/no-nested-conditional': 'warn',    // warn only, common in JSX
+    'sonarjs/slow-regex': 'warn',               // patterns in codebase are safe (short inputs)
+
+    // --- Existing rules ---
     'react-refresh/only-export-components': [
       'warn',
       { allowConstantExport: true },

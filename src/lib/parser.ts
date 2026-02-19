@@ -89,8 +89,8 @@ export function parseStatsClubs(htmlStats: string): ClubInfo[] {
 
     const cells = $row.find('td.papi_liste_c');
     if (cells.length >= 2) {
-      const name = $(cells[0]).text().trim().replace(/\s*:\s*$/, '');
-      const count = parseInt($(cells[1]).text().trim().replace(/\s*:\s*$/, '')) || 0;
+      const name = $(cells[0]).text().trim().replace(/\s*:\s*$/g, '');
+      const count = parseInt($(cells[1]).text().trim().replace(/\s*:\s*$/g, '')) || 0;
       if (name) clubs.push({ name, playerCount: count });
     }
   });
@@ -234,7 +234,6 @@ export function parseResults(
       let score: 0 | 0.5 | 1 = 0;
       if (scoreText === '1') score = 1;
       else if (scoreText === '½' || scoreText === '0.5' || scoreText === '&frac12;') score = 0.5;
-      else score = 0;
 
       results.push({
         round: roundNum,

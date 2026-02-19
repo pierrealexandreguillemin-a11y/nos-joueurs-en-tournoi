@@ -1,11 +1,1 @@
-echo "Running pre-commit checks..."
-
-# Run ESLint (only warnings, don't fail on them)
-echo "Checking code quality with ESLint..."
-npm run lint || true
-
-# Skip TypeScript check for now since test files have issues
-# and they don't affect production build
-echo "Skipping TypeScript check (build will catch errors)"
-
-echo "Pre-commit checks passed!"
+npx lint-staged

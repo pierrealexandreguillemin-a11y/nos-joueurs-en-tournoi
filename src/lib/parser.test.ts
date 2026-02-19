@@ -85,9 +85,11 @@ describe('parser.ts', () => {
     // rounds: array of [roundNum, score, ...padding..., opponentName] (13-cell rows) or fewer for byes
     const roundRows = rounds.map(r => {
       if (r.length >= 6) {
-        return `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`;
+        const cells = r.map(c => `<td>${c}</td>`).join('');
+        return `<tr>${cells}</tr>`;
       }
-      return `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`;
+      const cells = r.map(c => `<td>${c}</td>`).join('');
+      return `<tr>${cells}</tr>`;
     }).join('');
 
     return `

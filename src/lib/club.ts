@@ -20,9 +20,10 @@ export function slugifyClubName(name: string): string {
     .replace(/[\u0300-\u036f]/g, '') // remove diacritics
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')    // replace non-alphanum sequences with single dash
-    .replace(/^-+|-+$/g, '')         // trim leading/trailing dashes
+    .replace(/^-+/g, '')              // trim leading dashes
+    .replace(/-+$/g, '')              // trim trailing dashes
     .slice(0, 40)                    // max 40 chars
-    .replace(/-+$/, '');             // trim any trailing dash from truncation
+    .replace(/-+$/g, '');            // trim any trailing dash from truncation
 
   if (!slug) {
     throw new Error('Club name cannot be empty');
