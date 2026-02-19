@@ -254,11 +254,11 @@ export function importEvent(
         // Create new event with new ID
         finalEvent = {
           ...event,
-          id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `event_${crypto.randomUUID()}`,
           name: `${event.name} (copie)`,
           tournaments: event.tournaments.map(t => ({
             ...t,
-            id: `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: `tournament_${crypto.randomUUID()}`,
           })),
         };
         data.events.push(finalEvent);
@@ -424,7 +424,7 @@ export function createTournament(
   }
 
   const newTournament: import('@/types').Tournament = {
-    id: `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `tournament_${crypto.randomUUID()}`,
     name: tournament.name,
     url: tournament.url,
     lastUpdate: new Date().toISOString(),
@@ -712,11 +712,11 @@ export function createClubStorage(slug: string): ClubStorage {
           } else if (options.generateNewId) {
             finalEvent = {
               ...event,
-              id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              id: `event_${crypto.randomUUID()}`,
               name: `${event.name} (copie)`,
               tournaments: event.tournaments.map(t => ({
                 ...t,
-                id: `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                id: `tournament_${crypto.randomUUID()}`,
               })),
             };
             data.events.push(finalEvent);

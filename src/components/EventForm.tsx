@@ -77,12 +77,12 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
 
     const event: Event = {
-      id: `evt_${Date.now()}`,
+      id: `event_${crypto.randomUUID()}`,
       name: eventName,
       ...(clubName.trim() ? { clubName: clubName.trim() } : {}),
       createdAt: new Date().toISOString(),
-      tournaments: validTournaments.map((t, index) => ({
-        id: `trn_${Date.now()}_${index}`,
+      tournaments: validTournaments.map((t) => ({
+        id: `tournament_${crypto.randomUUID()}`,
         name: t.name,
         url: t.url,
         lastUpdate: '',

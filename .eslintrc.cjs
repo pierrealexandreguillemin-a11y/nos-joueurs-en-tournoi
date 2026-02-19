@@ -29,13 +29,17 @@ module.exports = {
     'max-depth': ['warn', { max: 4 }],
     'max-lines-per-function': ['warn', { max: 80, skipBlankLines: true, skipComments: true }],
 
-    // --- ISO 5055 Reliability (sonarjs overrides) ---
+    // --- ISO 5055 Reliability (sonarjs tuning) ---
+    // Justified overrides: rules producing false positives in React/TypeScript context.
     'sonarjs/cognitive-complexity': ['warn', 15],
-    'sonarjs/no-duplicate-string': 'off',
-    'sonarjs/pseudo-random': 'off',             // Math.random() for UI animations is safe
-    'sonarjs/no-nested-functions': 'off',       // standard React pattern (handlers in components)
-    'sonarjs/no-nested-conditional': 'warn',    // warn only, common in JSX
-    'sonarjs/slow-regex': 'warn',               // patterns in codebase are safe (short inputs)
+    'sonarjs/no-duplicate-string': 'off',       // 31 hits: CSS class strings, test assertions, UI labels
+    'sonarjs/pseudo-random': 'off',             // 9 hits: BackgroundPaths/FloatingParticles CSS animation offsets
+    'sonarjs/no-nested-functions': 'error',
+    'sonarjs/no-nested-conditional': 'error',
+    'sonarjs/slow-regex': 'error',
+
+    // --- ISO 5055 Security (eslint-plugin-security tuning) ---
+    'security/detect-object-injection': 'off',  // 56 false positives on typed Record<K,V> bracket access in TS
 
     // --- Existing rules ---
     'react-refresh/only-export-components': [
@@ -54,5 +58,14 @@ module.exports = {
       version: 'detect',
     },
   },
+  overrides: [
+    {
+      // Test files: describe() blocks are inherently large — disable function length
+      files: ['**/*.test.*', '**/__tests__/**'],
+      rules: {
+        'max-lines-per-function': 'off',
+      },
+    },
+  ],
   ignorePatterns: ['dist', 'node_modules', '*.cjs'],
 };

@@ -4,44 +4,42 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mockStore: Record<string, unknown> = {};
 
 vi.mock('@upstash/redis', () => {
-  return {
-    Redis: {
-      fromEnv: () => ({
-        hset: vi.fn(async (key: string, fields: Record<string, string>) => {
-          if (!mockStore[key]) mockStore[key] = {};
-          Object.assign(mockStore[key] as Record<string, string>, fields);
-        }),
-        hgetall: vi.fn(async (key: string) => {
-          return mockStore[key] || null;
-        }),
-        hdel: vi.fn(async (key: string, field: string) => {
-          if (mockStore[key]) {
-            delete (mockStore[key] as Record<string, unknown>)[field];
-          }
-        }),
-        set: vi.fn(async (key: string, value: string) => {
-          mockStore[key] = value;
-        }),
-        get: vi.fn(async (key: string) => {
-          return mockStore[key] || null;
-        }),
-        pipeline: vi.fn(() => {
-          const ops: Array<() => void> = [];
-          return {
-            hset: (key: string, fields: Record<string, string>) => {
-              ops.push(() => {
-                if (!mockStore[key]) mockStore[key] = {};
-                Object.assign(mockStore[key] as Record<string, string>, fields);
-              });
-            },
-            exec: async () => {
-              ops.forEach(op => op());
-            },
-          };
-        }),
-      }),
-    },
-  };
+  class RedisMock {
+    hset = vi.fn(async (key: string, fields: Record<string, string>) => {
+      if (!mockStore[key]) mockStore[key] = {};
+      Object.assign(mockStore[key] as Record<string, string>, fields);
+    });
+    hgetall = vi.fn(async (key: string) => {
+      return mockStore[key] || null;
+    });
+    hdel = vi.fn(async (key: string, field: string) => {
+      if (mockStore[key]) {
+        delete (mockStore[key] as Record<string, unknown>)[field];
+      }
+    });
+    set = vi.fn(async (key: string, value: string) => {
+      mockStore[key] = value;
+    });
+    get = vi.fn(async (key: string) => {
+      return mockStore[key] || null;
+    });
+    pipeline = vi.fn(() => {
+      const ops: Array<() => void> = [];
+      return {
+        hset: (key: string, fields: Record<string, string>) => {
+          ops.push(() => {
+            if (!mockStore[key]) mockStore[key] = {};
+            Object.assign(mockStore[key] as Record<string, string>, fields);
+          });
+        },
+        exec: async () => {
+          ops.forEach(op => op());
+        },
+      };
+    });
+    static fromEnv() { return new RedisMock(); }
+  }
+  return { Redis: RedisMock };
 });
 
 import {

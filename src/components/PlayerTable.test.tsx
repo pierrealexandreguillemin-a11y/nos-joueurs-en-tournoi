@@ -336,7 +336,7 @@ describe('PlayerTable', () => {
     it('handles large number of rounds (>10)', () => {
       const manyRounds: Result[] = Array.from({ length: 15 }, (_, i) => ({
         round: i + 1,
-        score: (i % 3 === 0 ? 1 : i % 3 === 1 ? 0.5 : 0) as 0 | 0.5 | 1,
+        score: [1, 0.5, 0][i % 3] as 0 | 0.5 | 1,
       }));
 
       const tournament: Tournament = {

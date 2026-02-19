@@ -1,18 +1,21 @@
 echo "=== Pre-push quality gate ==="
 
-echo "[1/5] TypeScript type check (ISO 5055 Reliability)..."
+echo "[1/6] TypeScript type check (ISO 5055 Reliability)..."
 npx tsc --noEmit
 
-echo "[2/5] Production build..."
+echo "[2/6] ESLint full project — warning budget (ISO 5055 Maintainability)..."
+npx eslint src --max-warnings 13
+
+echo "[3/6] Production build..."
 npm run build
 
-echo "[3/5] Code duplication (ISO 5055 Maintainability, seuil 5%)..."
+echo "[4/6] Code duplication (ISO 5055 Maintainability, seuil 5%)..."
 npx jscpd src --min-tokens 50 --min-lines 5 --threshold 5 --ignore "**/*.test.*,**/__tests__/**" --reporters console
 
-echo "[4/5] Dependency audit (OWASP A06)..."
+echo "[5/6] Dependency audit (OWASP A06)..."
 npm audit --audit-level=critical
 
-echo "[5/5] Tests with coverage (ISO 25010 Testability)..."
+echo "[6/6] Tests with coverage (ISO 25010 Testability)..."
 npx vitest run --coverage
 
 echo "=== All checks passed ==="

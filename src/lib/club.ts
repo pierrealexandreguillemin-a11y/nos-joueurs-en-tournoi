@@ -15,15 +15,17 @@ export function slugifyClubName(name: string): string {
     throw new Error('Club name cannot be empty');
   }
 
-  const slug = trimmed
+  let slug = trimmed
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // remove diacritics
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')    // replace non-alphanum sequences with single dash
-    .replace(/^-+/g, '')              // trim leading dashes
-    .replace(/-+$/g, '')              // trim trailing dashes
-    .slice(0, 40)                    // max 40 chars
-    .replace(/-+$/g, '');            // trim any trailing dash from truncation
+    .replace(/[^a-z0-9]+/g, '-');   // replace non-alphanum sequences with single dash
+
+  // trim leading/trailing dashes (without regex vulnerable to backtracking)
+  while (slug.startsWith('-')) slug = slug.slice(1);
+  while (slug.endsWith('-')) slug = slug.slice(0, -1);
+  slug = slug.slice(0, 40);
+  while (slug.endsWith('-')) slug = slug.slice(0, -1);
 
   if (!slug) {
     throw new Error('Club name cannot be empty');

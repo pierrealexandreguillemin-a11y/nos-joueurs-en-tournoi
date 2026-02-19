@@ -287,7 +287,7 @@ describe('EventForm', () => {
       });
 
       const createdEvent = mockOnEventCreated.mock.calls[0][0] as Event;
-      expect(createdEvent.id).toMatch(/^evt_\d+$/);
+      expect(createdEvent.id).toMatch(/^event_/);
     });
 
     it('generates unique tournament IDs with correct format', async () => {
@@ -301,7 +301,7 @@ describe('EventForm', () => {
       });
 
       const createdEvent = mockOnEventCreated.mock.calls[0][0] as Event;
-      expect(createdEvent.tournaments[0].id).toMatch(/^trn_\d+_0$/);
+      expect(createdEvent.tournaments[0].id).toMatch(/^tournament_/);
     });
 
     it('initializes tournament with empty players array', async () => {

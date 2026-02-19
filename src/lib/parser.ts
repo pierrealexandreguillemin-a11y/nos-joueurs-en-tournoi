@@ -89,8 +89,10 @@ export function parseStatsClubs(htmlStats: string): ClubInfo[] {
 
     const cells = $row.find('td.papi_liste_c');
     if (cells.length >= 2) {
-      const name = $(cells[0]).text().trim().replace(/\s*:\s*$/g, '');
-      const count = parseInt($(cells[1]).text().trim().replace(/\s*:\s*$/g, '')) || 0;
+      const rawName = $(cells[0]).text().trim();
+      const name = rawName.endsWith(':') ? rawName.slice(0, -1).trim() : rawName;
+      const rawCount = $(cells[1]).text().trim();
+      const count = parseInt(rawCount.endsWith(':') ? rawCount.slice(0, -1).trim() : rawCount) || 0;
       if (name) clubs.push({ name, playerCount: count });
     }
   });

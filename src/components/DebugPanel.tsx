@@ -24,19 +24,22 @@ export default function DebugPanel() {
     if (!storage) return;
     const data = storage.getStorageData();
 
+    const validationKeys = Object.keys(data.validations);
+
     const info: Record<string, unknown> = {
       clubSlug: identity?.clubSlug,
       totalEvents: data.events.length,
       currentEventId: data.currentEventId,
-      events: data.events.map(e => ({
-        id: e.id,
-        name: e.name,
-        tournaments: e.tournaments.length,
-        hasValidations: Object.keys(data.validations).filter(k =>
-          e.tournaments.some(t => t.id === k)
-        ).length,
-      })),
-      validationsKeys: Object.keys(data.validations).length,
+      events: data.events.map(e => {
+        const tournamentIds = new Set(e.tournaments.map(t => t.id));
+        return {
+          id: e.id,
+          name: e.name,
+          tournaments: e.tournaments.length,
+          hasValidations: validationKeys.filter(k => tournamentIds.has(k)).length,
+        };
+      }),
+      validationsKeys: validationKeys.length,
     };
 
     // Test generateShareURL for current event
