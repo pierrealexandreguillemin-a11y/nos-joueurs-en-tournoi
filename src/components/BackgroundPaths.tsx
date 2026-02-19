@@ -1,6 +1,7 @@
 'use client';
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { secureRandom } from "@/lib/random";
 
 interface FloatingPathsProps {
   position: number;
@@ -10,7 +11,6 @@ function FloatingPaths({ position }: FloatingPathsProps) {
   // Memoize paths to prevent regeneration on every render
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const paths = useMemo(() => {
-    // Using Math.random() here is intentional - memoized so it only runs once
     return Array.from({ length: 36 }, (_, i) => ({
       id: i,
       d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${
@@ -22,7 +22,7 @@ function FloatingPaths({ position }: FloatingPathsProps) {
       } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
       color: `rgba(15,23,42,${0.1 + i * 0.03})`,
       width: 0.5 + i * 0.03,
-      duration: 20 + Math.random() * 10,
+      duration: 20 + secureRandom() * 10,
     }));
   }, [position]);
 

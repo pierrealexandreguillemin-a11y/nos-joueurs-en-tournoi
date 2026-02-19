@@ -7,6 +7,9 @@
  * - HTML extraction from response
  */
 
+const SCRAPE_ENDPOINT = '/api/scrape';
+const SCRAPE_HEADERS = { 'Content-Type': 'application/json' };
+
 /**
  * Throw a classified scrape error based on HTTP status
  */
@@ -25,9 +28,9 @@ export function throwScrapeError(status: number, context: string): never {
  * @returns The raw HTML string
  */
 export async function scrapeFFE(url: string, context: string = 'des données FFE'): Promise<string> {
-  const response = await fetch('/api/scrape', {
+  const response = await fetch(SCRAPE_ENDPOINT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: SCRAPE_HEADERS,
     body: JSON.stringify({ url }),
   });
 
@@ -48,14 +51,14 @@ export async function scrapeFFEPair(
   resultsUrl: string,
 ): Promise<[string, string]> {
   const [resList, resResults] = await Promise.all([
-    fetch('/api/scrape', {
+    fetch(SCRAPE_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: SCRAPE_HEADERS,
       body: JSON.stringify({ url: listUrl }),
     }),
-    fetch('/api/scrape', {
+    fetch(SCRAPE_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: SCRAPE_HEADERS,
       body: JSON.stringify({ url: resultsUrl }),
     }),
   ]);

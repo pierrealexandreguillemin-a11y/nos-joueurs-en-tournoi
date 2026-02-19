@@ -13,6 +13,46 @@ import {
 import { createClubStorage } from '@/lib/storage';
 import { useClub } from '@/contexts/ClubContext';
 
+function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
+  debugInfo: string;
+  onRefresh: () => void;
+  onCopyAll: () => void;
+}) {
+  return (
+    <DialogContent className="sm:max-w-[600px] miami-card border-miami-aqua/30 max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+          🐛 Debug Panel
+        </DialogTitle>
+        <DialogDescription className="text-miami-navy/70">
+          Informations techniques pour diagnostic
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="p-4 bg-black/5 rounded-lg font-mono text-xs overflow-x-auto">
+          <pre>{debugInfo || 'Cliquez pour générer les infos de debug'}</pre>
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={onRefresh} variant="outline" className="flex-1">
+            Rafraîchir Debug Info
+          </Button>
+          <Button onClick={onCopyAll} variant="outline" className="flex-1">
+            Copier Toutes les Données
+          </Button>
+        </div>
+
+        <div className="text-xs text-miami-navy/60 space-y-1">
+          <p>• Vérifiez la console (F12) pour les logs détaillés</p>
+          <p>• &quot;Copier Toutes les Données&quot; = tout le localStorage</p>
+          <p>• Envoyez ces infos pour diagnostic</p>
+        </div>
+      </div>
+    </DialogContent>
+  );
+}
+
 export default function DebugPanel() {
   const { identity } = useClub();
   const [open, setOpen] = useState(false);
@@ -42,7 +82,6 @@ export default function DebugPanel() {
       validationsKeys: validationKeys.length,
     };
 
-    // Test generateShareURL for current event
     if (data.currentEventId) {
       const shareResult = storage.generateShareURL(data.currentEventId);
       info.shareURLTest = shareResult ? {
@@ -73,37 +112,7 @@ export default function DebugPanel() {
           <Bug className="w-4 h-4 text-amber-600" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] miami-card border-miami-aqua/30 max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
-            🐛 Debug Panel
-          </DialogTitle>
-          <DialogDescription className="text-miami-navy/70">
-            Informations techniques pour diagnostic
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="p-4 bg-black/5 rounded-lg font-mono text-xs overflow-x-auto">
-            <pre>{debugInfo || 'Cliquez pour générer les infos de debug'}</pre>
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleDebug} variant="outline" className="flex-1">
-              Rafraîchir Debug Info
-            </Button>
-            <Button onClick={handleCopyAll} variant="outline" className="flex-1">
-              Copier Toutes les Données
-            </Button>
-          </div>
-
-          <div className="text-xs text-miami-navy/60 space-y-1">
-            <p>• Vérifiez la console (F12) pour les logs détaillés</p>
-            <p>• &quot;Copier Toutes les Données&quot; = tout le localStorage</p>
-            <p>• Envoyez ces infos pour diagnostic</p>
-          </div>
-        </div>
-      </DialogContent>
+      <DebugDialogContent debugInfo={debugInfo} onRefresh={handleDebug} onCopyAll={handleCopyAll} />
     </Dialog>
   );
 }

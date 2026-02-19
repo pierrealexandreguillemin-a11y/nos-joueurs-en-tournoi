@@ -14,10 +14,163 @@ import { Badge } from '@/components/ui/badge';
 // Icons removed - displaying text scores (1/0/0.5) instead
 import { createClubStorage } from '@/lib/storage';
 import { useClub } from '@/contexts/ClubContext';
-import type { Tournament } from '@/types';
+import type { Tournament, Player } from '@/types';
 
 interface PlayerTableProps {
   tournament: Tournament;
+}
+
+type ValidationMap = Record<string, Record<number, boolean>>;
+
+type ClubStorage = ReturnType<typeof createClubStorage>;
+
+function buildValidationState(
+  tournamentId: string,
+  players: Player[],
+  storage: ClubStorage
+): ValidationMap {
+  const state: ValidationMap = {};
+  players.forEach(player => {
+    state[player.name] = {};
+    player.results.forEach((_, roundIndex) => {
+      state[player.name][roundIndex + 1] = storage.getValidation(
+        tournamentId,
+        player.name,
+        roundIndex + 1
+      );
+    });
+  });
+  return state;
+}
+
+interface ClubTotalsRowProps {
+  clubTotalsPerRound: number[];
+}
+
+function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
+  return (
+    <TableRow className="bg-gradient-to-r from-miami-aqua/10 to-miami-navy/10 border-b-2 border-miami-aqua/30">
+      <TableHead className="font-bold text-miami-navy">Total Club</TableHead>
+      <TableHead className="text-center">-</TableHead>
+      {clubTotalsPerRound.map((total, i) => (
+        <TableHead key={i} className="text-center font-bold text-miami-aqua">
+          {total > 0 ? total : '-'}
+        </TableHead>
+      ))}
+      <TableHead className="text-center">-</TableHead>
+      <TableHead className="text-center">-</TableHead>
+      <TableHead className="text-center">-</TableHead>
+      <TableHead className="text-center">-</TableHead>
+      <TableHead className="text-center">-</TableHead>
+    </TableRow>
+  );
+}
+
+interface ColumnHeadersRowProps {
+  maxRounds: number;
+}
+
+function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
+  return (
+    <TableRow>
+      <TableHead className="font-bold">Nom</TableHead>
+      <TableHead className="font-bold text-center">Elo</TableHead>
+      {Array.from({ length: maxRounds }, (_, i) => (
+        <TableHead key={i} className="text-center font-bold">
+          R{i + 1}
+        </TableHead>
+      ))}
+      <TableHead className="text-center font-bold">Pts</TableHead>
+      <TableHead className="text-center font-bold">Tr.</TableHead>
+      <TableHead className="text-center font-bold">Buch.</TableHead>
+      <TableHead className="text-center font-bold">Perf</TableHead>
+      <TableHead className="text-center font-bold">Class.</TableHead>
+    </TableRow>
+  );
+}
+
+interface RoundCellProps {
+  player: Player;
+  roundIndex: number;
+  isValidated: boolean;
+  tournamentId: string;
+  onValidationChange: (playerName: string, round: number, checked: boolean) => void;
+}
+
+function RoundCell({ player, roundIndex, isValidated, onValidationChange }: RoundCellProps) {
+  const result = player.results[roundIndex];
+  const round = roundIndex + 1;
+
+  return (
+    <TableCell className="text-center">
+      <div className="flex items-center justify-center gap-2">
+        {result ? (
+          <>
+            <span className="font-medium">
+              {result.score.toString()}
+            </span>
+            <Checkbox
+              checked={isValidated}
+              onCheckedChange={(checked) =>
+                onValidationChange(player.name, round, checked as boolean)
+              }
+              title={`Valider R${round} pour ${player.name}`}
+            />
+          </>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
+      </div>
+    </TableCell>
+  );
+}
+
+interface PlayerRowProps {
+  player: Player;
+  playerIndex: number;
+  maxRounds: number;
+  validationState: ValidationMap;
+  tournamentId: string;
+  onValidationChange: (playerName: string, round: number, checked: boolean) => void;
+}
+
+function PlayerRow({ player, playerIndex, maxRounds, validationState, tournamentId, onValidationChange }: PlayerRowProps) {
+  return (
+    <TableRow
+      className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/3 hover:bg-miami-aqua/3'}
+    >
+      <TableCell className="font-medium">{player.name}</TableCell>
+      <TableCell className="text-center">{player.elo}</TableCell>
+
+      {/* Round Results with Validation */}
+      {Array.from({ length: maxRounds }, (_, i) => (
+        <RoundCell
+          key={i}
+          player={player}
+          roundIndex={i}
+          isValidated={validationState[player.name]?.[i + 1] || false}
+          tournamentId={tournamentId}
+          onValidationChange={onValidationChange}
+        />
+      ))}
+
+      <TableCell className="text-center font-semibold">
+        {player.currentPoints}
+      </TableCell>
+      <TableCell className="text-center">
+        {player.tiebreak ? player.tiebreak.toFixed(1) : '-'}
+      </TableCell>
+      <TableCell className="text-center">
+        {player.buchholz ? player.buchholz.toFixed(1) : '-'}
+      </TableCell>
+      <TableCell className="text-center">
+        {player.performance || '-'}
+      </TableCell>
+      <TableCell className="text-center">
+        <Badge variant="outline">{player.ranking}</Badge>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 export default function PlayerTable({ tournament }: PlayerTableProps) {
@@ -26,38 +179,16 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
   const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
 
   // Load validation state using lazy initialization
-  const [validationState, setValidationState] = useState<Record<string, Record<number, boolean>>>(() => {
+  const [validationState, setValidationState] = useState<ValidationMap>(() => {
     if (!storage) return {};
-    const state: Record<string, Record<number, boolean>> = {};
-    tournament.players.forEach(player => {
-      state[player.name] = {};
-      player.results.forEach((_, roundIndex) => {
-        state[player.name][roundIndex + 1] = storage.getValidation(
-          tournament.id,
-          player.name,
-          roundIndex + 1
-        );
-      });
-    });
-    return state;
+    return buildValidationState(tournament.id, tournament.players, storage);
   });
 
   // Update validation state when tournament changes (sync with localStorage)
   useEffect(() => {
     if (!storage) return;
-    const state: Record<string, Record<number, boolean>> = {};
-    tournament.players.forEach(player => {
-      state[player.name] = {};
-      player.results.forEach((_, roundIndex) => {
-        state[player.name][roundIndex + 1] = storage.getValidation(
-          tournament.id,
-          player.name,
-          roundIndex + 1
-        );
-      });
-    });
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValidationState(state);
+    setValidationState(buildValidationState(tournament.id, tournament.players, storage));
   }, [tournament.id, tournament.players, storage]);
 
   const handleValidationChange = (playerName: string, round: number, checked: boolean) => {
@@ -69,10 +200,6 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
         [round]: checked,
       },
     }));
-  };
-
-  const getScoreDisplay = (score: 0 | 0.5 | 1): string => {
-    return score.toString();
   };
 
   const maxRounds = Math.max(...tournament.players.map(p => p.results.length), 0);
@@ -90,100 +217,20 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            {/* Club Totals Row - First row in header */}
-            <TableRow className="bg-gradient-to-r from-miami-aqua/10 to-miami-navy/10 border-b-2 border-miami-aqua/30">
-              <TableHead className="font-bold text-miami-navy">Total Club</TableHead>
-              <TableHead className="text-center">-</TableHead>
-              {clubTotalsPerRound.map((total, i) => (
-                <TableHead key={i} className="text-center font-bold text-miami-aqua">
-                  {total > 0 ? total : '-'}
-                </TableHead>
-              ))}
-              <TableHead className="text-center">-</TableHead>
-              <TableHead className="text-center">-</TableHead>
-              <TableHead className="text-center">-</TableHead>
-              <TableHead className="text-center">-</TableHead>
-              <TableHead className="text-center">-</TableHead>
-            </TableRow>
-            {/* Column Headers */}
-            <TableRow>
-              <TableHead className="font-bold">Nom</TableHead>
-              <TableHead className="font-bold text-center">Elo</TableHead>
-              {Array.from({ length: maxRounds }, (_, i) => (
-                <TableHead key={i} className="text-center font-bold">
-                  R{i + 1}
-                </TableHead>
-              ))}
-              <TableHead className="text-center font-bold">Pts</TableHead>
-              <TableHead className="text-center font-bold">Tr.</TableHead>
-              <TableHead className="text-center font-bold">Buch.</TableHead>
-              <TableHead className="text-center font-bold">Perf</TableHead>
-              <TableHead className="text-center font-bold">Class.</TableHead>
-            </TableRow>
+            <ClubTotalsRow clubTotalsPerRound={clubTotalsPerRound} />
+            <ColumnHeadersRow maxRounds={maxRounds} />
           </TableHeader>
           <TableBody>
             {tournament.players.map((player, playerIndex) => (
-              <TableRow
+              <PlayerRow
                 key={player.name}
-                className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/3 hover:bg-miami-aqua/3'}
-              >
-                <TableCell className="font-medium">{player.name}</TableCell>
-                <TableCell className="text-center">{player.elo}</TableCell>
-
-                {/* Round Results with Validation */}
-                {Array.from({ length: maxRounds }, (_, i) => {
-                  const result = player.results[i];
-                  const round = i + 1;
-                  const isValidated = validationState[player.name]?.[round] || false;
-
-                  return (
-                    <TableCell key={i} className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {result ? (
-                          <>
-                            <span className="font-medium">
-                              {getScoreDisplay(result.score)}
-                            </span>
-                            <Checkbox
-                              checked={isValidated}
-                              onCheckedChange={(checked) =>
-                                handleValidationChange(
-                                  player.name,
-                                  round,
-                                  checked as boolean
-                                )
-                              }
-                              title={`Valider R${round} pour ${player.name}`}
-                            />
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  );
-                })}
-
-                <TableCell className="text-center font-semibold">
-                  {player.currentPoints}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {player.tiebreak ? player.tiebreak.toFixed(1) : '-'}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {player.buchholz ? player.buchholz.toFixed(1) : '-'}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {player.performance || '-'}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  <Badge variant="outline">{player.ranking}</Badge>
-                </TableCell>
-              </TableRow>
+                player={player}
+                playerIndex={playerIndex}
+                maxRounds={maxRounds}
+                validationState={validationState}
+                tournamentId={tournament.id}
+                onValidationChange={handleValidationChange}
+              />
             ))}
           </TableBody>
         </Table>

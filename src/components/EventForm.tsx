@@ -18,6 +18,145 @@ interface EventFormProps {
   onCancel?: () => void;
 }
 
+interface TournamentRowProps {
+  tournament: TournamentInput;
+  index: number;
+  showRemove: boolean;
+  onUpdate: (index: number, field: 'name' | 'url', value: string) => void;
+  onRemove: (index: number) => void;
+}
+
+function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove }: TournamentRowProps) {
+  return (
+    <div className="flex gap-2 items-end p-4 border rounded-lg bg-background/50">
+      <div className="flex-1 space-y-2">
+        <Label htmlFor={`tournament-name-${index}`}>
+          Nom (ex: U12, U14)
+        </Label>
+        <Input
+          id={`tournament-name-${index}`}
+          placeholder="U12"
+          value={tournament.name}
+          onChange={(e) => onUpdate(index, 'name', e.target.value)}
+        />
+      </div>
+
+      <div className="flex-[2] space-y-2">
+        <Label htmlFor={`tournament-url-${index}`}>
+          URL FFE Tournoi
+        </Label>
+        <Input
+          id={`tournament-url-${index}`}
+          type="url"
+          placeholder="https://echecs.asso.fr/Resultats.aspx?..."
+          value={tournament.url}
+          onChange={(e) => onUpdate(index, 'url', e.target.value)}
+        />
+      </div>
+
+      {showRemove && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={() => onRemove(index)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface TournamentsSectionProps {
+  tournaments: TournamentInput[];
+  onAdd: () => void;
+  onUpdate: (index: number, field: 'name' | 'url', value: string) => void;
+  onRemove: (index: number) => void;
+}
+
+function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove }: TournamentsSectionProps) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label>Tournois *</Label>
+        <Button type="button" size="sm" variant="outline" onClick={onAdd}>
+          <Plus className="h-4 w-4 mr-1" />
+          Ajouter un tournoi
+        </Button>
+      </div>
+      {tournaments.map((tournament, index) => (
+        <TournamentRow
+          key={index}
+          tournament={tournament}
+          index={index}
+          showRemove={tournaments.length > 1}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FormActions({ onCancel }: { onCancel?: () => void }) {
+  return (
+    <div className="flex gap-2 justify-end">
+      {onCancel && (
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Annuler
+        </Button>
+      )}
+      <Button type="submit" variant="miami">
+        Créer l&apos;événement
+      </Button>
+    </div>
+  );
+}
+
+function validateEventForm(
+  eventName: string,
+  tournaments: TournamentInput[],
+  setError: (msg: string) => void,
+): boolean {
+  if (!eventName.trim()) {
+    setError('Le nom de l\'événement est requis');
+    return false;
+  }
+
+  const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
+  if (validTournaments.length === 0) {
+    setError('Au moins un tournoi est requis');
+    return false;
+  }
+
+  for (const tournament of validTournaments) {
+    if (!tournament.url.includes('echecs.asso.fr')) {
+      setError('Les URLs doivent provenir de echecs.asso.fr');
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function buildEvent(eventName: string, clubName: string, tournaments: TournamentInput[]): Event {
+  const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
+  return {
+    id: `event_${crypto.randomUUID()}`,
+    name: eventName,
+    ...(clubName.trim() ? { clubName: clubName.trim() } : {}),
+    createdAt: new Date().toISOString(),
+    tournaments: validTournaments.map((t) => ({
+      id: `tournament_${crypto.randomUUID()}`,
+      name: t.name,
+      url: t.url,
+      lastUpdate: '',
+      players: [],
+    })),
+  };
+}
+
 export default function EventForm({ onEventCreated, onCancel }: EventFormProps) {
   const [eventName, setEventName] = useState('');
   const [clubName, setClubName] = useState('');
@@ -42,55 +181,11 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     setTournaments(updated);
   };
 
-  const validateForm = (): boolean => {
-    if (!eventName.trim()) {
-      setError('Le nom de l\'événement est requis');
-      return false;
-    }
-
-    const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
-    if (validTournaments.length === 0) {
-      setError('Au moins un tournoi est requis');
-      return false;
-    }
-
-    // Validate URLs
-    for (const tournament of validTournaments) {
-      if (!tournament.url.includes('echecs.asso.fr')) {
-        setError('Les URLs doivent provenir de echecs.asso.fr');
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
-    // Clear error on successful validation
+    if (!validateEventForm(eventName, tournaments, setError)) return;
     setError('');
-
-    // Create event object
-    const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
-
-    const event: Event = {
-      id: `event_${crypto.randomUUID()}`,
-      name: eventName,
-      ...(clubName.trim() ? { clubName: clubName.trim() } : {}),
-      createdAt: new Date().toISOString(),
-      tournaments: validTournaments.map((t) => ({
-        id: `tournament_${crypto.randomUUID()}`,
-        name: t.name,
-        url: t.url,
-        lastUpdate: '',
-        players: [],
-      })),
-    };
-
-    onEventCreated(event);
+    onEventCreated(buildEvent(eventName, clubName, tournaments));
   };
 
   return (
@@ -125,68 +220,12 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
             </p>
           </div>
 
-          {/* Tournaments */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Tournois *</Label>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={addTournament}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Ajouter un tournoi
-              </Button>
-            </div>
-
-            {tournaments.map((tournament, index) => (
-              <div
-                key={index}
-                className="flex gap-2 items-end p-4 border rounded-lg bg-background/50"
-              >
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`tournament-name-${index}`}>
-                    Nom (ex: U12, U14)
-                  </Label>
-                  <Input
-                    id={`tournament-name-${index}`}
-                    placeholder="U12"
-                    value={tournament.name}
-                    onChange={(e) =>
-                      updateTournament(index, 'name', e.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="flex-[2] space-y-2">
-                  <Label htmlFor={`tournament-url-${index}`}>
-                    URL FFE Tournoi
-                  </Label>
-                  <Input
-                    id={`tournament-url-${index}`}
-                    type="url"
-                    placeholder="https://echecs.asso.fr/Resultats.aspx?..."
-                    value={tournament.url}
-                    onChange={(e) =>
-                      updateTournament(index, 'url', e.target.value)
-                    }
-                  />
-                </div>
-
-                {tournaments.length > 1 && (
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => removeTournament(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+          <TournamentsSection
+            tournaments={tournaments}
+            onAdd={addTournament}
+            onUpdate={updateTournament}
+            onRemove={removeTournament}
+          />
 
           {/* Error Message */}
           {error && (
@@ -195,17 +234,7 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
             </Alert>
           )}
 
-          {/* Submit Button */}
-          <div className="flex gap-2 justify-end">
-            {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Annuler
-              </Button>
-            )}
-            <Button type="submit" variant="miami">
-              Créer l&apos;événement
-            </Button>
-          </div>
+          <FormActions onCancel={onCancel} />
         </form>
       </CardContent>
     </Card>

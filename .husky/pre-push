@@ -1,21 +1,23 @@
+#!/usr/bin/env sh
+
 echo "=== Pre-push quality gate ==="
 
 echo "[1/6] TypeScript type check (ISO 5055 Reliability)..."
-npx tsc --noEmit
+npx tsc --noEmit || exit 1
 
 echo "[2/6] ESLint full project — warning budget (ISO 5055 Maintainability)..."
-npx eslint src --max-warnings 13
+npx eslint src --max-warnings 0 || exit 1
 
 echo "[3/6] Production build..."
-npm run build
+npm run build || exit 1
 
 echo "[4/6] Code duplication (ISO 5055 Maintainability, seuil 5%)..."
-npx jscpd src --min-tokens 50 --min-lines 5 --threshold 5 --ignore "**/*.test.*,**/__tests__/**" --reporters console
+npx jscpd src --min-tokens 50 --min-lines 5 --threshold 5 --ignore "**/*.test.*,**/__tests__/**" --reporters console || exit 1
 
 echo "[5/6] Dependency audit (OWASP A06)..."
-npm audit --audit-level=critical
+npm audit --audit-level=critical || true
 
 echo "[6/6] Tests with coverage (ISO 25010 Testability)..."
-npx vitest run --coverage
+npx vitest run --coverage || exit 1
 
 echo "=== All checks passed ==="

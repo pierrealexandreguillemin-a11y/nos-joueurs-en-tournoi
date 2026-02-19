@@ -22,10 +22,107 @@ interface ShareEventModalProps {
   trigger?: React.ReactNode;
 }
 
+interface ShareData {
+  url: string;
+  size: number;
+}
+
+function QRCodeSection({ shareData, qrSize, qrCodeTooBig }: {
+  shareData: ShareData;
+  qrSize: number;
+  qrCodeTooBig: boolean;
+}) {
+  if (qrCodeTooBig) {
+    return (
+      <Alert className="border-red-500/50 bg-red-50">
+        <AlertCircle className="h-4 w-4 text-red-600" />
+        <AlertDescription className="text-red-800 text-sm">
+          <strong>Événement trop volumineux pour un QR code</strong>
+          <br />
+          Utilisez le bouton &quot;Export&quot; (téléchargement) pour partager cet événement via fichier JSON.
+          Le lien ci-dessous reste utilisable pour copier/coller.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3 p-4 sm:p-6 rounded-lg bg-white">
+      <div className="flex items-center justify-center">
+        <QRCodeSVG
+          value={shareData.url}
+          size={qrSize}
+          level="M"
+          includeMargin={true}
+        />
+      </div>
+      <p className="text-xs text-center text-miami-navy/60 px-2">
+        Scannez ce QR code avec un autre appareil pour importer l&apos;événement
+      </p>
+    </div>
+  );
+}
+
+function ShareURLSection({ url, copied, onCopy }: {
+  url: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-miami-navy">Lien de partage</label>
+      <div className="flex gap-2">
+        <div className="flex-1 p-3 rounded-md miami-glass-foreground border border-miami-aqua/20 max-h-24 overflow-auto">
+          <code className="text-xs break-all text-miami-navy/80">
+            {url}
+          </code>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onCopy}
+          className={`flex-shrink-0 transition-colors ${
+            copied
+              ? 'bg-green-100 border-green-500 text-green-700'
+              : 'miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10'
+          }`}
+          title="Copier le lien"
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ShareInstructions() {
+  return (
+    <div className="text-sm text-miami-navy/70 space-y-2 p-4 rounded-lg miami-glass-foreground border border-miami-aqua/10">
+      <p className="font-semibold text-miami-navy">Comment utiliser :</p>
+      <ul className="list-disc list-inside space-y-1 ml-2">
+        <li>Scannez le QR code avec votre téléphone</li>
+        <li>Ou copiez et partagez le lien</li>
+        <li>L&apos;événement sera automatiquement importé à l&apos;ouverture</li>
+      </ul>
+    </div>
+  );
+}
+
+function ValidationWarning() {
+  return (
+    <Alert className="border-amber-500/50 bg-amber-50">
+      <AlertCircle className="h-4 w-4 text-amber-600" />
+      <AlertDescription className="text-amber-800 text-sm">
+        <strong>&#x26A0;&#xFE0F; Attention :</strong> Les validations (cases cochées) ne sont pas incluses dans le partage QR code. Le destinataire devra les recocher manuellement. Pour partager avec les validations, utilisez le bouton Export (téléchargement JSON).
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export default function ShareEventModal({ eventId, eventName, trigger }: ShareEventModalProps) {
   const { identity } = useClub();
   const [open, setOpen] = useState(false);
-  const [shareData, setShareData] = useState<{ url: string; size: number } | null>(null);
+  const [shareData, setShareData] = useState<ShareData | null>(null);
   const [copied, setCopied] = useState(false);
   const [qrSize, setQrSize] = useState(240);
 
@@ -46,10 +143,8 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
     const updateQRSize = () => {
       const width = window.innerWidth;
       if (width < 640) {
-        // Mobile: use more space
         setQrSize(Math.min(280, width - 100));
       } else {
-        // Desktop: standard size
         setQrSize(240);
       }
     };
@@ -73,7 +168,7 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
     }
   };
 
-  const qrCodeTooBig = shareData && shareData.size > 2900; // QR code limit (~3000 chars max)
+  const qrCodeTooBig = shareData && shareData.size > 2900;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -100,77 +195,10 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
           </div>
         ) : (
           <div className="space-y-4 pb-2">
-            {/* QR Code or Error */}
-            {qrCodeTooBig ? (
-              <Alert className="border-red-500/50 bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800 text-sm">
-                  <strong>Événement trop volumineux pour un QR code</strong>
-                  <br />
-                  Utilisez le bouton &quot;Export&quot; (téléchargement) pour partager cet événement via fichier JSON.
-                  Le lien ci-dessous reste utilisable pour copier/coller.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="flex flex-col items-center gap-3 p-4 sm:p-6 rounded-lg bg-white">
-                <div className="flex items-center justify-center">
-                  <QRCodeSVG
-                    value={shareData.url}
-                    size={qrSize}
-                    level="M"
-                    includeMargin={true}
-                  />
-                </div>
-                <p className="text-xs text-center text-miami-navy/60 px-2">
-                  Scannez ce QR code avec un autre appareil pour importer l&apos;événement
-                </p>
-              </div>
-            )}
-
-            {/* URL Display */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-miami-navy">Lien de partage</label>
-              <div className="flex gap-2">
-                <div className="flex-1 p-3 rounded-md miami-glass-foreground border border-miami-aqua/20 max-h-24 overflow-auto">
-                  <code className="text-xs break-all text-miami-navy/80">
-                    {shareData.url}
-                  </code>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopyURL}
-                  className={`flex-shrink-0 transition-colors ${
-                    copied
-                      ? 'bg-green-100 border-green-500 text-green-700'
-                      : 'miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10'
-                  }`}
-                  title="Copier le lien"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-
-            {/* Warning about validations */}
-            {!qrCodeTooBig && (
-              <Alert className="border-amber-500/50 bg-amber-50">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800 text-sm">
-                  <strong>⚠️ Attention :</strong> Les validations (cases cochées) ne sont pas incluses dans le partage QR code. Le destinataire devra les recocher manuellement. Pour partager avec les validations, utilisez le bouton Export (téléchargement JSON).
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Instructions */}
-            <div className="text-sm text-miami-navy/70 space-y-2 p-4 rounded-lg miami-glass-foreground border border-miami-aqua/10">
-              <p className="font-semibold text-miami-navy">Comment utiliser :</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Scannez le QR code avec votre téléphone</li>
-                <li>Ou copiez et partagez le lien</li>
-                <li>L&apos;événement sera automatiquement importé à l&apos;ouverture</li>
-              </ul>
-            </div>
+            <QRCodeSection shareData={shareData} qrSize={qrSize} qrCodeTooBig={!!qrCodeTooBig} />
+            <ShareURLSection url={shareData.url} copied={copied} onCopy={handleCopyURL} />
+            {!qrCodeTooBig && <ValidationWarning />}
+            <ShareInstructions />
           </div>
         )}
       </DialogContent>

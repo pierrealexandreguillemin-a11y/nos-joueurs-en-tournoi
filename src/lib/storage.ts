@@ -547,6 +547,163 @@ export function getTournamentStats(tournamentId: string) {
 // NAMESPACED CLUB STORAGE
 // ========================================
 
+type StorageGetter = () => StorageData;
+type StorageSetter = (data: StorageData) => void;
+
+/** Helper: export a single event from storage data */
+function _exportEventFrom(
+  get: StorageGetter,
+  eventId: string,
+  includeValidations: boolean = true,
+): ExportedEvent | null {
+  const data = get();
+  const event = data.events.find(e => e.id === eventId);
+  if (!event) return null;
+
+  const eventValidations: ValidationState = {};
+  if (includeValidations) {
+    event.tournaments.forEach(tournament => {
+      if (data.validations[tournament.id]) {
+        eventValidations[tournament.id] = data.validations[tournament.id];
+      }
+    });
+  }
+
+  return {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    event,
+    validations: eventValidations,
+  };
+}
+
+/** Helper: import a single event into storage data */
+function _importEventInto(
+  get: StorageGetter,
+  set: StorageSetter,
+  exportedData: ExportedEvent,
+  options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false },
+): { success: boolean; eventId: string; isDuplicate: boolean } {
+  try {
+    const data = get();
+    const { event, validations } = exportedData;
+
+    const existingIndex = data.events.findIndex(e => e.id === event.id);
+    const isDuplicate = existingIndex >= 0;
+
+    let finalEvent = { ...event };
+
+    if (isDuplicate) {
+      if (options.replaceIfExists) {
+        data.events[existingIndex] = finalEvent;
+      } else if (options.generateNewId) {
+        finalEvent = {
+          ...event,
+          id: `event_${crypto.randomUUID()}`,
+          name: `${event.name} (copie)`,
+          tournaments: event.tournaments.map(t => ({
+            ...t,
+            id: `tournament_${crypto.randomUUID()}`,
+          })),
+        };
+        data.events.push(finalEvent);
+      } else {
+        return { success: false, eventId: event.id, isDuplicate: true };
+      }
+    } else {
+      data.events.push(finalEvent);
+    }
+
+    Object.entries(validations).forEach(([tournamentId, tournamentValidations]) => {
+      if (options.generateNewId && isDuplicate) {
+        const oldTournamentIndex = event.tournaments.findIndex(t => t.id === tournamentId);
+        if (oldTournamentIndex >= 0 && finalEvent.tournaments[oldTournamentIndex]) {
+          const newTournamentId = finalEvent.tournaments[oldTournamentIndex].id;
+          data.validations[newTournamentId] = tournamentValidations;
+        }
+      } else {
+        data.validations[tournamentId] = tournamentValidations;
+      }
+    });
+
+    data.currentEventId = finalEvent.id;
+    set(data);
+
+    return { success: true, eventId: finalEvent.id, isDuplicate };
+  } catch (error) {
+    console.error('Error importing event:', error);
+    return { success: false, eventId: '', isDuplicate: false };
+  }
+}
+
+/** Helper: encode event to compressed URL parameter */
+function _encodeEventToURL(get: StorageGetter, eventId: string): string | null {
+  const exportedData = _exportEventFrom(get, eventId, false);
+  if (!exportedData) return null;
+
+  try {
+    const json = JSON.stringify(exportedData);
+    return compressToEncodedURIComponent(json);
+  } catch (error) {
+    console.error('Error encoding event to URL:', error);
+    return null;
+  }
+}
+
+/** Helper: save (upsert) an event and set it as current */
+function _saveEvent(get: StorageGetter, set: StorageSetter, event: Event): void {
+  const data = get();
+  const existingIndex = data.events.findIndex(e => e.id === event.id);
+  if (existingIndex >= 0) {
+    data.events[existingIndex] = event;
+  } else {
+    data.events.push(event);
+  }
+  data.currentEventId = event.id;
+  set(data);
+}
+
+/** Helper: delete an event and clean up its validations */
+function _deleteEvent(get: StorageGetter, set: StorageSetter, eventId: string): void {
+  const data = get();
+  data.events = data.events.filter(e => e.id !== eventId);
+  if (data.currentEventId === eventId) {
+    data.currentEventId = data.events[0]?.id || '';
+  }
+  const event = data.events.find(e => e.id === eventId);
+  if (event) {
+    event.tournaments.forEach(t => { delete data.validations[t.id]; });
+  }
+  set(data);
+}
+
+/** Helper: set a validation flag for a player/round */
+function _setValidation(
+  get: StorageGetter,
+  set: StorageSetter,
+  tournamentId: string,
+  playerName: string,
+  round: number,
+  isValid: boolean,
+): void {
+  const data = get();
+  if (!data.validations[tournamentId]) data.validations[tournamentId] = {};
+  if (!data.validations[tournamentId][playerName]) data.validations[tournamentId][playerName] = {};
+  data.validations[tournamentId][playerName][`round_${round}`] = isValid;
+  set(data);
+}
+
+/** Helper: generate a shareable URL for an event */
+function _generateShareURL(get: StorageGetter, eventId: string): { url: string; size: number } | null {
+  const encoded = _encodeEventToURL(get, eventId);
+  if (!encoded) return null;
+
+  const baseURL = window.location.origin + window.location.pathname;
+  const url = `${baseURL}?share=${encoded}`;
+
+  return { url, size: url.length };
+}
+
 export interface ClubStorage {
   getStorageData: () => StorageData;
   setStorageData: (data: StorageData) => void;
@@ -599,40 +756,14 @@ export function createClubStorage(slug: string): ClubStorage {
       set(data);
     },
 
-    saveEvent: (event: Event) => {
-      const data = get();
-      const existingIndex = data.events.findIndex(e => e.id === event.id);
-      if (existingIndex >= 0) {
-        data.events[existingIndex] = event;
-      } else {
-        data.events.push(event);
-      }
-      data.currentEventId = event.id;
-      set(data);
-    },
+    saveEvent: (event: Event) => _saveEvent(get, set, event),
 
-    deleteEvent: (eventId: string) => {
-      const data = get();
-      data.events = data.events.filter(e => e.id !== eventId);
-      if (data.currentEventId === eventId) {
-        data.currentEventId = data.events[0]?.id || '';
-      }
-      const event = data.events.find(e => e.id === eventId);
-      if (event) {
-        event.tournaments.forEach(t => { delete data.validations[t.id]; });
-      }
-      set(data);
-    },
+    deleteEvent: (eventId: string) => _deleteEvent(get, set, eventId),
 
     getValidationState: () => get().validations,
 
-    setValidation: (tournamentId: string, playerName: string, round: number, isValid: boolean) => {
-      const data = get();
-      if (!data.validations[tournamentId]) data.validations[tournamentId] = {};
-      if (!data.validations[tournamentId][playerName]) data.validations[tournamentId][playerName] = {};
-      data.validations[tournamentId][playerName][`round_${round}`] = isValid;
-      set(data);
-    },
+    setValidation: (tournamentId, playerName, round, isValid) =>
+      _setValidation(get, set, tournamentId, playerName, round, isValid),
 
     getValidation: (tournamentId: string, playerName: string, round: number) => {
       const data = get();
@@ -666,111 +797,17 @@ export function createClubStorage(slug: string): ClubStorage {
       }
     },
 
-    exportEvent: (eventId: string, includeValidations: boolean = true): ExportedEvent | null => {
-      const data = get();
-      const event = data.events.find(e => e.id === eventId);
-      if (!event) return null;
-
-      const eventValidations: ValidationState = {};
-      if (includeValidations) {
-        event.tournaments.forEach(tournament => {
-          if (data.validations[tournament.id]) {
-            eventValidations[tournament.id] = data.validations[tournament.id];
-          }
-        });
-      }
-
-      return {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        event,
-        validations: eventValidations,
-      };
-    },
+    exportEvent: (eventId, includeValidations) => _exportEventFrom(get, eventId, includeValidations),
 
     checkEventExists: (eventId: string): boolean => {
       const data = get();
       return data.events.some(e => e.id === eventId);
     },
 
-    importEvent: (
-      exportedData: ExportedEvent,
-      options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false }
-    ): { success: boolean; eventId: string; isDuplicate: boolean } => {
-      try {
-        const data = get();
-        const { event, validations } = exportedData;
+    importEvent: (exportedData, options) => _importEventInto(get, set, exportedData, options),
 
-        const existingIndex = data.events.findIndex(e => e.id === event.id);
-        const isDuplicate = existingIndex >= 0;
+    encodeEventToURL: (eventId) => _encodeEventToURL(get, eventId),
 
-        let finalEvent = { ...event };
-
-        if (isDuplicate) {
-          if (options.replaceIfExists) {
-            data.events[existingIndex] = finalEvent;
-          } else if (options.generateNewId) {
-            finalEvent = {
-              ...event,
-              id: `event_${crypto.randomUUID()}`,
-              name: `${event.name} (copie)`,
-              tournaments: event.tournaments.map(t => ({
-                ...t,
-                id: `tournament_${crypto.randomUUID()}`,
-              })),
-            };
-            data.events.push(finalEvent);
-          } else {
-            return { success: false, eventId: event.id, isDuplicate: true };
-          }
-        } else {
-          data.events.push(finalEvent);
-        }
-
-        Object.entries(validations).forEach(([tournamentId, tournamentValidations]) => {
-          if (options.generateNewId && isDuplicate) {
-            const oldTournamentIndex = event.tournaments.findIndex(t => t.id === tournamentId);
-            if (oldTournamentIndex >= 0 && finalEvent.tournaments[oldTournamentIndex]) {
-              const newTournamentId = finalEvent.tournaments[oldTournamentIndex].id;
-              data.validations[newTournamentId] = tournamentValidations;
-            }
-          } else {
-            data.validations[tournamentId] = tournamentValidations;
-          }
-        });
-
-        data.currentEventId = finalEvent.id;
-        set(data);
-
-        return { success: true, eventId: finalEvent.id, isDuplicate };
-      } catch (error) {
-        console.error('Error importing event:', error);
-        return { success: false, eventId: '', isDuplicate: false };
-      }
-    },
-
-    encodeEventToURL: function(eventId: string): string | null {
-      const exportedData = this.exportEvent(eventId, false);
-      if (!exportedData) return null;
-
-      try {
-        const json = JSON.stringify(exportedData);
-        const compressed = compressToEncodedURIComponent(json);
-        return compressed;
-      } catch (error) {
-        console.error('Error encoding event to URL:', error);
-        return null;
-      }
-    },
-
-    generateShareURL: function(eventId: string): { url: string; size: number } | null {
-      const encoded = this.encodeEventToURL(eventId);
-      if (!encoded) return null;
-
-      const baseURL = window.location.origin + window.location.pathname;
-      const url = `${baseURL}?share=${encoded}`;
-
-      return { url, size: url.length };
-    },
+    generateShareURL: (eventId) => _generateShareURL(get, eventId),
   };
 }

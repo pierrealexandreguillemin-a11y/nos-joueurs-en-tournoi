@@ -40,6 +40,9 @@ out/
 # Test coverage
 coverage
 
+# TypeScript build info
+tsconfig.tsbuildinfo
+
 # Vercel deployment
 .vercel
 

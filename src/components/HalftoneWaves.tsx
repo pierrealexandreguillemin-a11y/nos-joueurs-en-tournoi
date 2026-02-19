@@ -1,35 +1,18 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-function buildFragmentShader() {
-  const seaColors = [
-    [0.00, 0.05, 0.12], [0.00, 0.08, 0.18], [0.00, 0.12, 0.24],
-    [0.00, 0.16, 0.30], [0.00, 0.20, 0.36], [0.00, 0.26, 0.42],
-    [0.00, 0.32, 0.48], [0.00, 0.38, 0.52], [0.00, 0.44, 0.57],
-    [0.00, 0.50, 0.62], [0.00, 0.56, 0.65], [0.00, 0.62, 0.68],
-    [0.00, 0.66, 0.71], [0.05, 0.70, 0.74], [0.10, 0.74, 0.77],
-    [0.15, 0.78, 0.80], [0.20, 0.82, 0.83], [0.25, 0.86, 0.86],
-    [0.30, 0.90, 0.89], [0.35, 0.94, 0.92],
-  ];
+const SEA_COLORS: readonly number[][] = [
+  [0.00, 0.05, 0.12], [0.00, 0.08, 0.18], [0.00, 0.12, 0.24],
+  [0.00, 0.16, 0.30], [0.00, 0.20, 0.36], [0.00, 0.26, 0.42],
+  [0.00, 0.32, 0.48], [0.00, 0.38, 0.52], [0.00, 0.44, 0.57],
+  [0.00, 0.50, 0.62], [0.00, 0.56, 0.65], [0.00, 0.62, 0.68],
+  [0.00, 0.66, 0.71], [0.05, 0.70, 0.74], [0.10, 0.74, 0.77],
+  [0.15, 0.78, 0.80], [0.20, 0.82, 0.83], [0.25, 0.86, 0.86],
+  [0.30, 0.90, 0.89], [0.35, 0.94, 0.92],
+];
 
-  const colorArraySrc = seaColors
-    .map((c) => `vec3(${c[0]}, ${c[1]}, ${c[2]})`)
-    .join(",\n  ");
-
-  return `#version 300 es
-precision highp float;
-out vec4 outColor;
-
-uniform vec2 uResolution;
-uniform float uTime;
-
-#define NUM_COLORS 20
-
-vec3 seaColors[NUM_COLORS] = vec3[](
-  ${colorArraySrc}
-);
-
-vec3 permute(vec3 x) {
+function buildGlslNoiseFunctions() {
+  return `vec3 permute(vec3 x) {
   return mod(((x * 34.0) + 1.0) * x, 289.0);
 }
 
@@ -65,9 +48,11 @@ float fbm(vec2 st) {
     amplitude *= 0.5;
   }
   return value;
+}`;
 }
 
-void main() {
+function buildGlslMainBody() {
+  return `void main() {
   vec2 uv = (gl_FragCoord.xy / uResolution.xy) * 2.0 - 1.0;
   uv.x *= uResolution.x / uResolution.y;
   uv *= 0.3;
@@ -101,6 +86,29 @@ void main() {
 }`;
 }
 
+function buildFragmentShader() {
+  const colorArraySrc = SEA_COLORS
+    .map((c) => `vec3(${c[0]}, ${c[1]}, ${c[2]})`)
+    .join(",\n  ");
+
+  return `#version 300 es
+precision highp float;
+out vec4 outColor;
+
+uniform vec2 uResolution;
+uniform float uTime;
+
+#define NUM_COLORS 20
+
+vec3 seaColors[NUM_COLORS] = vec3[](
+  ${colorArraySrc}
+);
+
+${buildGlslNoiseFunctions()}
+
+${buildGlslMainBody()}`;
+}
+
 const vertexShaderSource = `#version 300 es
 precision mediump float;
 in vec2 aPosition;
@@ -108,26 +116,25 @@ void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }`;
 
+function compileShader(gl: WebGL2RenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const label = type === gl.VERTEX_SHADER ? 'Vertex' : 'Fragment';
+    console.error(`${label} shader error:`, gl.getShaderInfoLog(shader));
+    return null;
+  }
+  return shader;
+}
+
 function createShaderProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: string) {
-  const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vsSource);
   if (!vertexShader) return null;
-  gl.shaderSource(vertexShader, vsSource);
-  gl.compileShader(vertexShader);
 
-  if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-    console.error("Vertex shader error:", gl.getShaderInfoLog(vertexShader));
-    return null;
-  }
-
-  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+  const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
   if (!fragmentShader) return null;
-  gl.shaderSource(fragmentShader, fsSource);
-  gl.compileShader(fragmentShader);
-
-  if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-    console.error("Fragment shader error:", gl.getShaderInfoLog(fragmentShader));
-    return null;
-  }
 
   const program = gl.createProgram();
   if (!program) return null;
@@ -143,6 +150,113 @@ function createShaderProgram(gl: WebGL2RenderingContext, vsSource: string, fsSou
   return program;
 }
 
+interface GlResources {
+  gl: WebGL2RenderingContext;
+  program: WebGLProgram;
+  vao: WebGLVertexArrayObject | null;
+  vbo: WebGLBuffer | null;
+  uResolutionLoc: WebGLUniformLocation | null;
+  uTimeLoc: WebGLUniformLocation | null;
+}
+
+function initWebGLResources(canvas: HTMLCanvasElement): GlResources | null {
+  const fsSource = buildFragmentShader();
+  const gl = canvas.getContext('webgl2', { alpha: true });
+  if (!gl) {
+    console.error('WebGL2 is not supported by your browser.');
+    return null;
+  }
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.clearColor(0, 0, 0, 0);
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const program = createShaderProgram(gl, vertexShaderSource, fsSource);
+  if (!program) return null;
+
+  gl.useProgram(program);
+
+  const quadVertices = new Float32Array([
+    -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1,
+  ]);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
+
+  const aPositionLoc = gl.getAttribLocation(program, 'aPosition');
+  gl.enableVertexAttribArray(aPositionLoc);
+  gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 0, 0);
+
+  return {
+    gl,
+    program,
+    vao,
+    vbo,
+    uResolutionLoc: gl.getUniformLocation(program, 'uResolution'),
+    uTimeLoc: gl.getUniformLocation(program, 'uTime'),
+  };
+}
+
+function startRenderLoop(
+  canvas: HTMLCanvasElement,
+  res: GlResources,
+): () => void {
+  const { gl, program, vao, vbo, uResolutionLoc, uTimeLoc } = res;
+  const startTime = performance.now();
+  let isDestroyed = false;
+
+  function render() {
+    if (isDestroyed) return;
+    const elapsed = (performance.now() - startTime) * 0.001;
+
+    if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
+    gl.uniform1f(uTimeLoc, elapsed);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    if (!isDestroyed) {
+      requestAnimationFrame(render);
+    }
+  }
+  render();
+
+  const handleResize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  window.addEventListener('resize', handleResize);
+
+  return () => {
+    isDestroyed = true;
+    window.removeEventListener('resize', handleResize);
+    if (!gl.isContextLost()) {
+      try {
+        gl.deleteProgram(program);
+        gl.deleteBuffer(vbo);
+        gl.deleteVertexArray(vao);
+      } catch (e) {
+        console.warn('Error cleaning up WebGL resources:', e);
+      }
+    }
+  };
+}
+
 export default function HalftoneWaves() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -150,95 +264,10 @@ export default function HalftoneWaves() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const fsSource = buildFragmentShader();
-    const gl = canvas.getContext('webgl2', { alpha: true });
-    if (!gl) {
-      console.error('WebGL2 is not supported by your browser.');
-      return;
-    }
+    const res = initWebGLResources(canvas);
+    if (!res) return;
 
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0, 0, 0, 0);
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const program = createShaderProgram(gl, vertexShaderSource, fsSource);
-    if (!program) return;
-
-    gl.useProgram(program);
-
-    const quadVertices = new Float32Array([
-      -1, -1, 1, -1, -1,  1, -1,  1, 1, -1, 1,  1,
-    ]);
-
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
-
-    const aPositionLoc = gl.getAttribLocation(program, 'aPosition');
-    gl.enableVertexAttribArray(aPositionLoc);
-    gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 0, 0);
-
-    const uResolutionLoc = gl.getUniformLocation(program, 'uResolution');
-    const uTimeLoc = gl.getUniformLocation(program, 'uTime');
-
-    const startTime = performance.now();
-    let isDestroyed = false;
-
-    function render() {
-      if (isDestroyed || !canvas || !gl) return;
-
-      const currentTime = performance.now();
-      const elapsed = (currentTime - startTime) * 0.001;
-
-      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-
-      gl.useProgram(program);
-      gl.bindVertexArray(vao);
-
-      gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
-      gl.uniform1f(uTimeLoc, elapsed);
-
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-      if (!isDestroyed) {
-        requestAnimationFrame(render);
-      }
-    }
-    render();
-
-    const handleResize = () => {
-      if (!canvas || !gl) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      isDestroyed = true;
-      window.removeEventListener('resize', handleResize);
-      if (gl && !gl.isContextLost()) {
-        try {
-          gl.deleteProgram(program);
-          gl.deleteBuffer(vbo);
-          gl.deleteVertexArray(vao);
-        } catch (e) {
-          console.warn('Error cleaning up WebGL resources:', e);
-        }
-      }
-    };
+    return startRenderLoop(canvas, res);
   }, []);
 
   return (

@@ -13,13 +13,57 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
+const APP_URL = 'https://nos-joueurs-en-tournoi.vercel.app';
+
+function QRCodeCard() {
+  return (
+    <Card className="p-6 miami-glass-foreground flex flex-col items-center gap-4">
+      <div className="bg-white p-4 rounded-lg">
+        <QRCodeSVG
+          value={APP_URL}
+          size={200}
+          level="H"
+          includeMargin={true}
+          fgColor="#013369"
+        />
+      </div>
+      <p className="text-sm text-miami-navy/70 text-center">
+        Scannez ce QR code pour accéder à l&apos;application
+      </p>
+    </Card>
+  );
+}
+
+function CopyUrlCard({ copied, onCopy }: { copied: boolean; onCopy: () => void }) {
+  return (
+    <Card className="p-4 miami-glass-foreground">
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-sm text-miami-navy bg-white/50 px-3 py-2 rounded">
+          {APP_URL}
+        </code>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onCopy}
+          className="border-miami-aqua/30"
+        >
+          {copied ? (
+            <Check className="w-4 h-4 text-green-600" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export default function ShareButton() {
   const [copied, setCopied] = useState(false);
-  const appUrl = 'https://nos-joueurs-en-tournoi.vercel.app';
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(appUrl);
+      await navigator.clipboard.writeText(APP_URL);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -33,7 +77,7 @@ export default function ShareButton() {
         await navigator.share({
           title: 'Nos Joueurs en Tournoi',
           text: 'Suivez les tournois d\'échecs en temps réel',
-          url: appUrl,
+          url: APP_URL,
         });
       } catch (err) {
         console.error('Share failed:', err);
@@ -64,44 +108,9 @@ export default function ShareButton() {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* QR Code */}
-          <Card className="p-6 miami-glass-foreground flex flex-col items-center gap-4">
-            <div className="bg-white p-4 rounded-lg">
-              <QRCodeSVG
-                value={appUrl}
-                size={200}
-                level="H"
-                includeMargin={true}
-                fgColor="#013369"
-              />
-            </div>
-            <p className="text-sm text-miami-navy/70 text-center">
-              Scannez ce QR code pour accéder à l&apos;application
-            </p>
-          </Card>
+          <QRCodeCard />
+          <CopyUrlCard copied={copied} onCopy={handleCopy} />
 
-          {/* URL with Copy Button */}
-          <Card className="p-4 miami-glass-foreground">
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-sm text-miami-navy bg-white/50 px-3 py-2 rounded">
-                {appUrl}
-              </code>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopy}
-                className="border-miami-aqua/30"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 text-green-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          </Card>
-
-          {/* Share Button (Web Share API) */}
           {typeof navigator !== 'undefined' && 'share' in navigator && (
             <Button
               variant="miami"

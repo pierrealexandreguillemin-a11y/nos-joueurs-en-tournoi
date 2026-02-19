@@ -65,6 +65,16 @@ export function getStatsUrl(tournamentUrl: string): string {
   return `https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/${tournamentId}/${tournamentId}&Action=Stats`;
 }
 
+function isClubsSectionHeader(text: string): boolean {
+  return text.includes('partition par clubs')
+    || text.includes('repartition par clubs')
+    || text.includes('répartition par clubs');
+}
+
+function stripTrailingColon(raw: string): string {
+  return raw.endsWith(':') ? raw.slice(0, -1).trim() : raw;
+}
+
 /**
  * Parse Stats page (Action=Stats) to extract club list with player counts
  * Looks for the "Répartition par clubs" section
@@ -78,21 +88,16 @@ export function parseStatsClubs(htmlStats: string): ClubInfo[] {
     const $row = $(row);
     if ($row.hasClass('papi_liste_t')) {
       const text = $row.text().trim().toLowerCase();
-      if (text.includes('partition par clubs') || text.includes('repartition par clubs') || text.includes('répartition par clubs')) {
-        inClubsSection = true;
-        return;
-      }
-      if (inClubsSection && text.includes('clubs repr')) return; // subheader "N clubs représentés"
-      if (inClubsSection) { inClubsSection = false; return; } // next section header = end
+      if (isClubsSectionHeader(text)) { inClubsSection = true; return; }
+      if (inClubsSection && text.includes('clubs repr')) return;
+      if (inClubsSection) { inClubsSection = false; return; }
     }
     if (!inClubsSection) return;
 
     const cells = $row.find('td.papi_liste_c');
     if (cells.length >= 2) {
-      const rawName = $(cells[0]).text().trim();
-      const name = rawName.endsWith(':') ? rawName.slice(0, -1).trim() : rawName;
-      const rawCount = $(cells[1]).text().trim();
-      const count = parseInt(rawCount.endsWith(':') ? rawCount.slice(0, -1).trim() : rawCount) || 0;
+      const name = stripTrailingColon($(cells[0]).text().trim());
+      const count = parseInt(stripTrailingColon($(cells[1]).text().trim())) || 0;
       if (name) clubs.push({ name, playerCount: count });
     }
   });
@@ -165,14 +170,15 @@ export function parseResults(
 ): Player[] {
   const $ = cheerio.load(htmlResults);
   const players: Player[] = [];
+  const PLAYER_BOX = 'div.papi_joueur_box';
 
   // FFE structure: Each player row contains a div.papi_joueur_box with nested sub-table
   // See FFE-PARSER-REFERENCE.md for complete documentation
   $('tr').filter((_, row) => {
-    return $(row).find('div.papi_joueur_box').length > 0;
+    return $(row).find(PLAYER_BOX).length > 0;
   }).each((_, row) => {
     // Extract player name and filter by club
-    const playerDiv = $(row).find('div.papi_joueur_box');
+    const playerDiv = $(row).find(PLAYER_BOX);
     const nameRaw = playerDiv.find('b').first().text().trim();
     const name = cleanPlayerName(nameRaw);
 
@@ -209,7 +215,7 @@ export function parseResults(
     // Performance from outer row - RELATIVE indexing (last cell)
     // Outer cells structure: [...rounds..., Pts, Tr., Buch., Perf]
     const tdParent = $(row).find('td').filter((_, td) => {
-      return $(td).find('div.papi_joueur_box').length > 0;
+      return $(td).find(PLAYER_BOX).length > 0;
     }).first();
     const outerCells = tdParent.nextAll('td');
     const perfText = outerCells.length > 0

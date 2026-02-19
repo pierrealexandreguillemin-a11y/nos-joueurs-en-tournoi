@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { Trash2, CheckCircle2, Download, Upload, Share2, CloudDownload, CloudUpload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -39,7 +39,241 @@ interface EventsManagerProps {
   onNewEventClick: () => void;
 }
 
-export default function EventsManager({ currentEventId, onEventChange, onNewEventClick }: EventsManagerProps) {
+interface EventCardProps {
+  event: Event;
+  isCurrent: boolean;
+  onSwitch: (eventId: string) => void;
+  onExport: (eventId: string) => void;
+  onDelete: (eventId: string) => void;
+  onCloudUpload: () => void;
+}
+
+function EventCard({ event, isCurrent, onSwitch, onExport, onDelete, onCloudUpload }: EventCardProps) {
+  return (
+    <Card
+      className={`p-4 cursor-pointer transition-all ${
+        isCurrent
+          ? 'bg-gradient-to-r from-miami-aqua/20 to-miami-navy/10 border-miami-aqua/50 shadow-lg'
+          : 'miami-glass-foreground hover:border-miami-aqua/30 hover:shadow-md'
+      }`}
+      onClick={() => onSwitch(event.id)}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-bold text-lg text-miami-aqua">{event.name}</h3>
+            {isCurrent && (
+              <Badge className="bg-miami-aqua text-white">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Actif
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-miami-aqua/70 space-y-1">
+            <div>{event.tournaments.length} tournoi(s)</div>
+            <div className="text-xs">
+              Créé le {new Date(event.createdAt).toLocaleDateString('fr-FR')}
+            </div>
+          </div>
+        </div>
+        <EventCardActions
+          event={event}
+          onExport={onExport}
+          onDelete={onDelete}
+          onCloudUpload={onCloudUpload}
+        />
+      </div>
+    </Card>
+  );
+}
+
+interface EventCardActionsProps {
+  event: Event;
+  onExport: (eventId: string) => void;
+  onDelete: (eventId: string) => void;
+  onCloudUpload: () => void;
+}
+
+function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCardActionsProps) {
+  return (
+    <div className="flex gap-1">
+      <div onClick={(e) => e.stopPropagation()}>
+        <ShareEventModal
+          eventId={event.id}
+          eventName={event.name}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+              title="Partager avec QR code"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+          }
+        />
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+        onClick={(e) => {
+          e.stopPropagation();
+          onExport(event.id);
+        }}
+        title="Exporter vers fichier JSON"
+      >
+        <Upload className="w-4 h-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+        onClick={(e) => {
+          e.stopPropagation();
+          onCloudUpload();
+        }}
+        title="Envoyer tous les événements vers le cloud (Upstash)"
+      >
+        <CloudUpload className="w-4 h-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(event.id);
+        }}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+interface DialogHeaderBarProps {
+  onImportClick: () => void;
+  onCloudDownload: () => void;
+  onNewEvent: () => void;
+}
+
+function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogHeaderBarProps) {
+  return (
+    <DialogHeader>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-miami-aqua to-miami-navy bg-clip-text text-transparent">
+            Événements
+          </DialogTitle>
+          <DialogDescription className="text-miami-aqua/80">
+            Sélectionnez un événement ou supprimez ceux que vous ne souhaitez plus suivre.
+          </DialogDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onImportClick}
+            className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
+            title="Importer depuis fichier JSON"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onCloudDownload}
+            className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
+            title="Télécharger depuis le cloud (Upstash)"
+          >
+            <CloudDownload className="w-4 h-4" />
+          </Button>
+          <Button variant="miami" onClick={onNewEvent}>
+            Nouvel événement
+          </Button>
+        </div>
+      </div>
+    </DialogHeader>
+  );
+}
+
+interface DeleteConfirmDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}
+
+function DeleteConfirmDialog({ open, onOpenChange, onConfirm }: DeleteConfirmDialogProps) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="miami-card border-miami-aqua/30">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-miami-aqua font-bold">
+            Supprimer l&apos;événement ?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-miami-aqua/80">
+            Cette action est irréversible. Tous les tournois et données associés seront supprimés définitivement.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-miami-navy/30">Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function downloadJsonFile(data: ExportedEvent) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${data.event.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function cloudDownload(clubSlug: string, onEventChange: () => void) {
+  try {
+    toast.info('Téléchargement depuis le cloud...');
+    const success = await fetchFromMongoDB(clubSlug);
+    if (success) {
+      toast.success('Événements téléchargés depuis le cloud avec succès !');
+      onEventChange();
+    } else {
+      toast.error('Échec du téléchargement depuis le cloud');
+    }
+  } catch (error) {
+    console.error('Cloud download error:', error);
+    toast.error('Erreur lors du téléchargement');
+  }
+}
+
+async function cloudUpload(clubSlug: string) {
+  try {
+    toast.info('Envoi vers le cloud...');
+    const success = await syncToMongoDB(clubSlug);
+    if (success) {
+      toast.success('Événements envoyés vers le cloud avec succès !');
+    } else {
+      toast.error('Échec de l\'envoi vers le cloud');
+    }
+  } catch (error) {
+    console.error('Cloud upload error:', error);
+    toast.error('Erreur lors de l\'envoi');
+  }
+}
+
+function useEventsManagerState(currentEventId: string, onEventChange: () => void) {
   const { identity } = useClub();
   const [open, setOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -52,80 +286,86 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
   const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
   const events = storage?.getAllEvents() || [];
 
-  const handleSwitchEvent = (eventId: string) => {
+  const handleSwitchEvent = useCallback((eventId: string) => {
     if (eventId !== currentEventId && storage) {
       storage.setCurrentEvent(eventId);
       onEventChange();
       setOpen(false);
     }
-  };
+  }, [currentEventId, storage, onEventChange]);
 
-  const handleDeleteClick = (eventId: string) => {
+  const handleDeleteClick = useCallback((eventId: string) => {
     setEventToDelete(eventId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = useCallback(() => {
     if (eventToDelete && storage) {
       storage.deleteEvent(eventToDelete);
       onEventChange();
       setDeleteDialogOpen(false);
       setEventToDelete(null);
-
-      // Close main dialog if no events left
       if (events.length <= 1) {
         setOpen(false);
       }
     }
-  };
+  }, [eventToDelete, storage, onEventChange, events.length]);
 
-  const handleExportEvent = (eventId: string) => {
+  const handleExportEvent = useCallback((eventId: string) => {
     const exportedData = storage?.exportEvent(eventId);
     if (!exportedData) {
       toast.error('Erreur lors de l\'export de l\'événement');
       return;
     }
-
-    // Create download
-    const blob = new Blob([JSON.stringify(exportedData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${exportedData.event.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
+    downloadJsonFile(exportedData);
     toast.success('Événement exporté avec succès !');
-  };
+  }, [storage]);
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleCloudDownload = useCallback(
+    () => cloudDownload(clubSlug, onEventChange),
+    [clubSlug, onEventChange],
+  );
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCloudUpload = useCallback(
+    () => cloudUpload(clubSlug),
+    [clubSlug],
+  );
+
+  return {
+    open, setOpen,
+    deleteDialogOpen, setDeleteDialogOpen,
+    duplicateDialogOpen, setDuplicateDialogOpen,
+    pendingImport, setPendingImport,
+    fileInputRef,
+    clubSlug, storage, events,
+    handleSwitchEvent, handleDeleteClick, handleDeleteConfirm,
+    handleExportEvent, handleCloudDownload, handleCloudUpload,
+  };
+}
+
+function useImportHandlers(
+  storage: ReturnType<typeof createClubStorage> | null,
+  onEventChange: () => void,
+  fileInputRef: React.RefObject<HTMLInputElement | null>,
+  setPendingImport: (data: ExportedEvent | null) => void,
+  setDuplicateDialogOpen: (open: boolean) => void,
+  pendingImport: ExportedEvent | null,
+) {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       const text = await file.text();
       const exportedData = JSON.parse(text) as ExportedEvent;
-
-      // Validate structure
       if (!exportedData.version || !exportedData.event) {
         toast.error('Format de fichier invalide');
         return;
       }
-
-      // Check for duplicates
       const isDuplicate = storage?.checkEventExists(exportedData.event.id) ?? false;
-
       if (isDuplicate) {
         setPendingImport(exportedData);
         setDuplicateDialogOpen(true);
       } else {
-        // Import directly
         const result = storage?.importEvent(exportedData);
         if (result?.success) {
           toast.success(`Événement "${exportedData.event.name}" importé avec succès !`);
@@ -138,77 +378,61 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
       console.error('Import error:', error);
       toast.error('Erreur lors de la lecture du fichier');
     } finally {
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
-  };
+  }, [storage, onEventChange, fileInputRef, setPendingImport, setDuplicateDialogOpen]);
 
-  const handleDuplicateReplace = () => {
+  const handleDuplicateReplace = useCallback(() => {
     if (!pendingImport || !storage) return;
-
     const result = storage.importEvent(pendingImport, { replaceIfExists: true });
     if (result.success) {
       toast.success(`Événement "${pendingImport.event.name}" remplacé avec succès !`);
       onEventChange();
     }
-
     setDuplicateDialogOpen(false);
     setPendingImport(null);
-  };
+  }, [pendingImport, storage, onEventChange, setDuplicateDialogOpen, setPendingImport]);
 
-  const handleDuplicateKeepBoth = () => {
+  const handleDuplicateKeepBoth = useCallback(() => {
     if (!pendingImport || !storage) return;
-
     const result = storage.importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
     if (result.success) {
       toast.success(`Copie de "${pendingImport.event.name}" créée avec succès !`);
       onEventChange();
     }
-
     setDuplicateDialogOpen(false);
     setPendingImport(null);
-  };
+  }, [pendingImport, storage, onEventChange, setDuplicateDialogOpen, setPendingImport]);
 
-  const handleDuplicateCancel = () => {
+  const handleDuplicateCancel = useCallback(() => {
     setDuplicateDialogOpen(false);
     setPendingImport(null);
     toast.info('Import annulé');
-  };
+  }, [setDuplicateDialogOpen, setPendingImport]);
 
-  const handleCloudDownload = async () => {
-    if (!clubSlug) return;
-    try {
-      toast.info('Téléchargement depuis le cloud...');
-      const success = await fetchFromMongoDB(clubSlug);
-      if (success) {
-        toast.success('Événements téléchargés depuis le cloud avec succès !');
-        onEventChange();
-      } else {
-        toast.error('Échec du téléchargement depuis le cloud');
-      }
-    } catch (error) {
-      console.error('Cloud download error:', error);
-      toast.error('Erreur lors du téléchargement');
-    }
-  };
+  return { handleFileChange, handleDuplicateReplace, handleDuplicateKeepBoth, handleDuplicateCancel };
+}
 
-  const handleCloudUpload = async () => {
-    if (!clubSlug) return;
-    try {
-      toast.info('Envoi vers le cloud...');
-      const success = await syncToMongoDB(clubSlug);
-      if (success) {
-        toast.success('Événements envoyés vers le cloud avec succès !');
-      } else {
-        toast.error('Échec de l\'envoi vers le cloud');
-      }
-    } catch (error) {
-      console.error('Cloud upload error:', error);
-      toast.error('Erreur lors de l\'envoi');
-    }
-  };
+export default function EventsManager({ currentEventId, onEventChange, onNewEventClick }: EventsManagerProps) {
+  const {
+    open, setOpen,
+    deleteDialogOpen, setDeleteDialogOpen,
+    duplicateDialogOpen, setDuplicateDialogOpen,
+    pendingImport, setPendingImport,
+    fileInputRef,
+    storage, events,
+    handleSwitchEvent, handleDeleteClick, handleDeleteConfirm,
+    handleExportEvent, handleCloudDownload, handleCloudUpload,
+  } = useEventsManagerState(currentEventId, onEventChange);
+
+  const {
+    handleFileChange, handleDuplicateReplace, handleDuplicateKeepBoth, handleDuplicateCancel,
+  } = useImportHandlers(
+    storage, onEventChange, fileInputRef,
+    setPendingImport, setDuplicateDialogOpen, pendingImport,
+  );
 
   return (
     <>
@@ -219,49 +443,11 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[600px] miami-card border-miami-aqua/30">
-          <DialogHeader>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-miami-aqua to-miami-navy bg-clip-text text-transparent">
-                  Événements
-                </DialogTitle>
-                <DialogDescription className="text-miami-aqua/80">
-                  Sélectionnez un événement ou supprimez ceux que vous ne souhaitez plus suivre.
-                </DialogDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleImportClick}
-                  className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
-                  title="Importer depuis fichier JSON"
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCloudDownload}
-                  className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
-                  title="Télécharger depuis le cloud (Upstash)"
-                >
-                  <CloudDownload className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="miami"
-                  onClick={() => {
-                    setOpen(false);
-                    onNewEventClick();
-                  }}
-                >
-                  Nouvel événement
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {/* Hidden file input */}
+          <DialogHeaderBar
+            onImportClick={() => fileInputRef.current?.click()}
+            onCloudDownload={handleCloudDownload}
+            onNewEvent={() => { setOpen(false); onNewEventClick(); }}
+          />
           <input
             ref={fileInputRef}
             type="file"
@@ -269,129 +455,34 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
             onChange={handleFileChange}
             className="hidden"
           />
-
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {events.length === 0 ? (
               <div className="text-center py-8 text-miami-aqua font-semibold">
                 Aucun événement créé
               </div>
             ) : (
-              events.map((event: Event) => {
-                const isCurrent = event.id === currentEventId;
-                return (
-                  <Card
-                    key={event.id}
-                    className={`p-4 cursor-pointer transition-all ${
-                      isCurrent
-                        ? 'bg-gradient-to-r from-miami-aqua/20 to-miami-navy/10 border-miami-aqua/50 shadow-lg'
-                        : 'miami-glass-foreground hover:border-miami-aqua/30 hover:shadow-md'
-                    }`}
-                    onClick={() => handleSwitchEvent(event.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-lg text-miami-aqua">{event.name}</h3>
-                          {isCurrent && (
-                            <Badge className="bg-miami-aqua text-white">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Actif
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-miami-aqua/70 space-y-1">
-                          <div>{event.tournaments.length} tournoi(s)</div>
-                          <div className="text-xs">
-                            Créé le {new Date(event.createdAt).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <ShareEventModal
-                            eventId={event.id}
-                            eventName={event.name}
-                            trigger={
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
-                                title="Partager avec QR code"
-                              >
-                                <Share2 className="w-4 h-4" />
-                              </Button>
-                            }
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExportEvent(event.id);
-                          }}
-                          title="Exporter vers fichier JSON"
-                        >
-                          <Upload className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCloudUpload();
-                          }}
-                          title="Envoyer tous les événements vers le cloud (Upstash)"
-                        >
-                          <CloudUpload className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(event.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })
+              events.map((event: Event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isCurrent={event.id === currentEventId}
+                  onSwitch={handleSwitchEvent}
+                  onExport={handleExportEvent}
+                  onDelete={handleDeleteClick}
+                  onCloudUpload={handleCloudUpload}
+                />
+              ))
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="miami-card border-miami-aqua/30">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-miami-aqua font-bold">
-              Supprimer l&apos;événement ?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-miami-aqua/80">
-              Cette action est irréversible. Tous les tournois et données associés seront supprimés définitivement.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-miami-navy/30">Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+      />
 
-      {/* Duplicate Event Dialog */}
       <DuplicateEventDialog
         open={duplicateDialogOpen}
         eventName={pendingImport?.event.name || ''}
