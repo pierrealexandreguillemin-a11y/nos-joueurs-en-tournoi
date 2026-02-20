@@ -60,6 +60,8 @@ export default function DebugPanel() {
 
   const storage = useMemo(() => identity ? createClubStorage(identity.clubSlug) : null, [identity]);
 
+  if (process.env.NODE_ENV === 'production') return null;
+
   const handleDebug = () => {
     if (!storage) return;
     const data = storage.getStorageData();

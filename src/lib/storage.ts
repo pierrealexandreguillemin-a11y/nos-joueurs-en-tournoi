@@ -82,36 +82,12 @@ export function setCurrentEvent(eventId: string): void {
 
 // Save event
 export function saveEvent(event: Event): void {
-  const data = getStorageData();
-  const existingIndex = data.events.findIndex(e => e.id === event.id);
-
-  if (existingIndex >= 0) {
-    data.events[existingIndex] = event;
-  } else {
-    data.events.push(event);
-  }
-
-  data.currentEventId = event.id;
-  setStorageData(data);
+  _saveEvent(getStorageData, setStorageData, event);
 }
 
 // Delete event
 export function deleteEvent(eventId: string): void {
-  const data = getStorageData();
-  const event = data.events.find(e => e.id === eventId);
-  data.events = data.events.filter(e => e.id !== eventId);
-
-  if (data.currentEventId === eventId) {
-    data.currentEventId = data.events[0]?.id || '';
-  }
-
-  if (event) {
-    event.tournaments.forEach(t => {
-      delete data.validations[t.id];
-    });
-  }
-
-  setStorageData(data);
+  _deleteEvent(getStorageData, setStorageData, eventId);
 }
 
 // Get validation state
@@ -193,28 +169,7 @@ export interface ExportedEvent {
  * Export a single event as JSON (for sharing)
  */
 export function exportEvent(eventId: string, includeValidations: boolean = true): ExportedEvent | null {
-  const data = getStorageData();
-  const event = data.events.find(e => e.id === eventId);
-
-  if (!event) return null;
-
-  // Get validations for all tournaments in this event
-  const eventValidations: ValidationState = {};
-
-  if (includeValidations) {
-    event.tournaments.forEach(tournament => {
-      if (data.validations[tournament.id]) {
-        eventValidations[tournament.id] = data.validations[tournament.id];
-      }
-    });
-  }
-
-  return {
-    version: '1.0',
-    exportDate: new Date().toISOString(),
-    event,
-    validations: eventValidations,
-  };
+  return _exportEventFrom(getStorageData, eventId, includeValidations);
 }
 
 /**
@@ -235,65 +190,7 @@ export function importEvent(
     generateNewId?: boolean;
   } = { replaceIfExists: false }
 ): { success: boolean; eventId: string; isDuplicate: boolean } {
-  try {
-    const data = getStorageData();
-    const { event, validations } = exportedData;
-
-    // Check if event already exists
-    const existingIndex = data.events.findIndex(e => e.id === event.id);
-    const isDuplicate = existingIndex >= 0;
-
-    let finalEvent = { ...event };
-
-    if (isDuplicate) {
-      if (options.replaceIfExists) {
-        // Replace existing event
-        data.events[existingIndex] = finalEvent;
-      } else if (options.generateNewId) {
-        // Create new event with new ID
-        finalEvent = {
-          ...event,
-          id: `event_${crypto.randomUUID()}`,
-          name: `${event.name} (copie)`,
-          tournaments: event.tournaments.map(t => ({
-            ...t,
-            id: `tournament_${crypto.randomUUID()}`,
-          })),
-        };
-        data.events.push(finalEvent);
-      } else {
-        // User cancelled
-        return { success: false, eventId: event.id, isDuplicate: true };
-      }
-    } else {
-      // New event, just add it
-      data.events.push(finalEvent);
-    }
-
-    // Import validations
-    Object.entries(validations).forEach(([tournamentId, tournamentValidations]) => {
-      // If we generated new IDs, we need to map old tournament IDs to new ones
-      if (options.generateNewId && isDuplicate) {
-        // Find the corresponding new tournament ID
-        const oldTournamentIndex = event.tournaments.findIndex(t => t.id === tournamentId);
-        if (oldTournamentIndex >= 0 && finalEvent.tournaments[oldTournamentIndex]) {
-          const newTournamentId = finalEvent.tournaments[oldTournamentIndex].id;
-          data.validations[newTournamentId] = tournamentValidations;
-        }
-      } else {
-        data.validations[tournamentId] = tournamentValidations;
-      }
-    });
-
-    // Set as current event
-    data.currentEventId = finalEvent.id;
-    setStorageData(data);
-
-    return { success: true, eventId: finalEvent.id, isDuplicate };
-  } catch (error) {
-    console.error('Error importing event:', error);
-    return { success: false, eventId: '', isDuplicate: false };
-  }
+  return _importEventInto(getStorageData, setStorageData, exportedData, options);
 }
 
 // ========================================
@@ -304,17 +201,7 @@ export function importEvent(
  * Encode event to compressed URL parameter (without validations for QR code)
  */
 export function encodeEventToURL(eventId: string): string | null {
-  const exportedData = exportEvent(eventId, false); // Exclude validations for smaller size
-  if (!exportedData) return null;
-
-  try {
-    const json = JSON.stringify(exportedData);
-    const compressed = compressToEncodedURIComponent(json);
-    return compressed;
-  } catch (error) {
-    console.error('Error encoding event to URL:', error);
-    return null;
-  }
+  return _encodeEventToURL(getStorageData, eventId);
 }
 
 /**
@@ -343,24 +230,7 @@ export function decodeEventFromURL(compressed: string): ExportedEvent | null {
  * Generate shareable URL for an event
  */
 export function generateShareURL(eventId: string): { url: string; size: number } | null {
-  console.log('generateShareURL: eventId =', eventId);
-  const encoded = encodeEventToURL(eventId);
-  console.log('generateShareURL: encoded =', encoded ? `${encoded.substring(0, 50)}...` : null);
-
-  if (!encoded) {
-    console.error('generateShareURL: Failed to encode event');
-    return null;
-  }
-
-  const baseURL = window.location.origin + window.location.pathname;
-  const url = `${baseURL}?share=${encoded}`;
-
-  console.log('generateShareURL: url length =', url.length);
-
-  return {
-    url,
-    size: url.length,
-  };
+  return _generateShareURL(getStorageData, eventId);
 }
 
 // ========================================

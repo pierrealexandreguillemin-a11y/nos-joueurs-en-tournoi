@@ -42,8 +42,9 @@ module.exports = {
     'security/detect-object-injection': 'off',  // 56 false positives on typed Record<K,V> bracket access in TS
 
     // --- Existing rules ---
+    'no-console': ['error', { allow: ['warn', 'error'] }],
     'react-refresh/only-export-components': [
-      'warn',
+      'error',
       { allowConstantExport: true },
     ],
     '@typescript-eslint/no-unused-vars': [

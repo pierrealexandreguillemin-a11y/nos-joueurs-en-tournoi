@@ -130,6 +130,7 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
     if (open && identity) {
       const storage = createClubStorage(identity.clubSlug);
       const data = storage.generateShareURL(eventId);
+      // Justification: Share URL must be computed on dialog open and stored for display
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShareData(data);
 

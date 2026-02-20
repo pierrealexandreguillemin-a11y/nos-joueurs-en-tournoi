@@ -216,6 +216,88 @@ describe('storage.ts', () => {
       expect(data.validations['tournament-1']).toBeUndefined();
     });
 
+    it('does nothing when deleting a nonexistent event', () => {
+      const event: Event = {
+        id: 'event-1',
+        name: 'Event 1',
+        createdAt: new Date().toISOString(),
+        tournaments: [
+          {
+            id: 'tournament-1',
+            name: 'Tournament',
+            url: 'http://test.com',
+            players: [],
+            lastUpdate: new Date().toISOString(),
+          },
+        ],
+      };
+
+      saveEvent(event);
+      setValidation('tournament-1', 'Player 1', 1, true);
+
+      // Delete with a fake ID — should not throw
+      deleteEvent('nonexistent-id');
+
+      const data = getStorageData();
+      expect(data.events).toHaveLength(1);
+      expect(data.events[0].id).toBe('event-1');
+      expect(data.currentEventId).toBe('event-1');
+      expect(data.validations['tournament-1']).toBeDefined();
+      expect(getValidation('tournament-1', 'Player 1', 1)).toBe(true);
+    });
+
+    it('does not change currentEventId when deleting a non-current event', () => {
+      const event1: Event = {
+        id: 'event-1',
+        name: 'Event 1',
+        createdAt: new Date().toISOString(),
+        tournaments: [
+          {
+            id: 'tournament-1',
+            name: 'Tournament 1',
+            url: 'http://test.com/1',
+            players: [],
+            lastUpdate: new Date().toISOString(),
+          },
+        ],
+      };
+
+      const event2: Event = {
+        id: 'event-2',
+        name: 'Event 2',
+        createdAt: new Date().toISOString(),
+        tournaments: [
+          {
+            id: 'tournament-2',
+            name: 'Tournament 2',
+            url: 'http://test.com/2',
+            players: [],
+            lastUpdate: new Date().toISOString(),
+          },
+        ],
+      };
+
+      saveEvent(event1);
+      saveEvent(event2);
+      // saveEvent sets currentEventId to the last saved event, so event-2 is current.
+      // Manually set currentEventId back to event-1.
+      const data = getStorageData();
+      data.currentEventId = 'event-1';
+      setStorageData(data);
+
+      setValidation('tournament-2', 'Player X', 1, true);
+
+      // Delete event-2, which is NOT the current event
+      deleteEvent('event-2');
+
+      const afterDelete = getStorageData();
+      expect(afterDelete.currentEventId).toBe('event-1');
+      expect(afterDelete.events).toHaveLength(1);
+      expect(afterDelete.events[0].id).toBe('event-1');
+      // Validations for tournament-2 should be cleaned up
+      expect(afterDelete.validations['tournament-2']).toBeUndefined();
+    });
+
     it('sets next event as current when deleting current event', () => {
       const event1: Event = {
         id: 'event-1',
@@ -749,6 +831,74 @@ describe('storage.ts', () => {
         const events = getAllEvents();
         expect(events).toHaveLength(1);
         expect(events[0].name).toBe('Default event');
+      });
+    });
+
+    describe('deleteEvent in club-scoped storage', () => {
+      it('deleteEvent cleans up validations in club-scoped storage', () => {
+        const club = createClubStorage('club-x');
+
+        const event1: Event = {
+          id: 'event-1',
+          name: 'Event 1',
+          createdAt: new Date().toISOString(),
+          tournaments: [
+            {
+              id: 'tournament-1a',
+              name: 'Tournament 1A',
+              url: 'http://test.com/1a',
+              players: [],
+              lastUpdate: new Date().toISOString(),
+            },
+            {
+              id: 'tournament-1b',
+              name: 'Tournament 1B',
+              url: 'http://test.com/1b',
+              players: [],
+              lastUpdate: new Date().toISOString(),
+            },
+          ],
+        };
+
+        const event2: Event = {
+          id: 'event-2',
+          name: 'Event 2',
+          createdAt: new Date().toISOString(),
+          tournaments: [
+            {
+              id: 'tournament-2a',
+              name: 'Tournament 2A',
+              url: 'http://test.com/2a',
+              players: [],
+              lastUpdate: new Date().toISOString(),
+            },
+          ],
+        };
+
+        club.saveEvent(event1);
+        club.saveEvent(event2);
+
+        // Add validations for tournaments in both events
+        club.setValidation('tournament-1a', 'Player 1', 1, true);
+        club.setValidation('tournament-1b', 'Player 2', 1, true);
+        club.setValidation('tournament-2a', 'Player 3', 1, true);
+
+        // Delete event-1
+        club.deleteEvent('event-1');
+
+        const data = club.getStorageData();
+
+        // Event-1 is gone, event-2 remains
+        expect(data.events).toHaveLength(1);
+        expect(data.events[0].id).toBe('event-2');
+
+        // Validations for tournament-1a and tournament-1b are cleaned up
+        expect(data.validations['tournament-1a']).toBeUndefined();
+        expect(data.validations['tournament-1b']).toBeUndefined();
+
+        // Validations for tournament-2a are untouched
+        expect(data.validations['tournament-2a']).toBeDefined();
+        expect(club.getValidation('tournament-2a', 'Player 3', 1)).toBe(true);
       });
     });
   });

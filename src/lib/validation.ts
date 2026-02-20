@@ -6,7 +6,8 @@ import type { Tournament, Event } from '@/types';
 export function isValidFFeUrl(url: string): boolean {
   try {
     const parsedUrl = new URL(url);
-    return parsedUrl.hostname === 'echecs.asso.fr';
+    const hostname = parsedUrl.hostname.toLowerCase();
+    return hostname === 'echecs.asso.fr' || hostname === 'www.echecs.asso.fr';
   } catch {
     return false;
   }

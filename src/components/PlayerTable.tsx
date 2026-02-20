@@ -53,7 +53,7 @@ function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
       <TableHead className="font-bold text-miami-navy">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
-        <TableHead key={i} className="text-center font-bold text-miami-aqua">
+        <TableHead key={`round-${i}`} className="text-center font-bold text-miami-aqua">
           {total > 0 ? total : '-'}
         </TableHead>
       ))}
@@ -76,7 +76,7 @@ function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
       <TableHead className="font-bold">Nom</TableHead>
       <TableHead className="font-bold text-center">Elo</TableHead>
       {Array.from({ length: maxRounds }, (_, i) => (
-        <TableHead key={i} className="text-center font-bold">
+        <TableHead key={`round-${i}`} className="text-center font-bold">
           R{i + 1}
         </TableHead>
       ))}
@@ -145,7 +145,7 @@ function PlayerRow({ player, playerIndex, maxRounds, validationState, tournament
       {/* Round Results with Validation */}
       {Array.from({ length: maxRounds }, (_, i) => (
         <RoundCell
-          key={i}
+          key={`round-${i}`}
           player={player}
           roundIndex={i}
           isValidated={validationState[player.name]?.[i + 1] || false}
@@ -187,6 +187,7 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
   // Update validation state when tournament changes (sync with localStorage)
   useEffect(() => {
     if (!storage) return;
+    // Justification: Validation state must re-sync from localStorage when tournament data changes
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValidationState(buildValidationState(tournament.id, tournament.players, storage));
   }, [tournament.id, tournament.players, storage]);

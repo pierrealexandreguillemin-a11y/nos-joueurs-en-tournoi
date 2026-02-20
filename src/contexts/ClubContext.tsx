@@ -20,8 +20,10 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   // Load from localStorage after mount (client-side only)
   useEffect(() => {
     const saved = getClubIdentity();
+    // Justification: Hydration-safe initialization from localStorage must happen in useEffect
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIdentity(saved);
+    // Justification: Loaded flag must be set after client-side hydration to avoid SSR mismatch
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoaded(true);
   }, []);
@@ -45,6 +47,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Justification: useClub is a custom hook co-located with its provider by convention
 // eslint-disable-next-line react-refresh/only-export-components
 export function useClub() {
   const context = useContext(ClubContext);

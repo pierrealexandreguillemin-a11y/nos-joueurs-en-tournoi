@@ -9,15 +9,10 @@ const API_BASE = typeof window !== 'undefined' ? window.location.origin : 'http:
 /**
  * Sync local storage to Vercel KV (Upstash Redis)
  */
-export async function syncToMongoDB(clubSlug: string): Promise<boolean> {
+export async function syncToUpstash(clubSlug: string): Promise<boolean> {
   try {
     const storage = createClubStorage(clubSlug);
     const data = storage.getStorageData();
-    console.log('[Upstash Sync] Starting upload for club:', clubSlug, {
-      eventsCount: data.events.length,
-      validationsCount: Object.keys(data.validations).length,
-      currentEventId: data.currentEventId || 'none',
-    });
 
     const response = await fetch(`${API_BASE}/api/events/sync`, {
       method: 'POST',
@@ -32,8 +27,7 @@ export async function syncToMongoDB(clubSlug: string): Promise<boolean> {
       return false;
     }
 
-    const result = await response.json();
-    console.log('[Upstash Sync] Upload successful:', result.synced, 'events synced');
+    await response.json();
     return true;
   } catch (error) {
     console.error('[Upstash Sync] Upload error:', error);
@@ -44,9 +38,8 @@ export async function syncToMongoDB(clubSlug: string): Promise<boolean> {
 /**
  * Fetch data from Upstash KV and merge with local storage
  */
-export async function fetchFromMongoDB(clubSlug: string): Promise<boolean> {
+export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
   try {
-    console.log('[Upstash Sync] Starting download for club:', clubSlug);
     const response = await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`);
 
     if (!response.ok) {
@@ -61,11 +54,6 @@ export async function fetchFromMongoDB(clubSlug: string): Promise<boolean> {
     const storage = createClubStorage(clubSlug);
     const localData = storage.getStorageData();
 
-    console.log('[Upstash Sync] Merging data...', {
-      remoteEvents: remoteData.events.length,
-      localEvents: localData.events.length,
-    });
-
     // Merge logic: Remote is source of truth
     // But keep local changes if newer
     const mergedEvents = [...remoteData.events];
@@ -75,7 +63,6 @@ export async function fetchFromMongoDB(clubSlug: string): Promise<boolean> {
       const existsRemotely = mergedEvents.some(e => e.id === localEvent.id);
       if (!existsRemotely) {
         mergedEvents.push(localEvent);
-        console.log('[Upstash Sync] Adding local-only event:', localEvent.name);
       }
     });
 
@@ -97,7 +84,6 @@ export async function fetchFromMongoDB(clubSlug: string): Promise<boolean> {
     // Save merged data to namespaced localStorage
     storage.setStorageData(mergedData);
 
-    console.log('[Upstash Sync] Download successful:', mergedEvents.length, 'total events after merge');
     return true;
   } catch (error) {
     console.error('[Upstash Sync] Download error:', error);
@@ -109,24 +95,21 @@ export async function fetchFromMongoDB(clubSlug: string): Promise<boolean> {
  * Start auto-sync service (bidirectional sync every 5 seconds)
  */
 export function startAutoSync(clubSlug: string): () => void {
-  console.log('[Upstash Sync] Auto-sync service started (interval: 5s) for club:', clubSlug);
-
   // Initial sync (upload then download)
-  syncToMongoDB(clubSlug).then(() => fetchFromMongoDB(clubSlug));
+  syncToUpstash(clubSlug).then(() => fetchFromUpstash(clubSlug));
 
   // Sync local changes to Upstash every 5s
   const syncInterval = setInterval(() => {
-    syncToMongoDB(clubSlug);
+    syncToUpstash(clubSlug);
   }, SYNC_INTERVAL);
 
   // Fetch remote changes from Upstash every 5s
   const fetchInterval = setInterval(() => {
-    fetchFromMongoDB(clubSlug);
+    fetchFromUpstash(clubSlug);
   }, SYNC_INTERVAL);
 
   // Return cleanup function
   return () => {
-    console.log('[Upstash Sync] Auto-sync service stopped');
     clearInterval(syncInterval);
     clearInterval(fetchInterval);
   };

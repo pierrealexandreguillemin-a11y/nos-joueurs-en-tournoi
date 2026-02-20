@@ -18,8 +18,10 @@ export function AnimationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('animationsEnabled');
     const value = saved !== null ? JSON.parse(saved) : true;
+    // Justification: Hydration-safe initialization from localStorage must happen in useEffect
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAnimationsEnabled(value);
+    // Justification: Mounted flag must be set after client-side hydration to avoid SSR mismatch
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
@@ -50,6 +52,7 @@ export function AnimationsProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Justification: useAnimations is a custom hook co-located with its provider by convention
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAnimations() {
   const context = useContext(AnimationsContext);

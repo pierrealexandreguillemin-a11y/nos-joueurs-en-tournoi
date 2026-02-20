@@ -27,7 +27,7 @@ import {
   createClubStorage,
   type ExportedEvent,
 } from '@/lib/storage';
-import { syncToMongoDB, fetchFromMongoDB } from '@/lib/sync';
+import { syncToUpstash, fetchFromUpstash } from '@/lib/sync';
 import DuplicateEventDialog from '@/components/DuplicateEventDialog';
 import ShareEventModal from '@/components/ShareEventModal';
 import { useClub } from '@/contexts/ClubContext';
@@ -245,7 +245,7 @@ function downloadJsonFile(data: ExportedEvent) {
 async function cloudDownload(clubSlug: string, onEventChange: () => void) {
   try {
     toast.info('Téléchargement depuis le cloud...');
-    const success = await fetchFromMongoDB(clubSlug);
+    const success = await fetchFromUpstash(clubSlug);
     if (success) {
       toast.success('Événements téléchargés depuis le cloud avec succès !');
       onEventChange();
@@ -261,7 +261,7 @@ async function cloudDownload(clubSlug: string, onEventChange: () => void) {
 async function cloudUpload(clubSlug: string) {
   try {
     toast.info('Envoi vers le cloud...');
-    const success = await syncToMongoDB(clubSlug);
+    const success = await syncToUpstash(clubSlug);
     if (success) {
       toast.success('Événements envoyés vers le cloud avec succès !');
     } else {

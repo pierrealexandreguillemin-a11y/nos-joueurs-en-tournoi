@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-import { syncToMongoDB, fetchFromMongoDB } from './sync';
+import { syncToUpstash, fetchFromUpstash } from './sync';
 
 describe('sync.ts — QG-6: scope du sync', () => {
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
     mockFetch.mockReset();
   });
 
-  describe('syncToMongoDB(clubSlug)', () => {
+  describe('syncToUpstash(clubSlug)', () => {
     it('envoie clubSlug dans le body du POST', async () => {
       // Set up localStorage with namespaced data
       const storageData = JSON.stringify({
@@ -27,7 +27,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         json: async () => ({ success: true, synced: 1 }),
       });
 
-      await syncToMongoDB('hay-chess');
+      await syncToUpstash('hay-chess');
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [, options] = mockFetch.mock.calls[0];
@@ -55,7 +55,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         json: async () => ({ success: true, synced: 1 }),
       });
 
-      await syncToMongoDB('hay-chess');
+      await syncToUpstash('hay-chess');
 
       const [, options] = mockFetch.mock.calls[0];
       const body = JSON.parse(options.body);
@@ -65,7 +65,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
     });
   });
 
-  describe('fetchFromMongoDB(clubSlug)', () => {
+  describe('fetchFromUpstash(clubSlug)', () => {
     it('passe clubSlug dans le query string du GET', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', JSON.stringify({
         currentEventId: '',
@@ -81,7 +81,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('hay-chess');
+      await fetchFromUpstash('hay-chess');
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url] = mockFetch.mock.calls[0];
@@ -107,7 +107,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('hay-chess');
+      await fetchFromUpstash('hay-chess');
 
       // Namespaced key should have data
       const namespacedData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:hay-chess')!);
@@ -148,7 +148,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('club-a');
+      await fetchFromUpstash('club-a');
 
       // Club B data should be untouched
       const clubBData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:club-b')!);
@@ -158,48 +158,48 @@ describe('sync.ts — QG-6: scope du sync', () => {
   });
 
   describe('error paths', () => {
-    it('syncToMongoDB retourne false si fetch throw', async () => {
+    it('syncToUpstash retourne false si fetch throw', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await syncToMongoDB('test-club');
+      const result = await syncToUpstash('test-club');
       expect(result).toBe(false);
     });
 
-    it('syncToMongoDB retourne false si response 500', async () => {
+    it('syncToUpstash retourne false si response 500', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
 
-      const result = await syncToMongoDB('test-club');
+      const result = await syncToUpstash('test-club');
       expect(result).toBe(false);
     });
 
-    it('fetchFromMongoDB retourne false si fetch throw', async () => {
+    it('fetchFromUpstash retourne false si fetch throw', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await fetchFromMongoDB('test-club');
+      const result = await fetchFromUpstash('test-club');
       expect(result).toBe(false);
     });
 
-    it('fetchFromMongoDB retourne false si response 500', async () => {
+    it('fetchFromUpstash retourne false si response 500', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
 
-      const result = await fetchFromMongoDB('test-club');
+      const result = await fetchFromUpstash('test-club');
       expect(result).toBe(false);
     });
   });
 
-  describe('fetchFromMongoDB — decision table: merge', () => {
+  describe('fetchFromUpstash — decision table: merge', () => {
     it('remote [A], local [] → merged = [A]', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
@@ -217,7 +217,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('test-club');
+      await fetchFromUpstash('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);
@@ -243,7 +243,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('test-club');
+      await fetchFromUpstash('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);
@@ -269,7 +269,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('test-club');
+      await fetchFromUpstash('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(2);
@@ -295,7 +295,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromMongoDB('test-club');
+      await fetchFromUpstash('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);

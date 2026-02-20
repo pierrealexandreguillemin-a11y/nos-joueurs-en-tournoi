@@ -6,15 +6,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * Used for FFE tournament data scraping
  */
 export async function POST(req: NextRequest) {
-  // CORS headers
-  const headers = {
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
-    'Access-Control-Allow-Headers':
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-  };
-
   try {
     const body = await req.json();
     const { url } = body;
@@ -22,7 +13,7 @@ export async function POST(req: NextRequest) {
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
         { error: 'Invalid URL provided' },
-        { status: 400, headers }
+        { status: 400 }
       );
     }
 
@@ -33,7 +24,7 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: 'Invalid URL format' },
-        { status: 400, headers }
+        { status: 400 }
       );
     }
 
@@ -41,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (hostname !== 'echecs.asso.fr' && hostname !== 'www.echecs.asso.fr') {
       return NextResponse.json(
         { error: 'Only FFE URLs are allowed' },
-        { status: 403, headers }
+        { status: 403 }
       );
     }
 
@@ -72,7 +63,7 @@ export async function POST(req: NextRequest) {
         html,
         url,
       },
-      { status: 200, headers }
+      { status: 200 }
     );
   } catch (error) {
     console.error('Scrape error:', error);
@@ -81,23 +72,7 @@ export async function POST(req: NextRequest) {
         error: 'Scraping failed',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500, headers }
+      { status: 500 }
     );
   }
-}
-
-/**
- * OPTIONS /api/scrape
- * CORS preflight
- */
-export async function OPTIONS() {
-  const headers = {
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
-    'Access-Control-Allow-Headers':
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-  };
-
-  return new NextResponse(null, { status: 200, headers });
 }

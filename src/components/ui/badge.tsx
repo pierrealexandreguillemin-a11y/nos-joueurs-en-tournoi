@@ -36,5 +36,6 @@ function Badge({ className, variant, ...props }: BadgeProps) {
   );
 }
 
+// Justification: badgeVariants is a non-component export needed by consumers for styling
 // eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants };
