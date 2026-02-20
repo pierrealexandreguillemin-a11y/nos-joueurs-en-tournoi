@@ -6,6 +6,7 @@ import {
   isValidTournament,
   isValidEvent,
   isValidTournamentName,
+  SLUG_REGEX,
 } from './validation';
 
 describe('validation.ts', () => {
@@ -226,6 +227,41 @@ describe('validation.ts', () => {
 
     it('accepts name that trims to 2 characters', () => {
       expect(isValidTournamentName('  U8  ')).toBe(true);
+    });
+  });
+
+  // ── SLUG_REGEX ────────────────────────────────────────────────────────
+  describe('SLUG_REGEX', () => {
+    it('accepts lowercase alphanumeric with hyphens', () => {
+      expect(SLUG_REGEX.test('hay-chess')).toBe(true);
+    });
+
+    it('accepts single character', () => {
+      expect(SLUG_REGEX.test('a')).toBe(true);
+    });
+
+    it('accepts max 40 characters', () => {
+      expect(SLUG_REGEX.test('a'.repeat(40))).toBe(true);
+    });
+
+    it('rejects over 40 characters', () => {
+      expect(SLUG_REGEX.test('a'.repeat(41))).toBe(false);
+    });
+
+    it('rejects uppercase', () => {
+      expect(SLUG_REGEX.test('Hay-Chess')).toBe(false);
+    });
+
+    it('rejects spaces', () => {
+      expect(SLUG_REGEX.test('hay chess')).toBe(false);
+    });
+
+    it('rejects empty string', () => {
+      expect(SLUG_REGEX.test('')).toBe(false);
+    });
+
+    it('rejects special characters', () => {
+      expect(SLUG_REGEX.test('hay_chess!')).toBe(false);
     });
   });
 });

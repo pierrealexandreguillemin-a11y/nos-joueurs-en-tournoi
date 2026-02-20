@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
+import { SLUG_REGEX } from '@/lib/validation';
 import type { StorageData } from '@/types';
-
-const SLUG_REGEX = /^[a-z0-9-]{1,40}$/;
 
 /**
  * POST /api/events/sync

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorageData } from '@/lib/kv';
-
-const SLUG_REGEX = /^[a-z0-9-]{1,40}$/;
+import { SLUG_REGEX } from '@/lib/validation';
 
 /**
  * GET /api/events/fetch?clubSlug=xxx

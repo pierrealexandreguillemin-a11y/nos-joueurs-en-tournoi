@@ -1,5 +1,8 @@
 import type { Tournament, Event } from '@/types';
 
+/** Club slug: lowercase alphanumeric with hyphens, max 40 chars */
+export const SLUG_REGEX = /^[a-z0-9-]{1,40}$/;
+
 /**
  * Validate if a URL is a valid FFE tournament URL
  */
