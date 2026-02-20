@@ -98,14 +98,13 @@ export function saveEvent(event: Event): void {
 // Delete event
 export function deleteEvent(eventId: string): void {
   const data = getStorageData();
+  const event = data.events.find(e => e.id === eventId);
   data.events = data.events.filter(e => e.id !== eventId);
 
   if (data.currentEventId === eventId) {
     data.currentEventId = data.events[0]?.id || '';
   }
 
-  // Clean up validations for this event
-  const event = data.events.find(e => e.id === eventId);
   if (event) {
     event.tournaments.forEach(t => {
       delete data.validations[t.id];
@@ -666,11 +665,11 @@ function _saveEvent(get: StorageGetter, set: StorageSetter, event: Event): void 
 /** Helper: delete an event and clean up its validations */
 function _deleteEvent(get: StorageGetter, set: StorageSetter, eventId: string): void {
   const data = get();
+  const event = data.events.find(e => e.id === eventId);
   data.events = data.events.filter(e => e.id !== eventId);
   if (data.currentEventId === eventId) {
     data.currentEventId = data.events[0]?.id || '';
   }
-  const event = data.events.find(e => e.id === eventId);
   if (event) {
     event.tournaments.forEach(t => { delete data.validations[t.id]; });
   }

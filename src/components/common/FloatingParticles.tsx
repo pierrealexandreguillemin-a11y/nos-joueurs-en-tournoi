@@ -96,6 +96,7 @@ export default function FloatingParticles({
   density = 50,
   speed = 1,
 }: FloatingParticlesProps) {
+  // generateParticles is a stable module-level function, not a reactive dependency
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const particles = useMemo(() => generateParticles(density), [density]);
 

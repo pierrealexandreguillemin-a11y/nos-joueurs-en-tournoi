@@ -302,14 +302,15 @@ function useEventsManagerState(currentEventId: string, onEventChange: () => void
   const handleDeleteConfirm = useCallback(() => {
     if (eventToDelete && storage) {
       storage.deleteEvent(eventToDelete);
+      const remaining = storage.getAllEvents();
       onEventChange();
       setDeleteDialogOpen(false);
       setEventToDelete(null);
-      if (events.length <= 1) {
+      if (remaining.length <= 1) {
         setOpen(false);
       }
     }
-  }, [eventToDelete, storage, onEventChange, events.length]);
+  }, [eventToDelete, storage, onEventChange]);
 
   const handleExportEvent = useCallback((eventId: string) => {
     const exportedData = storage?.exportEvent(eventId);

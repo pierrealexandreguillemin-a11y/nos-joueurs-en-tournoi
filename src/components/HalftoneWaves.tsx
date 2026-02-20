@@ -204,52 +204,59 @@ function initWebGLResources(canvas: HTMLCanvasElement): GlResources | null {
   };
 }
 
+function renderFrame(
+  canvas: HTMLCanvasElement,
+  res: GlResources,
+  startTime: number,
+  state: { destroyed: boolean },
+) {
+  if (state.destroyed) return;
+  const elapsed = (performance.now() - startTime) * 0.001;
+
+  if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  res.gl.viewport(0, 0, canvas.width, canvas.height);
+  res.gl.clear(res.gl.COLOR_BUFFER_BIT);
+  res.gl.useProgram(res.program);
+  res.gl.bindVertexArray(res.vao);
+  res.gl.uniform2f(res.uResolutionLoc, canvas.width, canvas.height);
+  res.gl.uniform1f(res.uTimeLoc, elapsed);
+  res.gl.drawArrays(res.gl.TRIANGLES, 0, 6);
+
+  if (!state.destroyed) {
+    requestAnimationFrame(() => renderFrame(canvas, res, startTime, state));
+  }
+}
+
+function resizeCanvas(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+
 function startRenderLoop(
   canvas: HTMLCanvasElement,
   res: GlResources,
 ): () => void {
-  const { gl, program, vao, vbo, uResolutionLoc, uTimeLoc } = res;
   const startTime = performance.now();
-  let isDestroyed = false;
+  const state = { destroyed: false };
 
-  function render() {
-    if (isDestroyed) return;
-    const elapsed = (performance.now() - startTime) * 0.001;
+  renderFrame(canvas, res, startTime, state);
 
-    if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
-    gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
-    gl.uniform1f(uTimeLoc, elapsed);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    if (!isDestroyed) {
-      requestAnimationFrame(render);
-    }
-  }
-  render();
-
-  const handleResize = () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  };
-  window.addEventListener('resize', handleResize);
+  const onResize = () => resizeCanvas(canvas, res.gl);
+  window.addEventListener('resize', onResize);
 
   return () => {
-    isDestroyed = true;
-    window.removeEventListener('resize', handleResize);
-    if (!gl.isContextLost()) {
+    state.destroyed = true;
+    window.removeEventListener('resize', onResize);
+    if (!res.gl.isContextLost()) {
       try {
-        gl.deleteProgram(program);
-        gl.deleteBuffer(vbo);
-        gl.deleteVertexArray(vao);
+        res.gl.deleteProgram(res.program);
+        res.gl.deleteBuffer(res.vbo);
+        res.gl.deleteVertexArray(res.vao);
       } catch (e) {
         console.warn('Error cleaning up WebGL resources:', e);
       }

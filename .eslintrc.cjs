@@ -26,7 +26,7 @@ module.exports = {
   rules: {
     // --- ISO 5055 Maintainability ---
     'complexity': ['error', { max: 15 }],
-    'max-depth': ['warn', { max: 4 }],
+    'max-depth': ['error', { max: 4 }],
     'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
 
     // --- ISO 5055 Reliability (sonarjs tuning) ---

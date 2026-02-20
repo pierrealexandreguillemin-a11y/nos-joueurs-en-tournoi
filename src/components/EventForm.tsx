@@ -9,6 +9,7 @@ import { X, Plus } from 'lucide-react';
 import type { Event } from '@/types';
 
 interface TournamentInput {
+  id: string;
   name: string;
   url: string;
 }
@@ -87,7 +88,7 @@ function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove }: Tourname
       </div>
       {tournaments.map((tournament, index) => (
         <TournamentRow
-          key={index}
+          key={tournament.id}
           tournament={tournament}
           index={index}
           showRemove={tournaments.length > 1}
@@ -161,12 +162,12 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
   const [eventName, setEventName] = useState('');
   const [clubName, setClubName] = useState('');
   const [tournaments, setTournaments] = useState<TournamentInput[]>([
-    { name: '', url: '' },
+    { id: crypto.randomUUID(), name: '', url: '' },
   ]);
   const [error, setError] = useState('');
 
   const addTournament = () => {
-    setTournaments([...tournaments, { name: '', url: '' }]);
+    setTournaments([...tournaments, { id: crypto.randomUUID(), name: '', url: '' }]);
   };
 
   const removeTournament = (index: number) => {
