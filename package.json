@@ -42,6 +42,9 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0"
   },
+  "overrides": {
+    "minimatch": "^10.2.1"
+  },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.11.0",
     "@commitlint/cli": "^20.4.2",
