@@ -213,6 +213,7 @@ describe('storage.ts', () => {
       const data = getStorageData();
       expect(data.events).toHaveLength(0);
       expect(data.currentEventId).toBe('');
+      expect(data.validations['tournament-1']).toBeUndefined();
     });
 
     it('sets next event as current when deleting current event', () => {
