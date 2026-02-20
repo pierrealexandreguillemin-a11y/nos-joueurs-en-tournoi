@@ -22,7 +22,6 @@ import { Toaster } from 'sonner';
 import type { Event } from '@/types';
 import type { ExportedEvent } from '@/lib/storage';
 
-// Dynamic imports pour les composants d'animation (client-only, lourds)
 const HalftoneWaves = NextDynamic(() => import('@/components/HalftoneWaves'), {
   ssr: false,
   loading: () => null,
@@ -36,32 +35,165 @@ const FloatingParticles = NextDynamic(() => import('@/components/common/Floating
   loading: () => null,
 });
 
-export default function Home() {
-  const { animationsEnabled } = useAnimations();
-  const { identity, isLoaded } = useClub();
+// ── Shared style constants (sonarjs/no-duplicate-string) ─────────────
+const MIAMI_GRADIENT = 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)';
+const BLUR_SATURATE = 'blur(15px) saturate(130%)';
 
-  // Initialize with null to avoid hydration mismatch
+// ── Sub-components ───────────────────────────────────────────────────
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-white text-xl">Loading...</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface PageHeaderProps {
+  currentEvent: Event | null;
+  onEventChange: () => void;
+  onNewEventClick: () => void;
+}
+
+function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeaderProps) {
+  return (
+    <header className="mb-6">
+      <div className="rounded-lg p-6" style={{
+        background: 'rgba(255, 255, 255, 0.22)',
+        backdropFilter: BLUR_SATURATE,
+        WebkitBackdropFilter: BLUR_SATURATE,
+        border: '1px solid rgba(255, 255, 255, 0.28)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 16px rgba(0,0,0,0.15)',
+      }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/chess-logo.png"
+              alt="Nos Joueurs en Tournoi Logo"
+              width={48}
+              height={50}
+              className="hidden md:block chess-logo"
+              priority
+              quality={90}
+            />
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold cyberpunk-title">
+              NOS JOUEURS EN TOURNOI
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 md:hidden">
+            <Image
+              src="/chess-logo.png"
+              alt="Nos Joueurs en Tournoi Logo"
+              width={40}
+              height={42}
+              className="chess-logo"
+              priority
+              quality={90}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <ClubHeader />
+            <AnimationsToggle />
+            <ShareButton />
+            <EventsManager
+              currentEventId={currentEvent?.id || ''}
+              onEventChange={onEventChange}
+              onNewEventClick={onNewEventClick}
+            />
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function EmptyState({ onCreateEvent }: { onCreateEvent: () => void }) {
+  return (
+    <div className="rounded-lg p-12 text-center" style={{
+      background: 'rgba(255, 255, 255, 0.12)',
+      backdropFilter: BLUR_SATURATE,
+      WebkitBackdropFilter: BLUR_SATURATE,
+      border: '1px solid rgba(255, 255, 255, 0.18)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15)',
+    }}>
+      <h2 className="text-xl font-semibold mb-2">Aucun événement actif</h2>
+      <p className="text-muted-foreground mb-4">Créez un nouvel événement pour commencer</p>
+      <Button variant="miami" onClick={onCreateEvent}>
+        Créer un événement
+      </Button>
+    </div>
+  );
+}
+
+// ── Share URL import hook (handles ?share= parameter) ────────────────
+
+function useShareURLImport(
+  identity: { clubSlug: string } | null,
+  setCurrentEvent: (e: Event | null) => void,
+  setShowEventForm: (v: boolean) => void,
+  setPendingImport: (v: ExportedEvent | null) => void,
+  setDuplicateDialogOpen: (v: boolean) => void,
+) {
+  useEffect(() => {
+    if (!identity) return;
+    const shareParam = new URLSearchParams(window.location.search).get('share');
+    if (!shareParam) return;
+    const exportedData = decodeEventFromURL(shareParam);
+    const storage = createClubStorage(identity.clubSlug);
+    if (exportedData) {
+      if (exportedData.event && storage.getCurrentEvent()?.id === exportedData.event.id) {
+        // Duplicate detected — prompt user for resolution
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPendingImport(exportedData);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDuplicateDialogOpen(true);
+      } else {
+        const result = storage.importEvent(exportedData);
+        if (result.success) {
+          toast.success('Événement importé avec succès !');
+          setCurrentEvent(storage.getCurrentEvent());
+          setShowEventForm(false);
+        } else {
+          toast.error('Erreur lors de l\'import de l\'événement');
+        }
+      }
+    } else {
+      toast.error('Lien de partage invalide');
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [identity, setCurrentEvent, setShowEventForm, setPendingImport, setDuplicateDialogOpen]);
+}
+
+// ── Custom hook: page state and handlers ─────────────────────────────
+
+function useHomePage() {
+  const { identity, isLoaded } = useClub();
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ExportedEvent | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Get club-scoped storage
   const getStorage = useCallback(() => {
     if (!identity) return null;
     return createClubStorage(identity.clubSlug);
   }, [identity]);
 
-  // Load state from localStorage after mount (client-side only)
+  // Client-side hydration from localStorage on mount
   useEffect(() => {
     if (!isLoaded || !identity) {
+      // Hydration flag — setState in effect is the standard React pattern for client-only init
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMounted(isLoaded);
       return;
     }
     const storage = createClubStorage(identity.clubSlug);
     const event = storage.getCurrentEvent();
+    // Hydration from localStorage — setState in effect is the standard React pattern
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentEvent(event);
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,41 +202,7 @@ export default function Home() {
     setMounted(true);
   }, [isLoaded, identity]);
 
-  useEffect(() => {
-    if (!identity) return;
-    const params = new URLSearchParams(window.location.search);
-    const shareParam = params.get('share');
-
-    if (shareParam) {
-      const exportedData = decodeEventFromURL(shareParam);
-      const storage = createClubStorage(identity.clubSlug);
-
-      if (exportedData) {
-        const isDuplicate = exportedData.event && storage.getCurrentEvent()?.id === exportedData.event.id;
-
-        if (isDuplicate) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setPendingImport(exportedData);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setDuplicateDialogOpen(true);
-        } else {
-          const result = storage.importEvent(exportedData);
-          if (result.success) {
-            toast.success('Événement importé avec succès !');
-            setCurrentEvent(storage.getCurrentEvent());
-            setShowEventForm(false);
-          } else {
-            toast.error('Erreur lors de l\'import de l\'événement');
-          }
-        }
-
-        window.history.replaceState({}, '', window.location.pathname);
-      } else {
-        toast.error('Lien de partage invalide');
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    }
-  }, [identity]);
+  useShareURLImport(identity, setCurrentEvent, setShowEventForm, setPendingImport, setDuplicateDialogOpen);
 
   const handleEventCreated = (event: Event) => {
     const storage = getStorage();
@@ -121,27 +219,14 @@ export default function Home() {
     setShowEventForm(false);
   };
 
-  const handleDuplicateReplace = () => {
+  const handleDuplicateImport = (replace: boolean) => {
     if (!pendingImport) return;
     const storage = getStorage();
     if (!storage) return;
-    const result = storage.importEvent(pendingImport, { replaceIfExists: true });
+    const opts = replace ? { replaceIfExists: true } : { replaceIfExists: false, generateNewId: true };
+    const result = storage.importEvent(pendingImport, opts);
     if (result.success) {
-      toast.success('Événement remplacé avec succès !');
-      setCurrentEvent(storage.getCurrentEvent());
-      setShowEventForm(false);
-    }
-    setDuplicateDialogOpen(false);
-    setPendingImport(null);
-  };
-
-  const handleDuplicateKeepBoth = () => {
-    if (!pendingImport) return;
-    const storage = getStorage();
-    if (!storage) return;
-    const result = storage.importEvent(pendingImport, { replaceIfExists: false, generateNewId: true });
-    if (result.success) {
-      toast.success('Copie de l\'événement créée !');
+      toast.success(replace ? 'Événement remplacé avec succès !' : 'Copie de l\'événement créée !');
       setCurrentEvent(storage.getCurrentEvent());
       setShowEventForm(false);
     }
@@ -155,45 +240,29 @@ export default function Home() {
     toast.info('Import annulé');
   };
 
-  // Wait for club context to load
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)'
-      }}>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-white text-xl">Loading...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  return {
+    isLoaded, identity, currentEvent, showEventForm, duplicateDialogOpen,
+    pendingImport, mounted, setShowEventForm, setCurrentEvent,
+    handleEventCreated, handleEventChange, handleDuplicateImport, handleDuplicateCancel,
+  };
+}
 
-  // Gate: no club identity → show onboarding
-  if (!identity) {
-    return <ClubOnboarding />;
-  }
+// ── Main component ───────────────────────────────────────────────────
 
-  // Show loading state during hydration
-  if (!mounted) {
-    return (
-      <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)'
-      }}>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-white text-xl">Loading...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+export default function Home() {
+  const { animationsEnabled } = useAnimations();
+  const {
+    isLoaded, identity, currentEvent, showEventForm, duplicateDialogOpen,
+    pendingImport, mounted, setShowEventForm, setCurrentEvent,
+    handleEventCreated, handleEventChange, handleDuplicateImport, handleDuplicateCancel,
+  } = useHomePage();
+
+  if (!isLoaded) return <LoadingScreen />;
+  if (!identity) return <ClubOnboarding />;
+  if (!mounted) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{
-      background: 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)'
-    }}>
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
       <Toaster position="top-right" richColors />
       {animationsEnabled && (
         <>
@@ -203,54 +272,11 @@ export default function Home() {
         </>
       )}
       <div className="max-w-7xl mx-auto relative z-10">
-        <header className="mb-6">
-          <div className="rounded-lg p-6" style={{
-            background: 'rgba(255, 255, 255, 0.22)',
-            backdropFilter: 'blur(15px) saturate(130%)',
-            WebkitBackdropFilter: 'blur(15px) saturate(130%)',
-            border: '1px solid rgba(255, 255, 255, 0.28)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 16px rgba(0,0,0,0.15)'
-          }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Image
-                  src="/chess-logo.png"
-                  alt="Nos Joueurs en Tournoi Logo"
-                  width={48}
-                  height={50}
-                  className="hidden md:block chess-logo"
-                  priority
-                  quality={90}
-                />
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold cyberpunk-title">
-                  NOS JOUEURS EN TOURNOI
-                </h1>
-              </div>
-              <div className="flex items-center gap-2 md:hidden">
-                <Image
-                  src="/chess-logo.png"
-                  alt="Nos Joueurs en Tournoi Logo"
-                  width={40}
-                  height={42}
-                  className="chess-logo"
-                  priority
-                  quality={90}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <ClubHeader />
-                <AnimationsToggle />
-                <ShareButton />
-                <EventsManager
-                  currentEventId={currentEvent?.id || ''}
-                  onEventChange={handleEventChange}
-                  onNewEventClick={() => setShowEventForm(true)}
-                />
-              </div>
-            </div>
-          </div>
-        </header>
-
+        <PageHeader
+          currentEvent={currentEvent}
+          onEventChange={handleEventChange}
+          onNewEventClick={() => setShowEventForm(true)}
+        />
         {showEventForm && (
           <div className="mb-6">
             <EventForm
@@ -259,32 +285,17 @@ export default function Home() {
             />
           </div>
         )}
-
         {currentEvent && !showEventForm && (
           <TournamentTabs event={currentEvent} onEventUpdate={setCurrentEvent} />
         )}
-
         {!currentEvent && !showEventForm && (
-          <div className="rounded-lg p-12 text-center" style={{
-            background: 'rgba(255, 255, 255, 0.12)',
-            backdropFilter: 'blur(15px) saturate(130%)',
-            WebkitBackdropFilter: 'blur(15px) saturate(130%)',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15)'
-          }}>
-            <h2 className="text-xl font-semibold mb-2">Aucun événement actif</h2>
-            <p className="text-muted-foreground mb-4">Créez un nouvel événement pour commencer</p>
-            <Button variant="miami" onClick={() => setShowEventForm(true)}>
-              Créer un événement
-            </Button>
-          </div>
+          <EmptyState onCreateEvent={() => setShowEventForm(true)} />
         )}
-
         <DuplicateEventDialog
           open={duplicateDialogOpen}
           eventName={pendingImport?.event.name || ''}
-          onReplace={handleDuplicateReplace}
-          onKeepBoth={handleDuplicateKeepBoth}
+          onReplace={() => handleDuplicateImport(true)}
+          onKeepBoth={() => handleDuplicateImport(false)}
           onCancel={handleDuplicateCancel}
         />
       </div>

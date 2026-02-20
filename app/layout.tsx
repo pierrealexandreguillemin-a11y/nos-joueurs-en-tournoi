@@ -1,3 +1,4 @@
+// Next.js layout: metadata/viewport exports alongside component are standard
 /* eslint-disable react-refresh/only-export-components */
 import type { Metadata, Viewport } from 'next';
 import { Audiowide, Inter } from 'next/font/google';
@@ -22,6 +23,9 @@ const inter = Inter({
   fallback: ['system-ui', 'arial'],
 });
 
+const APP_NAME = 'Nos Joueurs en Tournoi';
+const APP_TITLE = `${APP_NAME} - Suivi de tournois FFE`;
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -30,14 +34,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://nos-joueurs-en-tournoi.vercel.app'),
   title: {
-    default: 'Nos Joueurs en Tournoi - Suivi de tournois FFE',
-    template: '%s | Nos Joueurs en Tournoi',
+    default: APP_TITLE,
+    template: `%s | ${APP_NAME}`,
   },
   description: 'Application de suivi en temps réel des tournois d\'échecs FFE. Choisissez votre club, suivez vos joueurs. Synchronisation automatique, statistiques par club, gestion multi-événements.',
   keywords: ['échecs', 'FFE', 'tournoi', 'chess', 'tracker', 'club', 'temps réel', 'statistiques', 'joueurs'],
   authors: [{ name: 'Pierre Alexandre Guillemin' }],
   creator: 'Pierre Alexandre Guillemin',
-  publisher: 'Nos Joueurs en Tournoi',
+  publisher: APP_NAME,
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -53,21 +57,21 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'fr_FR',
     url: 'https://nos-joueurs-en-tournoi.vercel.app',
-    title: 'Nos Joueurs en Tournoi - Suivi de tournois FFE',
+    title: APP_TITLE,
     description: 'Application de suivi en temps réel des tournois d\'échecs FFE. Choisissez votre club, suivez vos joueurs.',
-    siteName: 'Nos Joueurs en Tournoi',
+    siteName: APP_NAME,
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Nos Joueurs en Tournoi - Suivi de tournois FFE',
+        alt: APP_TITLE,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nos Joueurs en Tournoi',
+    title: APP_NAME,
     description: 'Suivi de tournois FFE en temps réel',
     images: ['/og-image.png'],
   },
