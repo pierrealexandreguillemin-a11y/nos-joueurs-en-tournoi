@@ -4,6 +4,7 @@ import {
   setStorageData,
   getCurrentEvent,
   getAllEvents,
+  setCurrentEvent,
   saveEvent,
   deleteEvent,
   getValidationState,
@@ -12,6 +13,12 @@ import {
   clearAllData,
   exportData,
   importData,
+  exportEvent,
+  checkEventExists,
+  importEvent,
+  encodeEventToURL,
+  decodeEventFromURL,
+  generateShareURL,
   getAllTournaments,
   getTournamentsByEvent,
   getTournamentById,
@@ -23,7 +30,9 @@ import {
   getTournamentStats,
   createClubStorage,
 } from './storage';
+import type { ExportedEvent } from './storage';
 import type { Event, StorageData, Player } from '@/types';
+import { makeEvent as makeFixtureEvent } from '@/test/fixtures';
 
 describe('storage.ts', () => {
   beforeEach(() => {
@@ -172,7 +181,7 @@ describe('storage.ts', () => {
           {
             id: 'tournament-1',
             name: 'Tournament',
-            url: 'http://test.com',
+            url: 'https://test.example.com',
             players: [],
             lastUpdate: new Date().toISOString(),
           },
@@ -198,7 +207,7 @@ describe('storage.ts', () => {
           {
             id: 'tournament-1',
             name: 'Tournament',
-            url: 'http://test.com',
+            url: 'https://test.example.com',
             players: [],
             lastUpdate: new Date().toISOString(),
           },
@@ -225,7 +234,7 @@ describe('storage.ts', () => {
           {
             id: 'tournament-1',
             name: 'Tournament',
-            url: 'http://test.com',
+            url: 'https://test.example.com',
             players: [],
             lastUpdate: new Date().toISOString(),
           },
@@ -255,7 +264,7 @@ describe('storage.ts', () => {
           {
             id: 'tournament-1',
             name: 'Tournament 1',
-            url: 'http://test.com/1',
+            url: 'https://test.example.com/1',
             players: [],
             lastUpdate: new Date().toISOString(),
           },
@@ -270,7 +279,7 @@ describe('storage.ts', () => {
           {
             id: 'tournament-2',
             name: 'Tournament 2',
-            url: 'http://test.com/2',
+            url: 'https://test.example.com/2',
             players: [],
             lastUpdate: new Date().toISOString(),
           },
@@ -741,12 +750,8 @@ describe('storage.ts', () => {
     const storageA = () => createClubStorage('club-a');
     const storageB = () => createClubStorage('club-b');
 
-    const makeEvent = (id: string, name: string): Event => ({
-      id,
-      name,
-      createdAt: new Date().toISOString(),
-      tournaments: [],
-    });
+    // F4 DRY: use shared fixture instead of local duplicate
+    const makeEvent = (id: string, name: string): Event => makeFixtureEvent(id, name);
 
     describe('isolation lecture', () => {
       it('Club A sauvegarde un event → Club B ne le voit pas', () => {
@@ -846,14 +851,14 @@ describe('storage.ts', () => {
             {
               id: 'tournament-1a',
               name: 'Tournament 1A',
-              url: 'http://test.com/1a',
+              url: 'https://test.example.com/1a',
               players: [],
               lastUpdate: new Date().toISOString(),
             },
             {
               id: 'tournament-1b',
               name: 'Tournament 1B',
-              url: 'http://test.com/1b',
+              url: 'https://test.example.com/1b',
               players: [],
               lastUpdate: new Date().toISOString(),
             },
@@ -868,7 +873,7 @@ describe('storage.ts', () => {
             {
               id: 'tournament-2a',
               name: 'Tournament 2A',
-              url: 'http://test.com/2a',
+              url: 'https://test.example.com/2a',
               players: [],
               lastUpdate: new Date().toISOString(),
             },
@@ -928,6 +933,378 @@ describe('storage.ts', () => {
     it('setValidation playerName vide persiste correctement', () => {
       setValidation('tournament-1', '', 1, true);
       expect(getValidation('tournament-1', '', 1)).toBe(true);
+    });
+  });
+
+  describe('setCurrentEvent', () => {
+    it('met à jour le currentEventId', () => {
+      const event1: Event = { id: 'e1', name: 'E1', createdAt: '2024-01-01', tournaments: [] };
+      const event2: Event = { id: 'e2', name: 'E2', createdAt: '2024-01-01', tournaments: [] };
+      saveEvent(event1);
+      saveEvent(event2);
+
+      setCurrentEvent('e1');
+
+      const data = getStorageData();
+      expect(data.currentEventId).toBe('e1');
+    });
+
+    it('lance une erreur si l\'event n\'existe pas', () => {
+      expect(() => setCurrentEvent('nonexistent')).toThrow('Event with id nonexistent not found');
+    });
+  });
+
+  describe('exportEvent / importEvent / checkEventExists', () => {
+    const event: Event = {
+      id: 'exp-1',
+      name: 'Exported Event',
+      createdAt: '2024-01-01',
+      tournaments: [
+        { id: 'trn-1', name: 'U12', url: 'https://ffe.test/u12', lastUpdate: '2024-01-01', players: [] },
+      ],
+    };
+
+    beforeEach(() => {
+      saveEvent(event);
+      setValidation('trn-1', 'Alice', 1, true);
+    });
+
+    it('exportEvent retourne l\'event avec ses validations', () => {
+      const exported = exportEvent('exp-1');
+
+      expect(exported).not.toBeNull();
+      expect(exported!.version).toBe('1.0');
+      expect(exported!.event.id).toBe('exp-1');
+      expect(exported!.validations['trn-1']).toBeDefined();
+      expect(exported!.exportDate).toBeTruthy();
+    });
+
+    it('exportEvent sans validations quand includeValidations=false', () => {
+      const exported = exportEvent('exp-1', false);
+
+      expect(exported).not.toBeNull();
+      expect(exported!.validations).toEqual({});
+    });
+
+    it('exportEvent retourne null pour un event inexistant', () => {
+      expect(exportEvent('nonexistent')).toBeNull();
+    });
+
+    it('checkEventExists retourne true/false', () => {
+      expect(checkEventExists('exp-1')).toBe(true);
+      expect(checkEventExists('nonexistent')).toBe(false);
+    });
+
+    it('importEvent ajoute un nouvel event', () => {
+      const newExport: ExportedEvent = {
+        version: '1.0',
+        exportDate: '2024-01-01',
+        event: { id: 'imp-1', name: 'Imported', createdAt: '2024-01-01', tournaments: [] },
+        validations: {},
+      };
+
+      const result = importEvent(newExport);
+
+      expect(result.success).toBe(true);
+      expect(result.isDuplicate).toBe(false);
+      expect(result.eventId).toBe('imp-1');
+      expect(checkEventExists('imp-1')).toBe(true);
+    });
+
+    it('importEvent refuse un doublon sans replaceIfExists', () => {
+      const exported = exportEvent('exp-1')!;
+      const result = importEvent(exported);
+
+      expect(result.success).toBe(false);
+      expect(result.isDuplicate).toBe(true);
+    });
+
+    it('importEvent remplace un doublon avec replaceIfExists', () => {
+      const exported = exportEvent('exp-1')!;
+      exported.event.name = 'Updated Name';
+
+      const result = importEvent(exported, { replaceIfExists: true });
+
+      expect(result.success).toBe(true);
+      expect(result.isDuplicate).toBe(true);
+
+      const events = getAllEvents();
+      const updated = events.find(e => e.id === 'exp-1');
+      expect(updated?.name).toBe('Updated Name');
+    });
+
+    it('importEvent génère un nouvel ID avec generateNewId', () => {
+      const exported = exportEvent('exp-1')!;
+
+      const result = importEvent(exported, { replaceIfExists: false, generateNewId: true });
+
+      expect(result.success).toBe(true);
+      expect(result.isDuplicate).toBe(true);
+      expect(result.eventId).not.toBe('exp-1');
+
+      const events = getAllEvents();
+      expect(events).toHaveLength(2);
+      const copy = events.find(e => e.id === result.eventId);
+      expect(copy?.name).toContain('(copie)');
+    });
+
+    it('importEvent avec generateNewId remappe les validations', () => {
+      const exported = exportEvent('exp-1')!;
+
+      const result = importEvent(exported, { replaceIfExists: false, generateNewId: true });
+
+      expect(result.success).toBe(true);
+      // Les validations de l'original doivent être copiées vers le nouveau tournament ID
+      const data = getStorageData();
+      const copy = data.events.find(e => e.id === result.eventId);
+      expect(copy).toBeDefined();
+      // Le nouveau tournament a un ID différent de trn-1
+      const newTrnId = copy!.tournaments[0].id;
+      expect(newTrnId).not.toBe('trn-1');
+      expect(data.validations[newTrnId]).toBeDefined();
+    });
+
+    it('importEvent gère les erreurs gracieusement', () => {
+      // Forcer une erreur en injectant un objet invalide
+      const badExport = { version: '1.0', exportDate: '', event: null, validations: {} } as unknown as ExportedEvent;
+
+      const result = importEvent(badExport);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('encodeEventToURL / decodeEventFromURL / generateShareURL', () => {
+    const event: Event = {
+      id: 'share-1',
+      name: 'Shared Event',
+      createdAt: '2024-01-01',
+      tournaments: [
+        { id: 'trn-s1', name: 'Open', url: 'https://ffe.test/open', lastUpdate: '2024-01-01', players: [] },
+      ],
+    };
+
+    beforeEach(() => {
+      saveEvent(event);
+    });
+
+    it('encodeEventToURL retourne une string compressée', () => {
+      const encoded = encodeEventToURL('share-1');
+
+      expect(encoded).not.toBeNull();
+      expect(typeof encoded).toBe('string');
+      expect(encoded!.length).toBeGreaterThan(0);
+    });
+
+    it('encodeEventToURL retourne null pour un event inexistant', () => {
+      expect(encodeEventToURL('nonexistent')).toBeNull();
+    });
+
+    it('decodeEventFromURL décompresse correctement', () => {
+      const encoded = encodeEventToURL('share-1')!;
+      const decoded = decodeEventFromURL(encoded);
+
+      expect(decoded).not.toBeNull();
+      expect(decoded!.event.id).toBe('share-1');
+      expect(decoded!.event.name).toBe('Shared Event');
+      expect(decoded!.version).toBe('1.0');
+    });
+
+    it('decodeEventFromURL retourne null pour données invalides', () => {
+      expect(decodeEventFromURL('garbage-data')).toBeNull();
+    });
+
+    it('decodeEventFromURL retourne null pour structure invalide (pas de version/event)', async () => {
+      // lz-string compressé d'un objet sans version ni event
+      const { compressToEncodedURIComponent } = await import('lz-string');
+      const compressed = compressToEncodedURIComponent(JSON.stringify({ foo: 'bar' }));
+      expect(decodeEventFromURL(compressed)).toBeNull();
+    });
+
+    it('generateShareURL retourne url et taille', () => {
+      // Mock window.location pour le test (environnement node)
+      // Inclure localStorage car getLocalStorage() vérifie window.localStorage en premier
+      const origWindow = globalThis.window;
+      globalThis.window = {
+        location: { origin: 'https://example.com', pathname: '/' },
+        localStorage: globalThis.localStorage,
+      } as unknown as Window & typeof globalThis;
+
+      try {
+        const result = generateShareURL('share-1');
+
+        expect(result).not.toBeNull();
+        expect(result!.url).toContain('?share=');
+        expect(result!.url).toContain('https://example.com');
+        expect(result!.size).toBeGreaterThan(0);
+      } finally {
+        globalThis.window = origWindow;
+      }
+    });
+
+    it('generateShareURL retourne null pour event inexistant', () => {
+      expect(generateShareURL('nonexistent')).toBeNull();
+    });
+  });
+
+  describe('_setStorageData — gestion d\'erreurs', () => {
+    it('lance une erreur quand localStorage.setItem échoue', () => {
+      const originalSetItem = globalThis.localStorage.setItem;
+      globalThis.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+
+      try {
+        expect(() => setStorageData({ currentEventId: '', events: [], validations: {} }))
+          .toThrow('Failed to save data');
+      } finally {
+        globalThis.localStorage.setItem = originalSetItem;
+      }
+    });
+  });
+
+  describe('createClubStorage — méthodes non couvertes', () => {
+    it('getCurrentEvent retourne l\'event courant', () => {
+      const club = createClubStorage('test-club');
+      const event: Event = { id: 'e1', name: 'E1', createdAt: '2024-01-01', tournaments: [] };
+      club.saveEvent(event);
+
+      const current = club.getCurrentEvent();
+      expect(current).not.toBeNull();
+      expect(current!.id).toBe('e1');
+    });
+
+    it('getCurrentEvent retourne null sans currentEventId', () => {
+      const club = createClubStorage('empty-club');
+      expect(club.getCurrentEvent()).toBeNull();
+    });
+
+    it('getCurrentEvent retourne null si currentEventId ne correspond à rien', () => {
+      const club = createClubStorage('mismatch-club');
+      club.setStorageData({ currentEventId: 'ghost', events: [], validations: {} });
+      expect(club.getCurrentEvent()).toBeNull();
+    });
+
+    it('setCurrentEvent met à jour le currentEventId', () => {
+      const club = createClubStorage('switch-club');
+      club.saveEvent({ id: 'e1', name: 'E1', createdAt: '2024-01-01', tournaments: [] });
+      club.saveEvent({ id: 'e2', name: 'E2', createdAt: '2024-01-01', tournaments: [] });
+
+      club.setCurrentEvent('e1');
+      expect(club.getStorageData().currentEventId).toBe('e1');
+    });
+
+    it('setCurrentEvent lance une erreur si event inexistant', () => {
+      const club = createClubStorage('err-club');
+      expect(() => club.setCurrentEvent('ghost')).toThrow('Event with id ghost not found');
+    });
+
+    it('clearTournamentValidations supprime les validations d\'un tournoi', () => {
+      const club = createClubStorage('val-club');
+      club.setValidation('trn-1', 'Alice', 1, true);
+      club.setValidation('trn-2', 'Bob', 1, true);
+
+      club.clearTournamentValidations('trn-1');
+
+      expect(club.getValidation('trn-1', 'Alice', 1)).toBe(false);
+      expect(club.getValidation('trn-2', 'Bob', 1)).toBe(true);
+    });
+
+    it('exportEvent / importEvent fonctionnent en mode namespaced', () => {
+      const club = createClubStorage('exp-club');
+      club.saveEvent({
+        id: 'e1',
+        name: 'E1',
+        createdAt: '2024-01-01',
+        tournaments: [{ id: 'trn-1', name: 'T1', url: 'https://ffe.test/t', lastUpdate: '', players: [] }],
+      });
+
+      const exported = club.exportEvent('e1');
+      expect(exported).not.toBeNull();
+      expect(exported!.event.id).toBe('e1');
+
+      // Importer dans un autre club
+      const club2 = createClubStorage('imp-club');
+      const result = club2.importEvent(exported!);
+      expect(result.success).toBe(true);
+      expect(club2.getAllEvents()).toHaveLength(1);
+    });
+
+    it('checkEventExists fonctionne en mode namespaced', () => {
+      const club = createClubStorage('check-club');
+      club.saveEvent({ id: 'e1', name: 'E1', createdAt: '2024-01-01', tournaments: [] });
+
+      expect(club.checkEventExists('e1')).toBe(true);
+      expect(club.checkEventExists('e2')).toBe(false);
+    });
+
+    it('encodeEventToURL / generateShareURL en mode namespaced', () => {
+      const club = createClubStorage('url-club');
+      club.saveEvent({
+        id: 'e1',
+        name: 'E1',
+        createdAt: '2024-01-01',
+        tournaments: [],
+      });
+
+      const encoded = club.encodeEventToURL('e1');
+      expect(encoded).not.toBeNull();
+
+      const origWindow = globalThis.window;
+      globalThis.window = {
+        location: { origin: 'https://example.com', pathname: '/' },
+        localStorage: globalThis.localStorage,
+      } as unknown as Window & typeof globalThis;
+
+      try {
+        const shareResult = club.generateShareURL('e1');
+        expect(shareResult).not.toBeNull();
+        expect(shareResult!.url).toContain('?share=');
+      } finally {
+        globalThis.window = origWindow;
+      }
+    });
+
+    it('importData avec JSON invalide retourne false', () => {
+      const club = createClubStorage('bad-import');
+      expect(club.importData('not-json')).toBe(false);
+    });
+
+    // F6: clearAllData error path (storage.ts:652)
+    it('clearAllData attrape les erreurs de removeItem', () => {
+      const club = createClubStorage('err-clear');
+      club.saveEvent({ id: 'e1', name: 'E1', createdAt: '2024-01-01', tournaments: [] });
+
+      const originalRemoveItem = globalThis.localStorage.removeItem;
+      globalThis.localStorage.removeItem = () => { throw new Error('removeItem failed'); };
+
+      try {
+        // Should not throw — error is caught internally
+        expect(() => club.clearAllData()).not.toThrow();
+      } finally {
+        globalThis.localStorage.removeItem = originalRemoveItem;
+      }
+    });
+  });
+
+  // F5: _encodeEventToURL catch branch (storage.ts:516-518)
+  describe('encodeEventToURL — catch branch', () => {
+    it('retourne null quand JSON.stringify lève une erreur', () => {
+      const event: Event = {
+        id: 'crash-1',
+        name: 'Crash Event',
+        createdAt: '2024-01-01',
+        tournaments: [],
+      };
+      saveEvent(event);
+
+      // Mock JSON.stringify to throw — triggers the catch in _encodeEventToURL
+      const originalStringify = JSON.stringify;
+      JSON.stringify = (() => { throw new Error('stringify failed'); }) as typeof JSON.stringify;
+
+      try {
+        const result = encodeEventToURL('crash-1');
+        expect(result).toBeNull();
+      } finally {
+        JSON.stringify = originalStringify;
+      }
     });
   });
 });
