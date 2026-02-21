@@ -2,23 +2,20 @@
 
 import type { Event, StorageData } from '@/types';
 
-const STORAGE_KEY = 'nos-joueurs-en-tournoi';
+export const STORAGE_KEY = 'nos-joueurs-en-tournoi';
 
-// Safe localStorage access that works in client, server, and test contexts
 export function getLocalStorage(): Storage | null {
   if (typeof window !== 'undefined') return window.localStorage;
   if (typeof globalThis.localStorage !== 'undefined') return globalThis.localStorage;
   return null;
 }
 
-export function emptyData(): StorageData {
+function emptyData(): StorageData {
   return { currentEventId: '', events: [], validations: {} };
 }
 
-export { STORAGE_KEY };
-
-// Internal: get storage data for a given key
-export function _getStorageData(key: string): StorageData {
+// Namespaced read (used by createClubStorage)
+export function readStorage(key: string): StorageData {
   try {
     const storage = getLocalStorage();
     if (!storage) return emptyData();
@@ -31,8 +28,8 @@ export function _getStorageData(key: string): StorageData {
   }
 }
 
-// Internal: save storage data for a given key
-export function _setStorageData(data: StorageData, key: string): void {
+// Namespaced write (used by createClubStorage)
+export function writeStorage(data: StorageData, key: string): void {
   try {
     getLocalStorage()?.setItem(key, JSON.stringify(data));
   } catch (error) {
@@ -42,15 +39,15 @@ export function _setStorageData(data: StorageData, key: string): void {
 }
 
 // ========================================
-// PUBLIC API (backward compat, default key)
+// PUBLIC API (default key)
 // ========================================
 
 export function getStorageData(): StorageData {
-  return _getStorageData(STORAGE_KEY);
+  return readStorage(STORAGE_KEY);
 }
 
 export function setStorageData(data: StorageData): void {
-  _setStorageData(data, STORAGE_KEY);
+  writeStorage(data, STORAGE_KEY);
 }
 
 export function getAllEvents(): Event[] {
@@ -65,66 +62,24 @@ export function getCurrentEvent(): Event | null {
 
 export function setCurrentEvent(eventId: string): void {
   const data = getStorageData();
-  const event = data.events.find(e => e.id === eventId);
-  if (!event) throw new Error(`Event with id ${eventId} not found`);
+  if (!data.events.find(e => e.id === eventId)) {
+    throw new Error(`Event with id ${eventId} not found`);
+  }
   data.currentEventId = eventId;
   setStorageData(data);
 }
 
 export function saveEvent(event: Event): void {
-  _saveEvent(getStorageData, setStorageData, event);
+  const data = getStorageData();
+  const idx = data.events.findIndex(e => e.id === event.id);
+  if (idx >= 0) data.events[idx] = event;
+  else data.events.push(event);
+  data.currentEventId = event.id;
+  setStorageData(data);
 }
 
 export function deleteEvent(eventId: string): void {
-  _deleteEvent(getStorageData, setStorageData, eventId);
-}
-
-export function clearAllData(): void {
-  try {
-    getLocalStorage()?.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing localStorage:', error);
-  }
-}
-
-export function exportData(): string {
-  return JSON.stringify(getStorageData(), null, 2);
-}
-
-export function importData(jsonString: string): boolean {
-  try {
-    const data = JSON.parse(jsonString) as StorageData;
-    setStorageData(data);
-    return true;
-  } catch (error) {
-    console.error('Error importing data:', error);
-    return false;
-  }
-}
-
-// ========================================
-// HELPERS (used by core + clubStorage)
-// ========================================
-
-export type StorageGetter = () => StorageData;
-export type StorageSetter = (data: StorageData) => void;
-
-/** Helper: save (upsert) an event and set it as current */
-export function _saveEvent(get: StorageGetter, set: StorageSetter, event: Event): void {
-  const data = get();
-  const existingIndex = data.events.findIndex(e => e.id === event.id);
-  if (existingIndex >= 0) {
-    data.events[existingIndex] = event;
-  } else {
-    data.events.push(event);
-  }
-  data.currentEventId = event.id;
-  set(data);
-}
-
-/** Helper: delete an event and clean up its validations */
-export function _deleteEvent(get: StorageGetter, set: StorageSetter, eventId: string): void {
-  const data = get();
+  const data = getStorageData();
   const event = data.events.find(e => e.id === eventId);
   data.events = data.events.filter(e => e.id !== eventId);
   if (data.currentEventId === eventId) {
@@ -133,21 +88,5 @@ export function _deleteEvent(get: StorageGetter, set: StorageSetter, eventId: st
   if (event) {
     event.tournaments.forEach(t => { delete data.validations[t.id]; });
   }
-  set(data);
-}
-
-/** Helper: set a validation flag for a player/round */
-export function _setValidation(
-  get: StorageGetter,
-  set: StorageSetter,
-  tournamentId: string,
-  playerName: string,
-  round: number,
-  isValid: boolean,
-): void {
-  const data = get();
-  if (!data.validations[tournamentId]) data.validations[tournamentId] = {};
-  if (!data.validations[tournamentId][playerName]) data.validations[tournamentId][playerName] = {};
-  data.validations[tournamentId][playerName][`round_${round}`] = isValid;
-  set(data);
+  setStorageData(data);
 }

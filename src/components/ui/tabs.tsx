@@ -13,7 +13,7 @@ const TabsList = React.forwardRef<
     ref={ref}
     className={cn(
       "inline-flex h-10 items-center justify-center rounded-md p-1 text-muted-foreground",
-      "miami-glass-foreground miami-shimmer",
+      "miami-glass-foreground",
       "border border-miami-aqua/20",
       className
     )}

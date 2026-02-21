@@ -17,6 +17,9 @@ export class RateLimiter {
     const entry = this.store.get(key);
 
     if (!entry || now >= entry.resetAt) {
+      if (this.maxRequests <= 0) {
+        return { allowed: false, remaining: 0 };
+      }
       this.store.set(key, { count: 1, resetAt: now + this.windowMs });
       return { allowed: true, remaining: this.maxRequests - 1 };
     }

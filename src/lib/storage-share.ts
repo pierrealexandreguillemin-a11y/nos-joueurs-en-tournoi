@@ -1,17 +1,9 @@
 'use client';
 
 import type { Event, ValidationState } from '@/types';
+import type { StorageData } from '@/types';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import {
-  getStorageData,
-  setStorageData,
-  type StorageGetter,
-  type StorageSetter,
-} from './storage-core';
-
-// ========================================
-// EXPORT/IMPORT SINGLE EVENT
-// ========================================
+import { getStorageData, setStorageData } from './storage-core';
 
 export interface ExportedEvent {
   version: '1.0';
@@ -20,100 +12,37 @@ export interface ExportedEvent {
   validations: ValidationState;
 }
 
-export function exportEvent(eventId: string, includeValidations: boolean = true): ExportedEvent | null {
-  return _exportEventFrom(getStorageData, eventId, includeValidations);
-}
-
-export function checkEventExists(eventId: string): boolean {
-  const data = getStorageData();
-  return data.events.some(e => e.id === eventId);
-}
-
-export function importEvent(
-  exportedData: ExportedEvent,
-  options: {
-    replaceIfExists: boolean;
-    generateNewId?: boolean;
-  } = { replaceIfExists: false },
-): { success: boolean; eventId: string; isDuplicate: boolean } {
-  return _importEventInto(getStorageData, setStorageData, exportedData, options);
-}
+type Getter = () => StorageData;
+type Setter = (data: StorageData) => void;
 
 // ========================================
-// URL SHARING WITH COMPRESSION
+// PARAMETERIZED VERSIONS (for createClubStorage)
 // ========================================
 
-export function encodeEventToURL(eventId: string): string | null {
-  return _encodeEventToURL(getStorageData, eventId);
-}
-
-export function decodeEventFromURL(compressed: string): ExportedEvent | null {
-  try {
-    const json = decompressFromEncodedURIComponent(compressed);
-    if (!json) return null;
-
-    const exportedData = JSON.parse(json) as ExportedEvent;
-
-    if (!exportedData.version || !exportedData.event) {
-      return null;
-    }
-
-    return exportedData;
-  } catch (error) {
-    console.error('Error decoding event from URL:', error);
-    return null;
-  }
-}
-
-export function generateShareURL(eventId: string): { url: string; size: number } | null {
-  return _generateShareURL(getStorageData, eventId);
-}
-
-// ========================================
-// INTERNAL HELPERS (also used by clubStorage)
-// ========================================
-
-/** Helper: export a single event from storage data */
-export function _exportEventFrom(
-  get: StorageGetter,
-  eventId: string,
-  includeValidations: boolean = true,
+export function exportEventFrom(
+  get: Getter, eventId: string, includeValidations = true,
 ): ExportedEvent | null {
   const data = get();
   const event = data.events.find(e => e.id === eventId);
   if (!event) return null;
-
-  const eventValidations: ValidationState = {};
+  const vals: ValidationState = {};
   if (includeValidations) {
-    event.tournaments.forEach(tournament => {
-      if (data.validations[tournament.id]) {
-        eventValidations[tournament.id] = data.validations[tournament.id];
-      }
+    event.tournaments.forEach(t => {
+      if (data.validations[t.id]) vals[t.id] = data.validations[t.id];
     });
   }
-
-  return {
-    version: '1.0',
-    exportDate: new Date().toISOString(),
-    event,
-    validations: eventValidations,
-  };
+  return { version: '1.0', exportDate: new Date().toISOString(), event, validations: vals };
 }
 
-/** Helper: import a single event into storage data */
-export function _importEventInto(
-  get: StorageGetter,
-  set: StorageSetter,
-  exportedData: ExportedEvent,
+export function importEventInto(
+  get: Getter, set: Setter, exportedData: ExportedEvent,
   options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false },
 ): { success: boolean; eventId: string; isDuplicate: boolean } {
   try {
     const data = get();
     const { event, validations } = exportedData;
-
     const existingIndex = data.events.findIndex(e => e.id === event.id);
     const isDuplicate = existingIndex >= 0;
-
     let finalEvent = { ...event };
 
     if (isDuplicate) {
@@ -124,10 +53,7 @@ export function _importEventInto(
           ...event,
           id: `event_${crypto.randomUUID()}`,
           name: `${event.name} (copie)`,
-          tournaments: event.tournaments.map(t => ({
-            ...t,
-            id: `tournament_${crypto.randomUUID()}`,
-          })),
+          tournaments: event.tournaments.map(t => ({ ...t, id: `tournament_${crypto.randomUUID()}` })),
         };
         data.events.push(finalEvent);
       } else {
@@ -137,21 +63,19 @@ export function _importEventInto(
       data.events.push(finalEvent);
     }
 
-    Object.entries(validations).forEach(([tournamentId, tournamentValidations]) => {
+    Object.entries(validations).forEach(([tid, tv]) => {
       if (options.generateNewId && isDuplicate) {
-        const oldTournamentIndex = event.tournaments.findIndex(t => t.id === tournamentId);
-        if (oldTournamentIndex >= 0 && finalEvent.tournaments[oldTournamentIndex]) {
-          const newTournamentId = finalEvent.tournaments[oldTournamentIndex].id;
-          data.validations[newTournamentId] = tournamentValidations;
+        const oldIdx = event.tournaments.findIndex(t => t.id === tid);
+        if (oldIdx >= 0 && finalEvent.tournaments[oldIdx]) {
+          data.validations[finalEvent.tournaments[oldIdx].id] = tv;
         }
       } else {
-        data.validations[tournamentId] = tournamentValidations;
+        data.validations[tid] = tv;
       }
     });
 
     data.currentEventId = finalEvent.id;
     set(data);
-
     return { success: true, eventId: finalEvent.id, isDuplicate };
   } catch (error) {
     console.error('Error importing event:', error);
@@ -159,27 +83,62 @@ export function _importEventInto(
   }
 }
 
-/** Helper: encode event to compressed URL parameter */
-export function _encodeEventToURL(get: StorageGetter, eventId: string): string | null {
-  const exportedData = _exportEventFrom(get, eventId, false);
-  if (!exportedData) return null;
-
+export function encodeEventFrom(get: Getter, eventId: string): string | null {
+  const exported = exportEventFrom(get, eventId, false);
+  if (!exported) return null;
   try {
-    const json = JSON.stringify(exportedData);
-    return compressToEncodedURIComponent(json);
+    return compressToEncodedURIComponent(JSON.stringify(exported));
   } catch (error) {
     console.error('Error encoding event to URL:', error);
     return null;
   }
 }
 
-/** Helper: generate a shareable URL for an event */
-export function _generateShareURL(get: StorageGetter, eventId: string): { url: string; size: number } | null {
-  const encoded = _encodeEventToURL(get, eventId);
+export function generateShareURLFrom(
+  get: Getter, eventId: string,
+): { url: string; size: number } | null {
+  const encoded = encodeEventFrom(get, eventId);
   if (!encoded) return null;
-
-  const baseURL = window.location.origin + window.location.pathname;
-  const url = `${baseURL}?share=${encoded}`;
-
+  const url = `${window.location.origin + window.location.pathname}?share=${encoded}`;
   return { url, size: url.length };
+}
+
+// ========================================
+// PUBLIC API (default storage)
+// ========================================
+
+export function exportEvent(eventId: string, includeValidations = true): ExportedEvent | null {
+  return exportEventFrom(getStorageData, eventId, includeValidations);
+}
+
+export function checkEventExists(eventId: string): boolean {
+  return getStorageData().events.some(e => e.id === eventId);
+}
+
+export function importEvent(
+  exportedData: ExportedEvent,
+  options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false },
+): { success: boolean; eventId: string; isDuplicate: boolean } {
+  return importEventInto(getStorageData, setStorageData, exportedData, options);
+}
+
+export function encodeEventToURL(eventId: string): string | null {
+  return encodeEventFrom(getStorageData, eventId);
+}
+
+export function decodeEventFromURL(compressed: string): ExportedEvent | null {
+  try {
+    const json = decompressFromEncodedURIComponent(compressed);
+    if (!json) return null;
+    const data = JSON.parse(json) as ExportedEvent;
+    if (!data.version || !data.event) return null;
+    return data;
+  } catch (error) {
+    console.error('Error decoding event from URL:', error);
+    return null;
+  }
+}
+
+export function generateShareURL(eventId: string): { url: string; size: number } | null {
+  return generateShareURLFrom(getStorageData, eventId);
 }

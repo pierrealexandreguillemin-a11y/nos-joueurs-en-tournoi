@@ -107,31 +107,6 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
 }
 
-/* Miami Crystal UI System - Global Shimmer Effects */
-@keyframes shimmer {
-  0%, 100% {
-    transform: translateX(-100%);
-  }
-  50% {
-    transform: translateX(100%);
-  }
-}
-
-.miami-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.miami-shimmer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(-30deg, transparent 40%, rgba(255,255,255,0.02) 50%, transparent 60%);
-  animation: shimmer 8s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
 /* Miami Card avec opacite visible (12% au lieu de 1-5%) */
 .miami-card {
   border-radius: var(--radius);
