@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { generateSyncToken } from '@/lib/hmac';
 
 // Mock kv module
 vi.mock('@/lib/kv', () => ({
@@ -18,20 +19,20 @@ import { POST } from '../sync/route';
 import { GET } from '../fetch/route';
 import { NextRequest } from 'next/server';
 
-function makeSyncRequest(body: unknown): NextRequest {
+function makeSyncRequest(body: unknown, headers?: Record<string, string>): NextRequest {
   return new NextRequest('http://localhost:3000/api/events/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
 }
 
-function makeFetchRequest(params?: Record<string, string>): NextRequest {
+function makeFetchRequest(params?: Record<string, string>, headers?: Record<string, string>): NextRequest {
   const url = new URL('http://localhost:3000/api/events/fetch');
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   }
-  return new NextRequest(url.toString(), { method: 'GET' });
+  return new NextRequest(url.toString(), { method: 'GET', headers });
 }
 
 describe('API routes — QG-5: validation slug', () => {
@@ -64,12 +65,39 @@ describe('API routes — QG-5: validation slug', () => {
       expect(res.status).toBe(400);
     });
 
-    it('200 avec clubSlug valide "hay-chess"', async () => {
+    it('401 si X-Sync-Token manquant', async () => {
       const req = makeSyncRequest({
         clubSlug: 'hay-chess',
         events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
         validations: {},
       });
+      const res = await POST(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('401 si X-Sync-Token invalide', async () => {
+      const req = makeSyncRequest(
+        {
+          clubSlug: 'hay-chess',
+          events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
+          validations: {},
+        },
+        { 'X-Sync-Token': 'bad-token' },
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('200 avec clubSlug valide et token HMAC correct', async () => {
+      const token = await generateSyncToken('hay-chess');
+      const req = makeSyncRequest(
+        {
+          clubSlug: 'hay-chess',
+          events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
+          validations: {},
+        },
+        { 'X-Sync-Token': token },
+      );
       const res = await POST(req);
       expect(res.status).toBe(200);
     });
@@ -88,8 +116,21 @@ describe('API routes — QG-5: validation slug', () => {
       expect(res.status).toBe(400);
     });
 
-    it('200 avec clubSlug valide', async () => {
+    it('401 si X-Sync-Token manquant', async () => {
       const req = makeFetchRequest({ clubSlug: 'hay-chess' });
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('401 si X-Sync-Token invalide', async () => {
+      const req = makeFetchRequest({ clubSlug: 'hay-chess' }, { 'X-Sync-Token': 'bad' });
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('200 avec clubSlug valide et token HMAC correct', async () => {
+      const token = await generateSyncToken('hay-chess');
+      const req = makeFetchRequest({ clubSlug: 'hay-chess' }, { 'X-Sync-Token': token });
       const res = await GET(req);
       expect(res.status).toBe(200);
     });

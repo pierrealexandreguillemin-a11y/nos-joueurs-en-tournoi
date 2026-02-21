@@ -1,6 +1,7 @@
 'use client';
 
 import { createClubStorage } from './storage';
+import { generateSyncToken } from './hmac';
 import type { StorageData } from '@/types';
 
 const SYNC_INTERVAL = 5000; // 5 seconds (kept for backward compatibility, not used in manual sync)
@@ -14,10 +15,12 @@ export async function syncToUpstash(clubSlug: string): Promise<boolean> {
     const storage = createClubStorage(clubSlug);
     const data = storage.getStorageData();
 
+    const token = await generateSyncToken(clubSlug);
     const response = await fetch(`${API_BASE}/api/events/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Sync-Token': token,
       },
       body: JSON.stringify({ ...data, clubSlug }),
     });
@@ -40,7 +43,10 @@ export async function syncToUpstash(clubSlug: string): Promise<boolean> {
  */
 export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`);
+    const token = await generateSyncToken(clubSlug);
+    const response = await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`, {
+      headers: { 'X-Sync-Token': token },
+    });
 
     if (!response.ok) {
       console.error('[Upstash Sync] Download failed:', response.statusText, response.status);

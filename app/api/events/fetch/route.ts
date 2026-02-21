@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorageData } from '@/lib/kv';
+import { verifySyncToken } from '@/lib/hmac';
 import { SLUG_REGEX } from '@/lib/validation';
 
 /**
@@ -16,6 +17,12 @@ export async function GET(req: NextRequest) {
         { error: 'Invalid or missing clubSlug. Must match /^[a-z0-9-]{1,40}$/' },
         { status: 400 }
       );
+    }
+
+    // Verify HMAC token
+    const token = req.headers.get('X-Sync-Token');
+    if (!token || !await verifySyncToken(clubSlug, token)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Fetch all data from Upstash KV
