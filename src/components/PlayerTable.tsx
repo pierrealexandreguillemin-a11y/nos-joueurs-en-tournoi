@@ -81,10 +81,10 @@ function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
         </TableHead>
       ))}
       <TableHead className="text-center font-bold">Pts</TableHead>
-      <TableHead className="text-center font-bold">Tr.</TableHead>
-      <TableHead className="text-center font-bold">Buch.</TableHead>
-      <TableHead className="text-center font-bold">Perf</TableHead>
-      <TableHead className="text-center font-bold">Class.</TableHead>
+      <TableHead className="text-center font-bold" title="Départage (Tiebreak)">Tr.</TableHead>
+      <TableHead className="text-center font-bold" title="Buchholz">Buch.</TableHead>
+      <TableHead className="text-center font-bold" title="Performance Elo">Perf</TableHead>
+      <TableHead className="text-center font-bold" title="Classement">Class.</TableHead>
     </TableRow>
   );
 }
@@ -115,6 +115,7 @@ function RoundCell({ player, roundIndex, isValidated, onValidationChange }: Roun
                 onValidationChange(player.name, round, checked as boolean)
               }
               title={`Valider R${round} pour ${player.name}`}
+              aria-label={`Valider ronde ${round} pour ${player.name}`}
             />
           </>
         ) : (

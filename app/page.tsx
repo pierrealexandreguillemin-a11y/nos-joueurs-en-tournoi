@@ -43,7 +43,7 @@ const BLUR_SATURATE = 'blur(15px) saturate(130%)';
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" role="status" aria-live="polite" style={{ background: MIAMI_GRADIENT }}>
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">Chargement...</div>
@@ -210,6 +210,7 @@ function useHomePage() {
     storage.saveEvent(event);
     setCurrentEvent(event);
     setShowEventForm(false);
+    toast.success(`Événement "${event.name}" créé`);
   };
 
   const handleEventChange = () => {
@@ -263,6 +264,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-miami-navy focus:rounded">
+        Aller au contenu principal
+      </a>
       <Toaster position="top-right" richColors />
       {animationsEnabled && (
         <>
@@ -277,20 +281,22 @@ export default function Home() {
           onEventChange={handleEventChange}
           onNewEventClick={() => setShowEventForm(true)}
         />
-        {showEventForm && (
-          <div className="mb-6">
-            <EventForm
-              onEventCreated={handleEventCreated}
-              onCancel={() => setShowEventForm(false)}
-            />
-          </div>
-        )}
-        {currentEvent && !showEventForm && (
-          <TournamentTabs event={currentEvent} onEventUpdate={setCurrentEvent} />
-        )}
-        {!currentEvent && !showEventForm && (
-          <EmptyState onCreateEvent={() => setShowEventForm(true)} />
-        )}
+        <main id="main-content">
+          {showEventForm && (
+            <div className="mb-6">
+              <EventForm
+                onEventCreated={handleEventCreated}
+                onCancel={() => setShowEventForm(false)}
+              />
+            </div>
+          )}
+          {currentEvent && !showEventForm && (
+            <TournamentTabs event={currentEvent} onEventUpdate={setCurrentEvent} />
+          )}
+          {!currentEvent && !showEventForm && (
+            <EmptyState onCreateEvent={() => setShowEventForm(true)} />
+          )}
+        </main>
         <DuplicateEventDialog
           open={duplicateDialogOpen}
           eventName={pendingImport?.event.name || ''}

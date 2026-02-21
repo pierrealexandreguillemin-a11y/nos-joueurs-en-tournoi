@@ -16,9 +16,9 @@ export default function ClubStats({ eventName, clubName, players, currentRound }
   return (
     <div className="space-y-2 font-audiowide">
       <div className="flex items-center gap-2 flex-wrap">
-        <h3 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold">
           Stats {clubName || 'Club'} - Ronde {stats.round}
-        </h3>
+        </h2>
         <Badge variant="info">{players.length} joueurs</Badge>
         {eventName && (
           <span className="text-base text-miami-aqua ml-2">

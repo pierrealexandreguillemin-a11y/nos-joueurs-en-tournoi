@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
 import { scrapeFFE, scrapeFFEPair } from '@/lib/scraper';
 import { createClubStorage } from '@/lib/storage';
@@ -130,6 +131,7 @@ function useSyncCallbacks(
       }
 
       commitEvent({ ...event, availableClubs: clubs });
+      toast.success(`${clubs.length} club(s) détecté(s)`);
     } catch (err) {
       console.error('Error fetching clubs:', err);
       setError(err instanceof Error ? err.message : UNKNOWN_ERROR);
@@ -157,6 +159,7 @@ function useSyncCallbacks(
           t.id === tournament.id ? updatedTournament : t
         ),
       });
+      toast.success(`${updatedTournament.players.length} joueur(s) mis à jour`);
     } catch (err) {
       console.error('Error refreshing tournament:', err);
       setError(err instanceof Error ? err.message : UNKNOWN_ERROR);

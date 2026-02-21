@@ -107,8 +107,9 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
               size="icon"
               className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
               title="Partager avec QR code"
+              aria-label="Partager avec QR code"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           }
         />
@@ -122,8 +123,9 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
           onExport(event.id);
         }}
         title="Exporter vers fichier JSON"
+        aria-label="Exporter vers fichier JSON"
       >
-        <Upload className="w-4 h-4" />
+        <Upload className="w-4 h-4" aria-hidden="true" />
       </Button>
       <Button
         variant="ghost"
@@ -133,9 +135,10 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
           e.stopPropagation();
           onCloudUpload();
         }}
-        title="Envoyer tous les événements vers le cloud (Upstash)"
+        title="Envoyer vers le cloud"
+        aria-label="Envoyer vers le cloud"
       >
-        <CloudUpload className="w-4 h-4" />
+        <CloudUpload className="w-4 h-4" aria-hidden="true" />
       </Button>
       <Button
         variant="ghost"
@@ -145,8 +148,10 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
           e.stopPropagation();
           onDelete(event.id);
         }}
+        title="Supprimer"
+        aria-label={`Supprimer l'événement ${event.name}`}
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="w-4 h-4" aria-hidden="true" />
       </Button>
     </div>
   );
@@ -177,17 +182,19 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
             onClick={onImportClick}
             className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
             title="Importer depuis fichier JSON"
+            aria-label="Importer depuis fichier JSON"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={onCloudDownload}
             className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
-            title="Télécharger depuis le cloud (Upstash)"
+            title="Télécharger depuis le cloud"
+            aria-label="Télécharger depuis le cloud"
           >
-            <CloudDownload className="w-4 h-4" />
+            <CloudDownload className="w-4 h-4" aria-hidden="true" />
           </Button>
           <Button variant="miami" onClick={onNewEvent}>
             Nouvel événement
