@@ -1,8 +1,8 @@
 # Suivi de developpement - Nos Joueurs en Tournoi
 
-> Derniere mise a jour : 2026-02-20
+> Derniere mise a jour : 2026-02-21
 > Branche : `master`
-> Dernier commit : `59b77a9`
+> Dernier commit : `460d563`
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Indicateur | Valeur | Seuil | Statut |
 |------------|--------|-------|--------|
-| Tests | 361 passed (17 suites) | - | OK |
-| Couverture Stmts | 79.53% | >= 70% | OK |
-| Couverture Branch | 67.97% | >= 70% | SOUS SEUIL |
-| Couverture Funcs | 79.38% | >= 70% | OK |
-| Couverture Lines | 78.49% | >= 70% | OK |
+| Tests | 439 passed (20 suites) | - | OK |
+| Couverture Stmts | 94.80% | >= 70% | OK |
+| Couverture Branch | 86.40% | >= 70% | OK |
+| Couverture Funcs | 95.18% | >= 70% | OK |
+| Couverture Lines | 95.58% | >= 70% | OK |
 | ESLint errors | 0 | 0 | OK |
 | ESLint warnings | 0 | 0 | OK |
 | TypeScript errors | 0 | 0 | OK |
@@ -113,16 +113,65 @@ Commit : `c946ad0`
 
 Commit : `59b77a9`
 
+### Session couverture (2026-02-20 → 2026-02-21)
+
+**Phase 1 : 67.97% → 71.42% branches** — Plan initial execute
+
+| Fichier cree/modifie | Tests ajoutes | Impact branches |
+|----------------------|---------------|-----------------|
+| `src/components/ClubSelector.test.tsx` | +3 | +4 branches |
+| `src/lib/scraper.test.ts` | +5 | +4 branches |
+| `src/lib/kv.test.ts` | +10 | kv.ts → 100% |
+
+**Phase 2 : 71.42% → 85.71% branches** — Couverture fichiers critiques
+
+| Fichier cree/modifie | Tests ajoutes | Impact |
+|----------------------|---------------|--------|
+| `src/hooks/useTournamentSync.test.ts` | +22 | 46.34% → 90.24% |
+| `src/lib/storage.test.ts` | +30 | 45.55% → 92.22% |
+| `src/lib/kv.test.ts` | +2 | 90.9% → 100% |
+
+**Phase 3 : E2E** — Tests bout en bout
+
+| Fichier cree | Tests | Couverture |
+|-------------|-------|------------|
+| `e2e/onboarding.e2e.ts` | 5 | Flow onboarding complet |
+| `e2e/event-creation.e2e.ts` | 5 | Creation/persistence evenements |
+| `e2e/accessibility.e2e.ts` | 3 | WCAG 2.1 AA via axe-core |
+| `e2e/share-url.e2e.ts` | 2 | Import via ?share= URL |
+
+### Audit #4 — 12 findings (auto-audit sincerite)
+
+| Finding | Severite | Description | Statut |
+|---------|----------|-------------|--------|
+| F1 | HIGH | Test titre trompeur "fetchResults sans clubName" — ne testait pas fetchResults | CORRIGE (renomme + documente honnêtement) |
+| F2 | HIGH | Branche identity===null jamais testee (useTournamentSync:213-214) | CORRIGE (mockIdentity mutable, test ajoute) |
+| F3 | MEDIUM | Pas de E2E pour ?share= URL | CORRIGE (e2e/share-url.e2e.ts) |
+| F4 | MEDIUM | DRY non applique — makeEvent local dans storage.test.ts | CORRIGE (delegue a makeFixtureEvent) |
+| F5 | MEDIUM | _encodeEventToURL catch (storage.ts:516-518) non couvert | CORRIGE (mock JSON.stringify) |
+| F6 | MEDIUM | clearAllData error path (storage.ts:652) non couvert | CORRIGE (mock removeItem) |
+| F7 | LOW | loading guard Ctrl+R (useTournamentSync.ts:97) non teste | CORRIGE (test avec promise pendante) |
+| F8 | LOW | setTimeout(r,10) fragile dans test Ctrl+R | CORRIGE (remplace par waitFor) |
+| F9 | LOW | globalThis.window manipulation dans storage.test.ts | DOCUMENTE (try/finally suffisant) |
+| F10 | LOW | http://test.com pre-existants dans storage.test.ts | CORRIGE (→ https://test.example.com) |
+| F11 | LOW | SUIVI_DEV.md non mis a jour | CORRIGE |
+| F12 | LOW | fixtures.ts a 25% — factories mortes | CORRIGE (makePlayer/makeTournament utilises → 75%) |
+
+**Branches non couvertes restantes (documentees) :**
+- `useTournamentSync.ts:142` — defense-in-depth: `if (!event.clubName) return` dans fetchResults n'est jamais appele directement (handleRefresh dispatche vers fetchClubs dans ce cas). Branche inaccessible sans refactoring.
+- `ClubSelector.tsx:17` — defense-in-depth: `if(selected)` falsy inaccessible via React fiber (bouton disabled en amont).
+- `storage.ts:632` — getValidationState dans createClubStorage toujours couvert via getValidation mais pas directement.
+
 ---
 
 ## TODO - Prochaine session
 
 ### Priorite 1 — Fiabilite et couverture
 
-- [ ] **Couverture branches a 70%** — Actuellement 67.97%, sous le seuil ISO 25010. Identifier les branches non couvertes (`npx vitest run --coverage` puis analyser le rapport) et ajouter les tests manquants.
-- [ ] **Couverture globale a 85%** — Objectif stretch. Les fichiers les moins couverts sont probablement les composants React et les hooks.
-- [ ] **Tests composants React** — Ajouter des tests @testing-library/react pour les composants principaux : `ClubSelector`, `EventForm`, `EventsManager`, `TournamentTabs`, `ClubStats`, `ShareEventModal`.
-- [ ] **Tests hooks** — Tester `useTournamentSync`, `useShareURLImport`, `useHomePage` avec des mocks appropriate.
+- [x] **Couverture branches a 70%** — 67.97% → 86.40%. DONE.
+- [x] **Couverture globale a 85%** — Stmts 94.80%, Lines 95.58%. DONE.
+- [x] **Tests composants React** — ClubSelector, EventForm, TournamentTabs, ClubStats, PlayerTable testes. Reste: EventsManager, ShareEventModal.
+- [x] **Tests hooks** — useTournamentSync teste (97.56% branches). Reste: useShareURLImport, useHomePage (testes via E2E).
 
 ### Priorite 2 — Securite (OWASP)
 
@@ -141,17 +190,17 @@ Commit : `59b77a9`
 
 ### Priorite 4 — Tests E2E et accessibilite
 
-- [ ] **Tests E2E Puppeteer** — Le projet a deja `puppeteer` et `@axe-core/puppeteer` en devDependencies. Creer des scenarios E2E :
-  - Onboarding club
-  - Creation evenement
-  - Actualisation resultats (avec mock FFE)
-  - Partage par URL
-- [ ] **Tests accessibilite axe-core** — Scanner chaque page avec axe-core pour valider WCAG 2.1 AA.
+- [x] **Tests E2E Puppeteer** — 4 suites E2E creees :
+  - [x] Onboarding club (e2e/onboarding.e2e.ts)
+  - [x] Creation evenement (e2e/event-creation.e2e.ts)
+  - [ ] Actualisation resultats (avec mock FFE)
+  - [x] Partage par URL (e2e/share-url.e2e.ts)
+- [x] **Tests accessibilite axe-core** — 3 pages scannees WCAG 2.1 AA (e2e/accessibility.e2e.ts).
 - [ ] **Tests Lighthouse** — `lighthouse` est en devDependencies. Automatiser un audit performance/accessibility/SEO.
 
 ### Priorite 5 — Maintenance et DX
 
-- [ ] **Mettre a jour le README.md** — La section "Qualite du code" mentionne encore "142 tests" et un pre-commit basique. Mettre a jour avec les vrais chiffres (361 tests, 6 gates pre-push, normes ISO).
+- [ ] **Mettre a jour le README.md** — La section "Qualite du code" mentionne encore "142 tests" et un pre-commit basique. Mettre a jour avec les vrais chiffres (439 tests, 6 gates pre-push, normes ISO).
 - [ ] **Pre-push Windows workaround** — Investiguer pourquoi Git for Windows kill le push quand la sortie coverage depasse ~40k chars. Options : rediriger stdout vers un fichier, ou desactiver le reporter table coverage en pre-push.
 - [ ] **Upgrade eslint a v9** — Le projet utilise eslint 8.x avec `.eslintrc.cjs` (legacy config). La v9 utilise `eslint.config.js` (flat config). Migration non urgente mais a planifier.
 
