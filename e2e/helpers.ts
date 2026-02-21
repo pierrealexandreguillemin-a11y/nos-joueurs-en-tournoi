@@ -3,8 +3,7 @@
  */
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 
-export const PORT = 3099;
-export const BASE_URL = `http://localhost:${PORT}`;
+export const BASE_URL = process.env.E2E_BASE_URL || 'https://nos-joueurs-en-tournoi.vercel.app';
 
 export async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({

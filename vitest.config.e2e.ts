@@ -12,7 +12,7 @@ export default defineConfig({
     include: ['e2e/**/*.e2e.ts'],
     testTimeout: 30_000,
     hookTimeout: 120_000,
-    globalSetup: './e2e/global-setup.ts',
+    // E2E run against deployed URL (override via E2E_BASE_URL env var)
     // E2E tests are separate from unit test pyramid — no coverage
   },
 });
