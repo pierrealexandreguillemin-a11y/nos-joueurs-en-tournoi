@@ -11,6 +11,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "typecheck": "tsc --noEmit",
     "duplication": "jscpd src app --min-tokens 50 --min-lines 5 --threshold 5 --ignore \"**/*.test.*,**/__tests__/**\" --reporters console",
     "prepare": "husky"
