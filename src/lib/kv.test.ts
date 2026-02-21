@@ -48,10 +48,16 @@ import {
   settingsKey,
   saveEvents,
   getEvents,
+  saveEvent,
+  deleteEvent,
   saveValidations,
   getValidations,
+  getCurrentEventId,
+  saveCurrentEventId,
+  saveStorageData,
+  getStorageData,
 } from './kv';
-import type { Event } from '@/types';
+import { makeEvent } from '@/test/fixtures';
 
 describe('kv.ts namespacé — QG-4: isolation KV', () => {
   beforeEach(() => {
@@ -85,13 +91,6 @@ describe('kv.ts namespacé — QG-4: isolation KV', () => {
   });
 
   describe('fonctions paramétrées', () => {
-    const makeEvent = (id: string, name: string): Event => ({
-      id,
-      name,
-      createdAt: '2024-01-01',
-      tournaments: [],
-    });
-
     it('saveEvents(events, "club-a") ne persiste que sous le namespace club-a', async () => {
       await saveEvents([makeEvent('e1', 'Event 1')], 'club-a');
 
@@ -141,10 +140,7 @@ describe('kv.ts namespacé — QG-4: isolation KV', () => {
     });
 
     it('saveEvents puis getEvents préserve la structure complète', async () => {
-      const event: Event = {
-        id: 'e1',
-        name: 'Full Event',
-        createdAt: '2024-01-01',
+      const event = makeEvent('e1', 'Full Event', {
         tournaments: [{
           id: 'trn_1',
           name: 'U12',
@@ -160,13 +156,104 @@ describe('kv.ts namespacé — QG-4: isolation KV', () => {
             validated: [false],
           }],
         }],
-      };
+      });
 
       await saveEvents([event], 'club-a');
       const retrieved = await getEvents('club-a');
 
       expect(retrieved).toHaveLength(1);
       expect(retrieved[0].tournaments[0].players[0].name).toBe('Alice');
+    });
+
+    it('getEvents gère le retour objet (pas string) depuis Upstash', async () => {
+      // Injecter directement un objet (au lieu d'une string JSON)
+      const key = eventsKey('obj-club');
+      mockStore[key] = { e1: { id: 'e1', name: 'Obj Event', createdAt: '2024-01-01', tournaments: [] } };
+
+      const events = await getEvents('obj-club');
+      expect(events).toHaveLength(1);
+      expect(events[0].name).toBe('Obj Event');
+    });
+
+    it('getValidations gère le retour objet (pas string)', async () => {
+      const key = validationsKey('obj-club');
+      mockStore[key] = { t1: { Player: { round_1: true } } };
+
+      const validations = await getValidations('obj-club');
+      expect(validations).toEqual({ t1: { Player: { round_1: true } } });
+    });
+
+    it('getCurrentEventId retourne "" sans settings', async () => {
+      const id = await getCurrentEventId('no-settings-club');
+      expect(id).toBe('');
+    });
+
+    it('getCurrentEventId gère le retour objet (pas string)', async () => {
+      const key = settingsKey('obj-club');
+      mockStore[key] = { currentEventId: 'evt-42' };
+
+      const id = await getCurrentEventId('obj-club');
+      expect(id).toBe('evt-42');
+    });
+
+    it('getCurrentEventId retourne "" quand currentEventId est falsy dans settings (line 124)', async () => {
+      const key = settingsKey('falsy-club');
+      // Settings existent mais currentEventId est undefined
+      mockStore[key] = JSON.stringify({ currentEventId: '' });
+
+      const id = await getCurrentEventId('falsy-club');
+      expect(id).toBe('');
+    });
+
+    it('saveEvent persiste un event unitaire', async () => {
+      await saveEvent(makeEvent('e1', 'Single Event'), 'club-x');
+      const events = await getEvents('club-x');
+      expect(events).toHaveLength(1);
+      expect(events[0].name).toBe('Single Event');
+    });
+
+    it('deleteEvent supprime un event spécifique', async () => {
+      await saveEvent(makeEvent('e1', 'Event 1'), 'club-x');
+      await saveEvent(makeEvent('e2', 'Event 2'), 'club-x');
+      await deleteEvent('e1', 'club-x');
+      const events = await getEvents('club-x');
+      expect(events).toHaveLength(1);
+      expect(events[0].id).toBe('e2');
+    });
+
+    it('saveStorageData avec currentEventId falsy utilise "" (line 134)', async () => {
+      await saveStorageData({
+        events: [makeEvent('e1', 'Event 1')],
+        validations: {},
+        currentEventId: '',
+      }, 'falsy-eid-club');
+
+      const id = await getCurrentEventId('falsy-eid-club');
+      expect(id).toBe('');
+    });
+
+    it('saveStorageData persiste events + validations + currentEventId', async () => {
+      await saveStorageData({
+        events: [makeEvent('e1', 'Event 1')],
+        validations: { t1: { P: { r1: true } } },
+        currentEventId: 'e1',
+      }, 'club-z');
+
+      const data = await getStorageData('club-z');
+      expect(data.events).toHaveLength(1);
+      expect(data.validations).toEqual({ t1: { P: { r1: true } } });
+      expect(data.currentEventId).toBe('e1');
+    });
+
+    it('getStorageData agrège events, validations et currentEventId', async () => {
+      await saveEvents([makeEvent('e1', 'Event 1')], 'full-club');
+      await saveValidations({ t1: { P: { r1: true } } }, 'full-club');
+      await saveCurrentEventId('e1', 'full-club');
+
+      const data = await getStorageData('full-club');
+      expect(data.events).toHaveLength(1);
+      expect(data.validations).toEqual({ t1: { P: { r1: true } } });
+      expect(data.currentEventId).toBe('e1');
     });
   });
 });
