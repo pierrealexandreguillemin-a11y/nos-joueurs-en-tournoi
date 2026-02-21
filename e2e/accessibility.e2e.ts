@@ -7,11 +7,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { Browser, Page } from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
+import type { Result } from 'axe-core';
 import { launchBrowser, newPage, freshVisit, typeInto, waitForText } from './helpers';
 
 /** Format axe violations for readable test output */
-function formatViolations(violations: Awaited<ReturnType<AxePuppeteer['analyze']>>['violations']) {
-  return violations.map((v) => ({
+function formatViolations(violations: Result[]) {
+  return violations.map((v: Result) => ({
     id: v.id,
     impact: v.impact,
     description: v.description,
