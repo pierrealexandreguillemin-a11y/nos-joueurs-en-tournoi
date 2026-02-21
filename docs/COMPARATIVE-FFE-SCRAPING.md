@@ -26,7 +26,7 @@ Scraping HTML des pages publiques `echecs.asso.fr/Resultats.aspx` via un proxy N
 | Grille americaine | `Resultats.aspx?URL=Tournois/Id/{id}/{id}&Action=Ga` | Resultats par ronde, points, Buchholz |
 | Statistiques | `Resultats.aspx?URL=Tournois/Id/{id}/{id}&Action=Stats` | Repartition par clubs |
 
-> **Note** : nous utilisons deja le pattern URL `Tournois/Id/{id}/{id}` (cf. `src/lib/parser.ts:getListUrl`, `getResultsUrl`, `getStatsUrl`). Le endpoint `.papi` direct (`/Tournois/Id/{id}/{id}.papi`) utilise par Sharly Chess est un fichier Access sur la meme base URL — et nous disposons d'un **convertisseur Excel/Papi** (`convertisseur_csv_papi`) qui maitrise deja ce format (voir section 10).
+> **Note** : nous utilisons deja le pattern URL `Tournois/Id/{id}/{id}` (cf. `src/lib/parser.ts`). Le endpoint `.papi` direct (`/Tournois/Id/{id}/{id}.papi`) utilise par Sharly Chess est un fichier Access sur la meme base URL. Nous disposons d'un projet separe (`convertisseur_csv_papi`) qui maitrise ce format (voir section 10).
 
 ### Sharly Chess — 3 sources distinctes
 
@@ -162,19 +162,9 @@ Session cookie -> POST MonTournoi.aspx (upload .papi)
 | Fichier .papi tournoi | `https://www.echecs.asso.fr/Tournois/Id/{id}/{id}.papi` |
 | Resultats HTML (notre usage) | `https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/{id}/{id}&Action={Ls,Ga,Stats}` |
 
-## 10. Synergie avec le convertisseur Excel/Papi
+## 10. Connaissance du format .papi
 
-Nous disposons d'un projet `convertisseur_csv_papi` qui maitrise le format `.papi` :
-
-| Composant | Detail |
-|---|---|
-| **Stack** | Python 3.12, pyodbc, openpyxl |
-| **Lecture .papi** | Via ODBC Access — tables `JOUEUR`, `RES`, `INFO` |
-| **Ecriture .papi** | Copie template `Modele_Papi.papi` + INSERT via ODBC |
-| **Enrichissement FFE** | Lecture `Data.mdb` (base joueurs FFE locale) |
-| **Tests** | 169 tests, couverture >= 90% |
-
-### Structure des tables .papi (Access)
+Pour reference, nous disposons d'un projet separe (`convertisseur_csv_papi`, Python 3.12, pyodbc) qui maitrise le format `.papi` (Access). Structure des tables :
 
 ```
 TABLE JOUEUR: Ref, Nom, Prenom, Sexe, Elo, NeLe, Rapide, Blitz,
@@ -183,75 +173,37 @@ TABLE RES:    (resultats par ronde — colonnes Rd01..Rd24)
 TABLE INFO:   Variable (VARCHAR), Value (VARCHAR) — metadata tournoi (key-value)
 ```
 
-### Possibilite : source `.papi` directe au lieu du scraping HTML
-
-Le fichier `.papi` d'un tournoi est telechargeable publiquement :
+Le fichier `.papi` d'un tournoi est telechargeable publiquement sur le meme pattern URL que nos pages HTML :
 
 ```
 https://www.echecs.asso.fr/Tournois/Id/{id}/{id}.papi
 ```
 
-Ce fichier Access contient les memes donnees que les pages HTML mais en format structure (tables relationnelles). Avantages potentiels :
+Ce format contient plus de donnees (NrFFE, FideCode, categorie, naissance) mais son exploitation dans notre contexte n'est pas justifiee (voir section 11).
 
-| | Scraping HTML (actuel) | Source .papi directe |
-|---|---|---|
-| **Fiabilite** | Fragile (depends CSS classes FFE) | Stable (schema Access fixe depuis Papi 3.3.8) |
-| **Donnees** | 3 pages a parser (Ls + Ga + Stats) | 1 fichier, tout inclus (joueurs + resultats + clubs) |
-| **Performance** | 3 fetches HTTP + parsing cheerio | 1 fetch HTTP + lecture Access |
-| **Parsing** | Regex/selecteurs CSS sur HTML non-semantique | Requetes SQL sur tables structurees |
-| **Rondes** | Parse `div.papi_joueur_box` sous-tables | Colonnes `Rd01..Rd24` directes |
-| **NrFFE** | Non disponible en HTML public | Disponible dans table JOUEUR |
-| **Categorie** | Non disponible en HTML public | Disponible (`Cat`) |
+## 11. Conclusion
 
-### Contrainte : runtime
+### Deux projets, deux problemes differents
 
-Le lecteur .papi actuel utilise `pyodbc` + ODBC Access (Windows only). Pour l'integrer a notre app Vercel (Linux serverless), plusieurs pistes :
+- **Sharly Chess** est un **logiciel d'arbitrage complet** qui gere le cycle de vie du tournoi (saisie, appariements, resultats, upload FFE). Il accede aux donnees FFE via des canaux privilegies (SQL Server, admin). Sa complexite (plugins, background uploaders, ASP.NET auth) est justifiee par son perimetre.
 
-1. **API Python dediee** — un micro-service Python (Azure Function, fly.io, etc.) qui telecharge le `.papi`, le lit via pyodbc ou Jackcess, et retourne du JSON. Notre app Next.js l'appelle au lieu de scraper le HTML.
+- **Nos Joueurs en Tournoi** est un **tableau de bord de suivi club** : cliquer "Actualiser", voir les resultats de ses joueurs pendant un tournoi. C'est tout.
 
-2. **Jackcess WASM/Node** — la bibliotheque Java Jackcess (utilisee par papi-converter de Sharly Chess) lit les fichiers Access sans ODBC. Un portage Node.js ou WASM permettrait la lecture cote Vercel.
+### Notre approche est adaptee
 
-3. **mdb-reader (npm)** — des bibliotheques npm comme `mdb-reader` lisent les fichiers `.mdb`/`.accdb` en pur JavaScript (zero ODBC). C'est la piste la plus directe pour une integration dans notre API Route Next.js.
+Le scraping HTML public via cheerio est **la bonne solution pour notre cas d'usage** :
 
-4. **Workflow hybride** — telecharger le `.papi` cote API Route, le convertir en JSON via un binaire papi-converter (subprocess), puis parser le JSON. Necessite un binaire pre-compile dans le deploy Vercel.
+- **Simple** — 2 fetches, cheerio parse, on affiche. Zero auth, zero session, zero etat serveur.
+- **Suffisant** — les donnees visibles en HTML (nom, ELO, resultats par ronde, points, Buchholz) sont exactement ce dont un accompagnateur de club a besoin le jour du tournoi.
+- **Stable** — les classes CSS FFE (`papi_joueur_box`, `papi_liste_c`) n'ont pas change depuis des annees.
 
-### Donnees supplementaires disponibles via `.papi`
+### Ce qui ne vaut pas le coup
 
-Par rapport au scraping HTML actuel, le `.papi` donnerait acces a :
+| Piste | Pourquoi non |
+|---|---|
+| Source `.papi` directe | Over-engineering — remplacer cheerio par un lecteur Access (pyodbc, mdb-reader, Jackcess) pour le meme resultat visible. Les donnees supplementaires (NrFFE, FIDE, categorie) ne sont pas dans le perimetre de l'app. |
+| Cache serveur | Contre-productif — l'utilisateur clique "Actualiser" pour avoir des donnees fraiches (rondes en cours). Un cache irait a l'encontre du but. |
+| Gestion d'erreurs enrichie | Disproportionne — c'est une app de suivi de tournoi le week-end, pas un systeme critique. |
+| SQL Server direct / Auth admin / Upload | Hors perimetre — notre app est en lecture seule sur les pages publiques. |
 
-- **NrFFE** (numero licence FFE) — permettrait un lien direct vers la fiche joueur FFE
-- **FideCode** — lien vers la fiche FIDE
-- **Categorie exacte** (U8, U10, ..., Vet) — affichage plus riche
-- **Naissance** — calcul d'age
-- **Resultats codes** (colonnes Rd01..Rd24) — pas de parsing HTML fragile
-- **Departages** (Buchholz, Sonneborn-Berger, etc.) — valeurs exactes calculees par Papi
-
-## 11. Axes d'amelioration identifies
-
-### Court terme (sans changement d'architecture)
-
-1. **Cache serveur** — Cacher les reponses HTML FFE cote API (Vercel KV) avec un TTL de quelques minutes pour eviter les fetches redondants.
-
-2. **Gestion d'erreurs enrichie** — Distinguer les timeouts FFE des erreurs reseau (comme le fait Sharly Chess avec ConnectionError vs Timeout vs HTTP).
-
-3. **Detection de connectivite** — `navigator.onLine` cote client avant toute requete.
-
-### Moyen terme (evolution vers source .papi)
-
-4. **Source `.papi` directe** — Remplacer le scraping HTML par le telechargement du fichier `.papi` et sa lecture via `mdb-reader` (npm, pur JS). Elimine la fragilite du parsing HTML et donne acces a des donnees supplementaires (NrFFE, categorie, FIDE ID). Voir section 10 pour l'analyse detaillee.
-
-### Non pertinents pour notre projet
-
-- **SQL Server direct** — reserve aux logiciels d'arbitrage homologues FFE
-- **Upload `.papi`** — notre cas d'usage est consultation uniquement
-- **Auth admin FFE** — pas necessaire pour la lecture de pages publiques
-
-## 12. Conclusion
-
-Les deux projets resolvent des **problemes fondamentalement differents** :
-
-- **Sharly Chess** est un **logiciel d'arbitrage complet** qui gere le cycle de vie du tournoi (saisie, appariements, resultats, upload FFE). Il accede aux donnees FFE via des canaux privilegies (SQL Server, admin).
-
-- **Nos Joueurs en Tournoi** est un **tableau de bord de suivi club** qui scrape les resultats publics pour offrir une vue filtree par club.
-
-Notre approche actuelle (scraping HTML via cheerio) fonctionne mais reste fragile. La piste la plus prometteuse est l'**evolution vers la source `.papi` directe** : nous maitrisons deja le format (via le projet `convertisseur_csv_papi`), l'URL de telechargement est publique et sur le meme pattern que nos URLs actuelles, et des bibliotheques npm (`mdb-reader`) permettent la lecture Access en pur JavaScript sur Vercel. Cette evolution donnerait un parsing plus fiable et des donnees plus riches (NrFFE, categories, FIDE) sans changer l'architecture de l'app.
+Ce document est une **reference documentaire** sur l'ecosysteme FFE et les approches techniques existantes, pas un plan d'action.
