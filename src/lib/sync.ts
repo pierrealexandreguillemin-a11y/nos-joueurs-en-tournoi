@@ -4,7 +4,6 @@ import { createClubStorage } from './storage';
 import { generateSyncToken } from './hmac';
 import type { StorageData } from '@/types';
 
-const SYNC_INTERVAL = 5000; // 5 seconds (kept for backward compatibility, not used in manual sync)
 const API_BASE = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
 /**
@@ -97,26 +96,3 @@ export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
   }
 }
 
-/**
- * Start auto-sync service (bidirectional sync every 5 seconds)
- */
-export function startAutoSync(clubSlug: string): () => void {
-  // Initial sync (upload then download)
-  syncToUpstash(clubSlug).then(() => fetchFromUpstash(clubSlug));
-
-  // Sync local changes to Upstash every 5s
-  const syncInterval = setInterval(() => {
-    syncToUpstash(clubSlug);
-  }, SYNC_INTERVAL);
-
-  // Fetch remote changes from Upstash every 5s
-  const fetchInterval = setInterval(() => {
-    fetchFromUpstash(clubSlug);
-  }, SYNC_INTERVAL);
-
-  // Return cleanup function
-  return () => {
-    clearInterval(syncInterval);
-    clearInterval(fetchInterval);
-  };
-}
