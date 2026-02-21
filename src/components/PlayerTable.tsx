@@ -50,7 +50,7 @@ interface ClubTotalsRowProps {
 function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
     <TableRow className="bg-gradient-to-r from-miami-aqua/10 to-miami-navy/10 border-b-2 border-miami-aqua/30">
-      <TableHead className="font-bold text-miami-navy">Total Club</TableHead>
+      <TableHead className="font-bold text-miami-navy" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold text-miami-aqua">
@@ -216,7 +216,7 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
   return (
     <Card className="miami-card overflow-hidden">
       <div className="overflow-x-auto">
-        <Table>
+        <Table aria-label={`Résultats des joueurs — ${tournament.name}`}>
           <TableHeader>
             <ClubTotalsRow clubTotalsPerRound={clubTotalsPerRound} />
             <ColumnHeadersRow maxRounds={maxRounds} />

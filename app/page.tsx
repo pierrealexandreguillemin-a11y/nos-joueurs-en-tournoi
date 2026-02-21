@@ -46,7 +46,7 @@ function LoadingScreen() {
     <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-white text-xl">Loading...</div>
+          <div className="text-white text-xl">Chargement...</div>
         </div>
       </div>
     </div>
@@ -95,7 +95,7 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
               quality={90}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-end" aria-label="Actions principales">
             <ClubHeader />
             <AnimationsToggle />
             <ShareButton />
@@ -104,7 +104,7 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
               onEventChange={onEventChange}
               onNewEventClick={onNewEventClick}
             />
-          </div>
+          </nav>
         </div>
       </div>
     </header>

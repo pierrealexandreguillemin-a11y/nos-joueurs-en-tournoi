@@ -317,15 +317,26 @@
   }
 }
 
-/* FORCE ANIMATIONS FOR DASHBOARD */
-.dashboard-clean * {
-  animation-duration: initial !important;
-  animation-iteration-count: initial !important;
-  transition-duration: initial !important;
+/* Dashboard animation overrides (only when reduced-motion is NOT active) */
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-clean * {
+    animation-duration: initial;
+    animation-iteration-count: initial;
+    transition-duration: initial;
+  }
 }
 
-/* Reduced motion support - COMPLETELY DISABLED */
-/* @media (prefers-reduced-motion: reduce) disabled */
+/* Reduced motion support — WCAG 2.1 §2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* Dark mode support (future) */
 @media (prefers-color-scheme: dark) {

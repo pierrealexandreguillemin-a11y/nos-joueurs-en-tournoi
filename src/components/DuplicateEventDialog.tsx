@@ -54,7 +54,7 @@ export default function DuplicateEventDialog({
           </AlertDialogAction>
           <AlertDialogAction
             onClick={onReplace}
-            className="miami-glass-button hover:bg-miami-coral/30 border-miami-coral/50"
+            className="bg-red-600 hover:bg-red-700 text-white border-red-700"
           >
             Remplacer l&apos;existant
           </AlertDialogAction>

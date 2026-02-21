@@ -171,6 +171,17 @@ function TournamentPanel({
               ? `Aucun joueur ${event.clubName} trouvé dans ce tournoi`
               : 'Cliquez sur Actualiser pour détecter les clubs du tournoi'}
           </p>
+          {!event.clubName && (
+            <Button
+              variant="miami"
+              size="sm"
+              className="mt-4"
+              onClick={() => handleRefresh(tournament)}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+              Actualiser
+            </Button>
+          )}
         </Card>
       )}
     </>

@@ -28,11 +28,12 @@ export default function AnimationsToggle() {
       onClick={handleToggle}
       className="text-miami-navy hover:bg-miami-aqua/10"
       title={animationsEnabled ? 'Désactiver les animations (économie batterie)' : 'Activer les animations'}
+      aria-label={animationsEnabled ? 'Désactiver les animations' : 'Activer les animations'}
     >
       {animationsEnabled ? (
-        <Zap className="w-5 h-5" />
+        <Zap className="w-5 h-5" aria-hidden="true" />
       ) : (
-        <ZapOff className="w-5 h-5" />
+        <ZapOff className="w-5 h-5" aria-hidden="true" />
       )}
     </Button>
   );

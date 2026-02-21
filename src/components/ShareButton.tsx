@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Share2, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -66,8 +67,8 @@ export default function ShareButton() {
       await navigator.clipboard.writeText(APP_URL);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      toast.error('Impossible de copier le lien');
     }
   };
 
@@ -93,8 +94,9 @@ export default function ShareButton() {
           size="icon"
           className="text-miami-navy hover:bg-miami-aqua/10"
           title="Partager l'application"
+          aria-label="Partager l'application"
         >
-          <Share2 className="w-5 h-5" />
+          <Share2 className="w-5 h-5" aria-hidden="true" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] miami-card border-miami-aqua/30">
