@@ -44,4 +44,4 @@ export const syncBodySchema = z.object({
   events: z.array(eventSchema),
   validations: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.boolean()))),
   currentEventId: z.string().optional(),
-}).passthrough();
+});
