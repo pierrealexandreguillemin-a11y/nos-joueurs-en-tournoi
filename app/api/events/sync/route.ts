@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
 import { syncBodySchema } from '@/lib/schemas';
+import type { ValidationState } from '@/types';
 
 /**
  * POST /api/events/sync
@@ -38,7 +39,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clubSlug, events, validations, currentEventId } = parsed.data;
+    const { clubSlug, events, currentEventId } = parsed.data;
+    const validations = parsed.data.validations as ValidationState;
 
     // Verify HMAC token
     const token = req.headers.get('X-Sync-Token');

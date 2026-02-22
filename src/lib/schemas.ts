@@ -42,6 +42,6 @@ export const eventSchema = z.object({
 export const syncBodySchema = z.object({
   clubSlug: clubSlugSchema,
   events: z.array(eventSchema),
-  validations: z.record(z.record(z.record(z.boolean()))),
+  validations: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.boolean()))),
   currentEventId: z.string().optional(),
 }).passthrough();
