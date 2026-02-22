@@ -12,7 +12,7 @@ const MAX_BODY_SIZE = 1_048_576; // 1 MB
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    if (rawBody.length > MAX_BODY_SIZE) {
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_SIZE) {
       return NextResponse.json(
         { error: 'Request body too large. Maximum size is 1MB.' },
         { status: 413 }
