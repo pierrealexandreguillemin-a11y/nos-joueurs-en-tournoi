@@ -11,20 +11,11 @@ const nextConfig: NextConfig = {
   // Code splitting est géré automatiquement par Turbopack
   turbopack: {},
 
-  // Headers de cache agressifs pour les assets statiques
+  // Cache headers for image assets (/_next/static cache is in vercel.json)
   async headers() {
     return [
       {
         source: '/:all*(svg|jpg|jpeg|png|webp|avif|gif|ico)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
