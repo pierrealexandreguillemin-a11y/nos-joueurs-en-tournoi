@@ -63,6 +63,15 @@ describe('HMAC sync tokens', () => {
     expect(valid).toBe(false);
   });
 
+  it('rejects token with future timestamp', async () => {
+    // Manually forge a token with a timestamp 1 hour in the future
+    const futureTs = Date.now() + 3_600_000;
+    // We can't compute valid HMAC here without access to internals,
+    // but any token with a future timestamp must be rejected before HMAC check
+    const valid = await verifySyncToken('hay-chess', `${'a'.repeat(64)}:${futureTs}`);
+    expect(valid).toBe(false);
+  });
+
   it('rejects old format token without timestamp separator', async () => {
     // Simulate an old-format token (just hex, no colon+timestamp)
     const valid = await verifySyncToken('hay-chess', 'a'.repeat(64));

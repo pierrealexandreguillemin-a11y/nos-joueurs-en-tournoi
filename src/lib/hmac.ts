@@ -57,8 +57,13 @@ export async function verifySyncToken(slug: string, token: string): Promise<bool
 
   if (!Number.isFinite(timestamp)) return false;
 
+  const now = Date.now();
+
+  // Reject future timestamps (prevents long-lived forged tokens)
+  if (timestamp > now) return false;
+
   // Anti-replay: reject tokens older than 5 minutes
-  if (Date.now() - timestamp > TOKEN_MAX_AGE_MS) return false;
+  if (now - timestamp > TOKEN_MAX_AGE_MS) return false;
 
   // Recompute HMAC for the slug:timestamp message
   const message = `${slug}:${timestamp}`;
