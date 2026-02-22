@@ -3,6 +3,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Audiowide, Inter } from 'next/font/google';
 import '../src/styles/globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { AnimationsProvider } from '@/contexts/AnimationsContext';
 import { ClubProvider } from '@/contexts/ClubContext';
 
@@ -101,6 +102,7 @@ export default function RootLayout({
             {children}
           </AnimationsProvider>
         </ClubProvider>
+        <Analytics />
       </body>
     </html>
   );
