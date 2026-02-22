@@ -130,12 +130,12 @@ interface PlayerRowProps {
   player: Player;
   playerIndex: number;
   maxRounds: number;
-  validationState: ValidationMap;
+  playerValidation: Record<number, boolean>;
   tournamentId: string;
   onValidationChange: (playerName: string, round: number, checked: boolean) => void;
 }
 
-const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, validationState, tournamentId, onValidationChange }: PlayerRowProps) {
+const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, playerValidation, tournamentId, onValidationChange }: PlayerRowProps) {
   return (
     <TableRow
       className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/3 hover:bg-miami-aqua/3'}
@@ -149,7 +149,7 @@ const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, vali
           key={`round-${i}`}
           player={player}
           roundIndex={i}
-          isValidated={validationState[player.name]?.[i + 1] || false}
+          isValidated={playerValidation[i + 1] || false}
           tournamentId={tournamentId}
           onValidationChange={onValidationChange}
         />
@@ -204,7 +204,10 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
     }));
   }, [storage, tournament.id]);
 
-  const maxRounds = Math.max(...tournament.players.map(p => p.results.length), 0);
+  const maxRounds = useMemo(
+    () => Math.max(...tournament.players.map(p => p.results.length), 0),
+    [tournament.players],
+  );
 
   // Calculate club totals per round — memoized for stable reference
   const clubTotalsPerRound = useMemo(() => Array.from({ length: maxRounds }, (_, roundIndex) => {
@@ -225,11 +228,11 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
           <TableBody>
             {tournament.players.map((player, playerIndex) => (
               <PlayerRow
-                key={player.name}
+                key={`${player.name}-${player.ranking}`}
                 player={player}
                 playerIndex={playerIndex}
                 maxRounds={maxRounds}
-                validationState={validationState}
+                playerValidation={validationState[player.name] || {}}
                 tournamentId={tournament.id}
                 onValidationChange={handleValidationChange}
               />
