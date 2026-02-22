@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import {
   Table,
   TableBody,
@@ -47,7 +47,7 @@ interface ClubTotalsRowProps {
   clubTotalsPerRound: number[];
 }
 
-function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
+const ClubTotalsRow = memo(function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
     <TableRow className="bg-gradient-to-r from-miami-aqua/10 to-miami-navy/10 border-b-2 border-miami-aqua/30">
       <TableHead className="font-bold text-miami-navy" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
@@ -64,13 +64,13 @@ function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
       <TableHead className="text-center">-</TableHead>
     </TableRow>
   );
-}
+});
 
 interface ColumnHeadersRowProps {
   maxRounds: number;
 }
 
-function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
+const ColumnHeadersRow = memo(function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
   return (
     <TableRow>
       <TableHead className="font-bold">Nom</TableHead>
@@ -87,7 +87,7 @@ function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
       <TableHead className="text-center font-bold" title="Classement">Class.</TableHead>
     </TableRow>
   );
-}
+});
 
 interface RoundCellProps {
   player: Player;
@@ -97,7 +97,7 @@ interface RoundCellProps {
   onValidationChange: (playerName: string, round: number, checked: boolean) => void;
 }
 
-function RoundCell({ player, roundIndex, isValidated, onValidationChange }: RoundCellProps) {
+const RoundCell = memo(function RoundCell({ player, roundIndex, isValidated, onValidationChange }: RoundCellProps) {
   const result = player.results[roundIndex];
   const round = roundIndex + 1;
 
@@ -124,7 +124,7 @@ function RoundCell({ player, roundIndex, isValidated, onValidationChange }: Roun
       </div>
     </TableCell>
   );
-}
+});
 
 interface PlayerRowProps {
   player: Player;
@@ -135,7 +135,7 @@ interface PlayerRowProps {
   onValidationChange: (playerName: string, round: number, checked: boolean) => void;
 }
 
-function PlayerRow({ player, playerIndex, maxRounds, validationState, tournamentId, onValidationChange }: PlayerRowProps) {
+const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, validationState, tournamentId, onValidationChange }: PlayerRowProps) {
   return (
     <TableRow
       className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/3 hover:bg-miami-aqua/3'}
@@ -172,7 +172,7 @@ function PlayerRow({ player, playerIndex, maxRounds, validationState, tournament
       </TableCell>
     </TableRow>
   );
-}
+});
 
 export default function PlayerTable({ tournament }: PlayerTableProps) {
   const { identity } = useClub();
