@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
-import { SLUG_REGEX } from '@/lib/validation';
-import type { StorageData } from '@/types';
+import { syncBodySchema } from '@/lib/schemas';
 
 /**
  * POST /api/events/sync
@@ -30,28 +29,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clubSlug, events, validations, currentEventId } = body as Partial<StorageData> & { clubSlug?: string };
-
-    // Validate clubSlug
-    if (!clubSlug || !SLUG_REGEX.test(clubSlug)) {
+    // Validate body structure with Zod
+    const parsed = syncBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid or missing clubSlug. Must match /^[a-z0-9-]{1,40}$/' },
+        { error: 'Invalid request body', details: parsed.error.issues },
         { status: 400 }
       );
     }
+
+    const { clubSlug, events, validations, currentEventId } = parsed.data;
 
     // Verify HMAC token
     const token = req.headers.get('X-Sync-Token');
     if (!token || !await verifySyncToken(clubSlug, token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!events || !Array.isArray(events)) {
-      console.error('[API /sync] Invalid events data');
-      return NextResponse.json(
-        { error: 'Invalid events data' },
-        { status: 400 }
-      );
     }
 
     // Save all data to Upstash KV in parallel

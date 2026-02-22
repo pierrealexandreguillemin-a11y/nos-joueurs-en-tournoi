@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorageData } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
-import { SLUG_REGEX } from '@/lib/validation';
+import { clubSlugSchema } from '@/lib/schemas';
 
 /**
  * GET /api/events/fetch?clubSlug=xxx
@@ -9,15 +9,18 @@ import { SLUG_REGEX } from '@/lib/validation';
  */
 export async function GET(req: NextRequest) {
   try {
-    const clubSlug = req.nextUrl.searchParams.get('clubSlug');
+    const clubSlugRaw = req.nextUrl.searchParams.get('clubSlug');
 
-    // Validate clubSlug
-    if (!clubSlug || !SLUG_REGEX.test(clubSlug)) {
+    // Validate clubSlug with Zod
+    const parsed = clubSlugSchema.safeParse(clubSlugRaw);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Invalid or missing clubSlug. Must match /^[a-z0-9-]{1,40}$/' },
         { status: 400 }
       );
     }
+
+    const clubSlug = parsed.data;
 
     // Verify HMAC token
     const token = req.headers.get('X-Sync-Token');
