@@ -1,7 +1,6 @@
 'use client';
 
-import type { Event, ValidationState } from '@/types';
-import type { StorageData } from '@/types';
+import type { Event, StorageData, ValidationState } from '@/types';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { getStorageData, setStorageData } from './storage-core';
 
