@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RateLimiter } from '@/lib/rate-limit';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-const scrapeLimiter = new RateLimiter(30, 60_000);
-const eventsLimiter = new RateLimiter(10, 60_000);
+const ratelimit = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
+  ? new Ratelimit({
+      redis: new Redis({
+        url: process.env.KV_REST_API_URL.trim(),
+        token: process.env.KV_REST_API_TOKEN.trim(),
+      }),
+      limiter: Ratelimit.slidingWindow(30, '60 s'),
+      prefix: 'nos-joueurs:ratelimit',
+    })
+  : null;
 
 function getClientIP(req: NextRequest): string {
   return (
@@ -12,14 +21,13 @@ function getClientIP(req: NextRequest): string {
   );
 }
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
+  if (!ratelimit) return NextResponse.next();
+
   const ip = getClientIP(req);
-  const path = req.nextUrl.pathname;
+  const { success, remaining } = await ratelimit.limit(ip);
 
-  const limiter = path.startsWith('/api/events') ? eventsLimiter : scrapeLimiter;
-  const { allowed, remaining } = limiter.check(ip);
-
-  if (!allowed) {
+  if (!success) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       {
