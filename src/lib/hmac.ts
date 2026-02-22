@@ -7,6 +7,7 @@
 const SYNC_SECRET = process.env.NEXT_PUBLIC_SYNC_SECRET || 'default-dev-secret';
 
 export const TOKEN_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+export const CLOCK_SKEW_MS = 10_000; // 10s tolerance for client/server clock drift
 
 async function hmacDigest(message: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
@@ -59,8 +60,8 @@ export async function verifySyncToken(slug: string, token: string): Promise<bool
 
   const now = Date.now();
 
-  // Reject future timestamps (prevents long-lived forged tokens)
-  if (timestamp > now) return false;
+  // Reject future timestamps beyond clock-skew tolerance
+  if (timestamp > now + CLOCK_SKEW_MS) return false;
 
   // Anti-replay: reject tokens older than 5 minutes
   if (now - timestamp > TOKEN_MAX_AGE_MS) return false;

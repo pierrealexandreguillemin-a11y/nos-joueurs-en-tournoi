@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateSyncToken, verifySyncToken, TOKEN_MAX_AGE_MS } from './hmac';
+import { generateSyncToken, verifySyncToken, TOKEN_MAX_AGE_MS, CLOCK_SKEW_MS } from './hmac';
 
 describe('HMAC sync tokens', () => {
   beforeEach(() => {
@@ -63,12 +63,20 @@ describe('HMAC sync tokens', () => {
     expect(valid).toBe(false);
   });
 
-  it('rejects token with future timestamp', async () => {
-    // Manually forge a token with a timestamp 1 hour in the future
-    const futureTs = Date.now() + 3_600_000;
-    // We can't compute valid HMAC here without access to internals,
-    // but any token with a future timestamp must be rejected before HMAC check
-    const valid = await verifySyncToken('hay-chess', `${'a'.repeat(64)}:${futureTs}`);
+  it('accepts token with small clock skew (within tolerance)', async () => {
+    // Generate token 5s in the future (client clock ahead)
+    const base = new Date('2025-01-15T12:00:00Z');
+    vi.setSystemTime(new Date(base.getTime() + 5000));
+    const token = await generateSyncToken('hay-chess');
+    // Server verifies at base time (5s behind client)
+    vi.setSystemTime(base);
+    const valid = await verifySyncToken('hay-chess', token);
+    expect(valid).toBe(true);
+  });
+
+  it('rejects token with future timestamp beyond clock skew', async () => {
+    const farFutureTs = Date.now() + CLOCK_SKEW_MS + 60_000;
+    const valid = await verifySyncToken('hay-chess', `${'a'.repeat(64)}:${farFutureTs}`);
     expect(valid).toBe(false);
   });
 
