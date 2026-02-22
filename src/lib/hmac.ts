@@ -26,7 +26,15 @@ function bufferToHex(buffer: ArrayBuffer): string {
     .join('');
 }
 
+function isCryptoSubtleAvailable(): boolean {
+  return typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
+}
+
 export async function generateSyncToken(slug: string): Promise<string> {
+  if (!isCryptoSubtleAvailable()) {
+    console.warn('crypto.subtle is not available — cannot generate HMAC token');
+    return '';
+  }
   const timestamp = Date.now();
   const message = `${slug}:${timestamp}`;
   const digest = await hmacDigest(message);
@@ -34,6 +42,10 @@ export async function generateSyncToken(slug: string): Promise<string> {
 }
 
 export async function verifySyncToken(slug: string, token: string): Promise<boolean> {
+  if (!isCryptoSubtleAvailable()) {
+    console.warn('crypto.subtle is not available — cannot verify HMAC token');
+    return false;
+  }
   if (!token) return false;
 
   const separatorIndex = token.lastIndexOf(':');

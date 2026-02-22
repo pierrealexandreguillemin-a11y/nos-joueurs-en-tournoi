@@ -84,4 +84,32 @@ describe('HMAC sync tokens', () => {
     const valid = await verifySyncToken('club-b', token);
     expect(valid).toBe(false);
   });
+
+  it('returns empty string from generateSyncToken when crypto.subtle is unavailable', async () => {
+    const original = globalThis.crypto;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true });
+    try {
+      const token = await generateSyncToken('hay-chess');
+      expect(token).toBe('');
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('crypto.subtle is not available'));
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', { value: original, configurable: true });
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('returns false from verifySyncToken when crypto.subtle is unavailable', async () => {
+    const original = globalThis.crypto;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true });
+    try {
+      const valid = await verifySyncToken('hay-chess', 'some-token:123');
+      expect(valid).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('crypto.subtle is not available'));
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', { value: original, configurable: true });
+      warnSpy.mockRestore();
+    }
+  });
 });
