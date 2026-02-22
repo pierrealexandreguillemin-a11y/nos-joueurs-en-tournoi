@@ -2,6 +2,12 @@
  * HMAC-SHA256 sync token generation & verification.
  * Uses Web Crypto API (works in browser + Next.js edge runtime).
  * Token format: hex64:timestamp (anti-replay with 5-min window).
+ *
+ * SECURITY NOTE: The secret uses NEXT_PUBLIC_ prefix because tokens are
+ * generated client-side (sync.ts). This means the secret is visible in the
+ * JS bundle. The HMAC provides defence-in-depth (CORS + token + expiry)
+ * against casual cross-origin abuse, NOT against a motivated attacker who
+ * reads the source. For stronger auth, move token generation server-side.
  */
 
 const SYNC_SECRET = process.env.NEXT_PUBLIC_SYNC_SECRET || 'default-dev-secret';
