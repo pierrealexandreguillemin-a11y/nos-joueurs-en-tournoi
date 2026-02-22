@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   Table,
   TableBody,
@@ -193,7 +193,7 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
     setValidationState(buildValidationState(tournament.id, tournament.players, storage));
   }, [tournament.id, tournament.players, storage]);
 
-  const handleValidationChange = (playerName: string, round: number, checked: boolean) => {
+  const handleValidationChange = useCallback((playerName: string, round: number, checked: boolean) => {
     storage?.setValidation(tournament.id, playerName, round, checked);
     setValidationState(prev => ({
       ...prev,
@@ -202,17 +202,17 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
         [round]: checked,
       },
     }));
-  };
+  }, [storage, tournament.id]);
 
   const maxRounds = Math.max(...tournament.players.map(p => p.results.length), 0);
 
-  // Calculate club totals per round
-  const clubTotalsPerRound = Array.from({ length: maxRounds }, (_, roundIndex) => {
+  // Calculate club totals per round — memoized for stable reference
+  const clubTotalsPerRound = useMemo(() => Array.from({ length: maxRounds }, (_, roundIndex) => {
     return tournament.players.reduce((sum, player) => {
       const result = player.results[roundIndex];
       return sum + (result?.score || 0);
     }, 0);
-  });
+  }), [maxRounds, tournament.players]);
 
   return (
     <Card className="miami-card overflow-hidden">
