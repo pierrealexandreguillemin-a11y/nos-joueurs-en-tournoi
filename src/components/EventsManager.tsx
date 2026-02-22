@@ -28,9 +28,9 @@ import {
   type ExportedEvent,
 } from '@/lib/storage';
 import { syncToUpstash, fetchFromUpstash } from '@/lib/sync';
-import DuplicateEventDialog from '@/components/DuplicateEventDialog';
 import dynamic from 'next/dynamic';
 const ShareEventModal = dynamic(() => import('@/components/ShareEventModal'), { ssr: false });
+const DuplicateEventDialog = dynamic(() => import('@/components/DuplicateEventDialog'), { ssr: false });
 import { useClub } from '@/contexts/ClubContext';
 import type { Event } from '@/types';
 
