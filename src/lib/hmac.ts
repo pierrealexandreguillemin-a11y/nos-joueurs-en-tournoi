@@ -28,7 +28,9 @@ function bufferToHex(buffer: ArrayBuffer): string {
 }
 
 function isCryptoSubtleAvailable(): boolean {
-  return typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
+  return typeof crypto !== 'undefined'
+    && typeof crypto.subtle?.importKey === 'function'
+    && typeof crypto.subtle?.sign === 'function';
 }
 
 export async function generateSyncToken(slug: string): Promise<string> {
