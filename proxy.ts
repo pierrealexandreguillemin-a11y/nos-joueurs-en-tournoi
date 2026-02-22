@@ -2,14 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-const ratelimit = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
+function createRedis() {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
+  return new Redis({
+    url: process.env.KV_REST_API_URL.trim(),
+    token: process.env.KV_REST_API_TOKEN.trim(),
+  });
+}
+
+const redis = createRedis();
+
+const scrapeLimiter = redis
   ? new Ratelimit({
-      redis: new Redis({
-        url: process.env.KV_REST_API_URL.trim(),
-        token: process.env.KV_REST_API_TOKEN.trim(),
-      }),
+      redis,
       limiter: Ratelimit.slidingWindow(30, '60 s'),
-      prefix: 'nos-joueurs:ratelimit',
+      prefix: 'nos-joueurs:ratelimit:scrape',
+    })
+  : null;
+
+const eventsLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '60 s'),
+      prefix: 'nos-joueurs:ratelimit:events',
     })
   : null;
 
@@ -22,10 +37,13 @@ function getClientIP(req: NextRequest): string {
 }
 
 export async function proxy(req: NextRequest) {
-  if (!ratelimit) return NextResponse.next();
+  const path = req.nextUrl.pathname;
+  const limiter = path.startsWith('/api/events') ? eventsLimiter : scrapeLimiter;
+
+  if (!limiter) return NextResponse.next();
 
   const ip = getClientIP(req);
-  const { success, remaining } = await ratelimit.limit(ip);
+  const { success, remaining } = await limiter.limit(ip);
 
   if (!success) {
     return NextResponse.json(
