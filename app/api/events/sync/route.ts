@@ -8,9 +8,28 @@ import type { StorageData } from '@/types';
  * POST /api/events/sync
  * Sync events from client to Vercel KV
  */
+const MAX_BODY_SIZE = 1_048_576; // 1 MB
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large. Maximum size is 1MB.' },
+        { status: 413 }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
+
     const { clubSlug, events, validations, currentEventId } = body as Partial<StorageData> & { clubSlug?: string };
 
     // Validate clubSlug

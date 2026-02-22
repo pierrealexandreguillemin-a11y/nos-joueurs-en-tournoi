@@ -101,6 +101,17 @@ describe('API routes — QG-5: validation slug', () => {
       const res = await POST(req);
       expect(res.status).toBe(200);
     });
+
+    it('413 si body dépasse 1MB', async () => {
+      const largeBody = JSON.stringify({ clubSlug: 'hay-chess', events: [], data: 'x'.repeat(1_048_577) });
+      const req = new NextRequest('http://localhost:3000/api/events/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: largeBody,
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(413);
+    });
   });
 
   describe('GET /api/events/fetch', () => {
