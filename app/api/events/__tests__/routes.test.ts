@@ -102,6 +102,38 @@ describe('API routes — QG-5: validation slug', () => {
       expect(res.status).toBe(200);
     });
 
+    it('400 si event sans id (Zod validation)', async () => {
+      const req = makeSyncRequest({
+        clubSlug: 'hay-chess',
+        events: [{ name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
+        validations: {},
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe('Invalid request body');
+    });
+
+    it('400 si events est un string au lieu d\'un array (Zod validation)', async () => {
+      const req = makeSyncRequest({
+        clubSlug: 'hay-chess',
+        events: 'not-an-array',
+        validations: {},
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+    });
+
+    it('400 si validations contient une valeur non-boolean (Zod validation)', async () => {
+      const req = makeSyncRequest({
+        clubSlug: 'hay-chess',
+        events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
+        validations: { t1: { player1: { round_1: 'oui' } } },
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+    });
+
     it('413 si body dépasse 1MB', async () => {
       const largeBody = JSON.stringify({ clubSlug: 'hay-chess', events: [], data: 'x'.repeat(1_048_577) });
       const req = new NextRequest('http://localhost:3000/api/events/sync', {
