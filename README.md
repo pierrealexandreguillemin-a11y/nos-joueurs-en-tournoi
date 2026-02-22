@@ -1,383 +1,338 @@
 # Nos Joueurs en Tournoi
 
-Application web Progressive (PWA) pour le suivi en temps réel des résultats des tournois d'échecs FFE, avec choix dynamique du club.
+Application de suivi en temps reel des tournois d'echecs FFE (Federation Francaise des Echecs).
+Choisissez votre club, suivez vos joueurs, validez les resultats ronde par ronde.
 
-## Vue d'ensemble
+**Production** : https://nos-joueurs-en-tournoi.vercel.app
 
-Nos Joueurs en Tournoi permet aux responsables de club et aux parents bénévoles de suivre facilement les résultats des joueurs de **n'importe quel club** lors des tournois FFE (Fédération Française des Échecs), avec synchronisation multi-appareils et partage par QR code.
+## Fonctionnalites
 
-### Fonctionnalités principales
-
-- **Choix dynamique du club** - Détection automatique des clubs depuis la page FFE Stats
-- **Scraping automatique** des résultats FFE (parsing HTML optimisé)
-- **Affichage filtré** des joueurs du club sélectionné
+- **Choix dynamique du club** : detection automatique des clubs depuis la page FFE Stats
+- **Scraping automatique** des resultats FFE (parsing HTML optimise via Cheerio)
+- **Affichage filtre** des joueurs du club selectionne
 - **Synchronisation multi-appareils** via Upstash Redis KV
-- **Progressive Web App** - Installation sur mobile/desktop
-- **Multi-événements** - Gérer plusieurs tournois simultanément
-- **Export/Import JSON** - Sauvegarde et partage offline
-- **Partage QR Code** - Partage d'événements par scan
-- **Interface Cyberpunk** - Design Miami Vice glassmorphism
-- **Mode économie d'énergie** - Désactivation animations optionnelle
-- **Sauvegarde locale** - localStorage + sync cloud
-- **Statistiques automatiques** - Stats club par ronde
-- **Responsive** - Mobile-first design
+- **Multi-evenements** : gerer plusieurs tournois simultanement
+- **Partage QR Code** : partage d'evenements par scan ou lien URL
+- **Export/Import JSON** : sauvegarde et partage offline
+- **Validation par ronde** : cocher les resultats verifies
+- **Statistiques club** : total points, moyenne, par ronde
+- **Interface Miami Vice** : glassmorphism, animations desactivables
+- **Responsive** : mobile-first design
 
 ## Stack technique
 
-### Frontend
-- **Next.js 16** (App Router + Turbopack)
-- **React 19** + **TypeScript 5.5**
-- **Tailwind CSS 3.4** - Styling
-- **shadcn/ui** - Composants UI
-- **Lucide React** - Icônes
-- **Sonner** - Toast notifications
-- **QRCode.react** - Génération QR codes
+| Couche | Technologie |
+|--------|-------------|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| UI | React 19, Tailwind CSS 3, Radix UI, Framer Motion |
+| Langage | TypeScript 5 (strict mode) |
+| Validation | Zod 4 |
+| Storage client | localStorage (namespace par club) |
+| Storage serveur | Upstash Redis (`@upstash/redis`) |
+| Rate limiting | `@upstash/ratelimit` (sliding window, persistant) |
+| Auth API | HMAC-SHA256 avec anti-replay (5 min) |
+| Analytics | Vercel Analytics (Core Web Vitals) |
+| Tests | Vitest 4, Testing Library, jsdom |
+| Linting | ESLint 8 (security, sonarjs, typescript-eslint) |
+| CI | Husky pre-push (6 quality gates) |
+| Deploy | Vercel (auto-deploy on push) |
 
-### Backend & Infrastructure
-- **Vercel Edge Functions** - API Routes
-- **Upstash Redis** - KV Storage pour sync
-- **Cheerio** - HTML parsing (scraping FFE)
-- **Node.js 22.x**
+## Demarrage rapide
 
-### Stockage
-- **localStorage** - Données événements et validations (offline-first)
-- **Upstash KV** - Synchronisation cloud optionnelle
+### Prerequis
 
-## Structure du projet
-
-```
-nos-joueurs-en-tournoi/
-├── app/
-│   ├── layout.tsx               # Root layout (Audiowide + Inter fonts)
-│   ├── page.tsx                 # Page principale
-│   ├── api/
-│   │   ├── scrape/route.ts      # Proxy CORS pour FFE
-│   │   ├── events/
-│   │   │   ├── sync/route.ts    # Sync Upstash KV
-│   │   │   └── fetch/route.ts   # Fetch depuis KV
-│   └── manifest.json            # PWA manifest
-├── src/
-│   ├── components/
-│   │   ├── ui/                  # shadcn/ui components
-│   │   ├── common/
-│   │   │   └── FloatingParticles.tsx
-│   │   ├── ClubSelector.tsx     # Sélection dynamique du club
-│   │   ├── EventForm.tsx        # Formulaire création événement
-│   │   ├── EventsManager.tsx    # Gestion multi-événements
-│   │   ├── TournamentTabs.tsx   # Onglets tournois (2 phases)
-│   │   ├── PlayerTable.tsx      # Tableau joueurs
-│   │   ├── ClubStats.tsx        # Stats club + titre événement
-│   │   ├── ShareButton.tsx      # Bouton partage global
-│   │   ├── ShareEventModal.tsx  # Modal partage QR code
-│   │   ├── AnimationsToggle.tsx # Toggle animations (économie batterie)
-│   │   ├── DuplicateEventDialog.tsx
-│   │   ├── BackgroundPaths.tsx
-│   │   └── HalftoneWaves.tsx
-│   ├── contexts/
-│   │   └── AnimationsContext.tsx # Context global animations
-│   ├── lib/
-│   │   ├── parser.ts            # Parser HTML FFE (Stats + Ls + Ga)
-│   │   ├── storage.ts           # localStorage management + export/import
-│   │   ├── sync.ts              # Auto-sync avec Upstash
-│   │   ├── kv.ts                # Upstash Redis client
-│   │   └── utils.ts             # Utilitaires
-│   ├── types/
-│   │   └── index.ts             # Types TypeScript (ClubInfo, Event, etc.)
-│   └── styles/
-│       ├── globals.css          # Styles cyberpunk + .no-animations
-│       └── chess-logo.css       # Animations logo
-├── public/
-│   ├── chess-logo.png           # Logo principal
-│   ├── manifest.json            # PWA manifest
-│   ├── favicon*.png             # Multiple sizes (16/32/96)
-│   └── apple-icon.png           # Apple touch icon
-├── .husky/
-│   ├── pre-commit               # ESLint check
-│   └── pre-push                 # Full build test
-├── vitest.config.ts
-├── vitest.setup.ts
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-├── tailwind.config.ts
-├── postcss.config.mjs
-├── .npmrc                       # legacy-peer-deps=true
-└── vercel.json                  # Framework: nextjs + security headers
-```
-
-## Installation
-
-### Prérequis
 - Node.js >= 22.x
 - npm >= 10.x
-- Compte Vercel (pour déploiement)
-- Upstash Redis KV (optionnel, pour sync)
 
-### Étapes
+### Installation
 
-1. **Cloner le repository**
 ```bash
 git clone https://github.com/pierrealexandreguillemin-a11y/nos-joueurs-en-tournoi.git
 cd nos-joueurs-en-tournoi
-```
-
-2. **Installer les dépendances**
-```bash
 npm install
-```
-
-3. **Configuration environnement (optionnel)**
-```bash
-# Créer .env.local pour Upstash sync
-KV_REST_API_URL=https://xxx.upstash.io
-KV_REST_API_TOKEN=xxx
-```
-
-4. **Lancer en développement**
-```bash
 npm run dev
+# Ouvrir http://localhost:3000
 ```
 
-L'application sera accessible sur `http://localhost:3000`
+### Variables d'environnement
 
-5. **Build production**
+Copier `.env.example` vers `.env.local` et remplir :
+
+| Variable | Requis | Description |
+|----------|--------|-------------|
+| `KV_REST_API_URL` | Production | URL Upstash Redis |
+| `KV_REST_API_TOKEN` | Production | Token Upstash Redis |
+| `NEXT_PUBLIC_SYNC_SECRET` | Production | Secret HMAC (expose cote client par design, voir `src/lib/hmac.ts`) |
+
+En dev local, l'app fonctionne sans variables (fallback localStorage, pas de rate limiting).
+
+## Scripts
+
+| Commande | Action |
+|----------|--------|
+| `npm run dev` | Serveur de developpement (Turbopack) |
+| `npm run build` | Build production |
+| `npm run start` | Serveur production |
+| `npm run lint` | ESLint (ts, tsx) |
+| `npm test` | Vitest en mode watch |
+| `npm run test:coverage` | Tests + couverture (seuils: 70/60/70/70) |
+| `npm run test:e2e` | Tests E2E (Puppeteer + Chromium) |
+| `npm run typecheck` | Verification TypeScript strict |
+| `npm run duplication` | Detection code duplique (seuil 5%) |
+| `npm run analyze` | Analyse du bundle (ouvre rapport navigateur) |
+
+## Architecture
+
+```
+app/
+  layout.tsx              # Root layout (SEO, fonts, providers, analytics)
+  page.tsx                # Page principale (SPA client-side)
+  robots.ts               # robots.txt dynamique
+  sitemap.ts              # sitemap.xml dynamique
+  api/
+    scrape/route.ts       # Proxy FFE scraping (SSRF-protected)
+    events/
+      sync/route.ts       # POST sync events vers Redis (HMAC + Zod + 1MB limit)
+      fetch/route.ts      # GET fetch events depuis Redis (Zod slug validation)
+
+src/
+  components/
+    ui/                   # Primitives UI (button, card, dialog, table, etc.)
+    common/               # Composants partages (FloatingParticles, MiamiGlass, ShimmerEffect)
+    PlayerTable.tsx       # Table des joueurs (React.memo optimized)
+    TournamentTabs.tsx    # Onglets par tournoi (2 phases: clubs -> resultats)
+    EventForm.tsx         # Formulaire creation evenement (lazy-loaded)
+    EventsManager.tsx     # Gestion multi-evenements + sync cloud
+    ShareEventModal.tsx   # Partage par QR code (lazy-loaded)
+    DuplicateEventDialog.tsx # Dialog import doublon (lazy-loaded)
+    ClubSelector.tsx      # Selection du club FFE
+    ClubStats.tsx         # Statistiques par club et par ronde
+    ClubOnboarding.tsx    # Ecran premier lancement
+    ClubHeader.tsx        # Affichage club courant
+    ShareButton.tsx       # Bouton partage global
+    AnimationsToggle.tsx  # Toggle animations (economie batterie)
+    BackgroundPaths.tsx   # Fond anime SVG
+    HalftoneWaves.tsx     # Vagues WebGL
+  contexts/
+    ClubContext.tsx        # Identity club (slug, nom, persistence)
+    AnimationsContext.tsx  # Toggle animations (preference utilisateur)
+  hooks/
+    useTournamentSync.ts  # Hook principal sync/refresh (Ctrl+R, fetch, commit)
+  lib/
+    hmac.ts               # HMAC-SHA256 token (anti-replay, clock-skew tolerance)
+    schemas.ts            # Schemas Zod (validation API routes)
+    validation.ts         # Regles metier (SLUG_REGEX, URLs FFE, noms)
+    kv.ts                 # Client Redis namespace par club
+    sync.ts               # Sync localStorage <-> Upstash (merge strategy)
+    storage.ts            # Facade storage (re-exports core + share)
+    storage-core.ts       # CRUD localStorage namespace par club
+    storage-share.ts      # Encode/decode events pour partage URL (lz-string)
+    parser.ts             # Parser HTML FFE (Stats, Ls, Ga) via Cheerio
+    scraper.ts            # Orchestration scraping FFE (error handling)
+    club.ts               # Slugify, identity, migration legacy
+    calculations.ts       # Calculs points, performance, Buchholz, tri
+    formatters.ts         # Formatage affichage (noms, elo, scores, dates)
+    random.ts             # Generateur aleatoire securise (crypto.getRandomValues)
+    utils.ts              # cn() (clsx + tailwind-merge)
+  types/
+    index.ts              # Interfaces TypeScript (Event, Player, Tournament, etc.)
+
+proxy.ts                  # Rate limiting middleware (Next.js 16 convention)
+vercel.json               # Headers securite (CSP, HSTS, CORS)
+vitest.config.ts          # Config tests unitaires
+vitest.config.e2e.ts      # Config tests E2E
+vitest.setup.ts           # Setup jsdom + localStorage polyfill
+```
+
+## Tests
+
+**466 tests** repartis dans **23 fichiers**. Framework : Vitest 4 + Testing Library + jsdom.
+
+### Lancer les tests
+
 ```bash
-npm run build
+npm test                  # Mode watch
+npx vitest run            # Single run (CI)
+npm run test:coverage     # Avec couverture
 ```
 
-## Déploiement Vercel
+### Seuils de couverture
 
-### Configuration
+| Metrique | Seuil |
+|----------|-------|
+| Statements | 70% |
+| Branches | 60% |
+| Functions | 70% |
+| Lines | 70% |
 
-1. **Connecter à Vercel**
-- Aller sur [vercel.com](https://vercel.com)
-- Cliquer "Import Project"
-- Sélectionner le repository GitHub
-- **IMPORTANT**: Choisir branche **`master`** comme Production Branch
+### Inventaire complet
 
-2. **Configuration Vercel**
-- Framework Preset: **Next.js**
-- Root Directory: `.`
-- Build Command: `npm run build` (auto-détecté)
-- Output Directory: `.next` (auto-détecté)
+#### Bibliotheques (`src/lib/`)
 
-3. **Connecter Upstash KV Storage (optionnel)**
-- Dans Vercel Dashboard > Storage > Create > KV
-- Connecter au projet nos-joueurs-en-tournoi
-- Les env vars sont ajoutées automatiquement
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `hmac.test.ts` | 16 | Generation, verification, anti-replay 5 min, clock skew 10s, crypto.subtle check |
+| `schemas.test.ts` | 18 | Schemas Zod : clubSlug, result, player, tournament, event, syncBody |
+| `validation.test.ts` | 42 | URLs FFE, noms evenements/tournois, SLUG_REGEX (8 patterns) |
+| `storage.test.ts` | 56 | CRUD, export/import, isolation inter-clubs, BVA limites, share URL encode/decode |
+| `kv.test.ts` | 21 | Namespace KV, isolation clubs, key generation, edge cases |
+| `club.test.ts` | 25 | Slugify determinisme, accents, BVA longueur, migration legacy, identity |
+| `calculations.test.ts` | 34 | Points, performance, Buchholz, tri, moyenne elo, stats resultats |
+| `formatters.test.ts` | 28 | Formatage noms, elo, scores, pourcentages, dates, club, ronde |
+| `parser.test.ts` | 22 | Parser HTML FFE (Stats, Ls, Ga), clubs, resultats, rondes, invariance FFE |
+| `sync.test.ts` | 12 | Sync Upstash POST/GET, merge strategy, error paths |
+| `scraper.test.ts` | 8 | Scraping FFE, erreurs contextuelles |
+| `utils.test.ts` | 11 | Merge class names, gestion Tailwind conflicts |
+| `random.test.ts` | 7 | Distribution, unicite, plage [0,1) |
 
-4. **Déployer**
-- Push sur `master` > déploiement automatique
-- URL de production: `https://nos-joueurs-en-tournoi.vercel.app`
+#### Composants (`src/components/`)
+
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `PlayerTable.test.tsx` | ~30 | Rendu table, headers dynamiques, rondes, validation checkboxes, persistence, edge cases |
+| `EventForm.test.tsx` | ~25 | Formulaire, ajout/suppression tournois, validation URL FFE, soumission, edge cases |
+| `TournamentTabs.test.tsx` | ~20 | Onglets, refresh 2 phases, changement club, dialog confirmation, etats vides |
+| `ClubStats.test.tsx` | ~10 | Statistiques club par ronde |
+| `ClubSelector.test.tsx` | ~10 | Selection club dans dropdown |
+
+#### Hooks
+
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `useTournamentSync.test.ts` | 25 | Etat initial, identity null, refresh fetchClubs/fetchResults, selection club, Ctrl+R, persistence |
+
+#### Integration
+
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `integration.test.ts` | ~5 | Workflow complet : slug -> save -> retrieve -> isolation verifiee |
+
+#### API Routes
+
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `scrape/route.test.ts` | 5 | Validation URL, prevention SSRF (whitelist hostname) |
+| `events/routes.test.ts` | ~15 | Sync/fetch, validation slug Zod, HMAC verification, body size 1MB |
+
+#### Middleware
+
+| Fichier | Tests | Couverture |
+|---------|-------|------------|
+| `proxy.test.ts` | 6 | Rate limiting 429, pass-through, fail-open Redis, extraction IP (x-forwarded-for, x-real-ip) |
+
+### Conventions de test
+
+- **Co-localisation** : `foo.test.ts` a cote de `foo.ts`
+- **API routes** : `__tests__/` dans le dossier de la route
+- **Nommage describe** : nom du module ou composant
+- **Nommage it** : phrase descriptive (anglais ou francais)
+- **Mocks** : `vi.mock()` pour dependances externes uniquement
+- **Timers** : `vi.useFakeTimers()` + `vi.setSystemTime()` (pas `advanceTimersByTime` negatif)
+- **DOM** : jsdom + Testing Library (`render`, `screen`, `userEvent`)
+- **Pas de snapshots** : assertions explicites uniquement
+
+## Securite
+
+| Mesure | Implementation | Reference |
+|--------|---------------|-----------|
+| CSP | `default-src 'self'`, `frame-ancestors 'none'`, connect-src whitelist | `vercel.json` |
+| HSTS | `max-age=63072000; includeSubDomains; preload` | `vercel.json` |
+| CORS | Origin unique sur `/api/*` | `vercel.json` |
+| Rate limiting | Upstash sliding window (30/min scrape, 10/min events) | `proxy.ts` |
+| HMAC | SHA-256 + timestamp anti-replay (5 min, tolerance 10s) | `src/lib/hmac.ts` |
+| SSRF | Whitelist `echecs.asso.fr` sur `/api/scrape` | `app/api/scrape/route.ts` |
+| Body limit | 1 MB max sur POST `/api/events/sync` | `app/api/events/sync/route.ts` |
+| Validation | Zod schemas strictes sur toutes les API routes | `src/lib/schemas.ts` |
+| Headers | X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy | `vercel.json` |
+| Fail-open | Rate limiter laisse passer si Redis indisponible | `proxy.ts` |
+
+## Quality gates (pre-push)
+
+Chaque `git push` execute automatiquement 6 controles (`.husky/pre-push`) :
+
+| # | Controle | Norme | Commande |
+|---|----------|-------|----------|
+| 1 | TypeScript | ISO 5055 Reliability | `tsc --noEmit` |
+| 2 | ESLint 0 warnings | ISO 5055 Maintainability | `eslint src app --max-warnings 0` |
+| 3 | Build production | - | `next build` |
+| 4 | Duplication < 5% | ISO 5055 Maintainability | `jscpd --threshold 5` |
+| 5 | 0 vuln critique | OWASP A06 | `npm audit` (parse JSON, bloque sur critical) |
+| 6 | Tests + couverture | ISO 25010 Testability | `vitest run --coverage` |
 
 ## Utilisation
 
-### 1. Créer un événement
+### 1. Premier lancement
 
-1. Cliquer sur "Créer un événement"
-2. Entrer le nom de l'événement (ex: "Rapide de Salon 11 novembre")
-3. Optionnel : entrer le nom du club (sinon détecté automatiquement)
-4. Ajouter des tournois :
-   - Nom de l'onglet (ex: "U12", "U14")
-   - URL FFE résultats
-5. Cliquer "Créer l'événement"
+L'ecran d'onboarding demande le nom du club. Ce nom est slugifie (`"Hay Chess"` -> `"hay-chess"`) et sert de namespace pour isoler les donnees localStorage et Redis.
 
-### 2. Suivre les résultats (flux en 2 phases)
+### 2. Creer un evenement
 
-**Phase 1 - Détection des clubs :**
-1. Cliquer "Actualiser" sur un tournoi
-2. L'app détecte automatiquement tous les clubs du tournoi via la page FFE Stats
-3. Un dropdown apparaît avec la liste des clubs et leur nombre de joueurs
+1. Cliquer "Creer un evenement"
+2. Entrer le nom (min 3 caracteres)
+3. Ajouter des tournois (nom + URL FFE `echecs.asso.fr`)
+4. Valider
 
-**Phase 2 - Résultats du club :**
-4. Sélectionner votre club dans le dropdown
-5. L'app charge automatiquement les résultats pour ce club
-6. Visualiser :
-   - Classement et ELO
-   - Résultats par ronde (1/0/0.5)
-   - Points cumulés
-   - Buchholz et Performance
-   - Stats club (total, moyenne)
-   - Dernière mise à jour
+### 3. Suivre les resultats (2 phases)
 
-### 3. Gérer plusieurs événements
+**Phase 1 — Detection des clubs** : cliquer "Actualiser" -> l'app scrape la page FFE Stats -> dropdown des clubs detectes
 
-1. Cliquer "Gérer les événements"
-2. **Changer d'événement** : Cliquer sur un événement dans la liste
-3. **Exporter** : Icône Upload > télécharge JSON
-4. **Partager** : Icône Share > génère QR code + lien partage
-5. **Supprimer** : Icône Trash (confirmation requise)
-6. **Importer** : Icône Download > sélectionner fichier JSON
+**Phase 2 — Resultats** : selectionner votre club -> l'app charge les resultats filtres (Ls + Ga)
 
-### 4. Partager un événement
+### 4. Partager
 
-**Via QR Code** :
-1. Cliquer icône Share sur un événement
-2. Scanner le QR code avec un téléphone
-3. L'événement s'ouvre automatiquement (le choix du club est inclus)
+- **QR Code** : bouton Share -> scanner
+- **Lien URL** : copier le lien (encode lz-string dans `?share=`)
+- **JSON** : export/import fichier
 
-**Via URL** :
-1. Copier le lien de partage
-2. L'envoyer par email/SMS
-3. Le destinataire importe l'événement en 1 clic
+## Parser FFE
 
-## Architecture technique
+Le parser utilise 3 pages FFE (Federation Francaise des Echecs) :
 
-### Parser FFE (3 pages)
-
-Le parser utilise **3 pages FFE** :
-
-1. **Action=Stats** : Statistiques du tournoi (liste des clubs)
-2. **Action=Ls** : Liste des joueurs avec clubs
-3. **Action=Ga** : Grille américaine avec résultats
-
-```typescript
-// Phase 1: Détection des clubs
-const statsUrl = getStatsUrl(tournament.url);
-const clubs = parseStatsClubs(htmlStats);
-
-// Phase 2: Résultats filtrés par club
-const listUrl = getListUrl(tournament.url);
-const resultsUrl = getResultsUrl(tournament.url);
-const { players, currentRound } = parseFFePages(htmlList, htmlResults, clubName);
-```
-
-### Stockage localStorage
-
-```typescript
-{
-  currentEventId: "evt_123",
-  events: [
-    {
-      id: "evt_123",
-      name: "Rapide de Salon 11 novembre",
-      clubName: "Mon Club",           // club sélectionné
-      availableClubs: [               // clubs détectés
-        { name: "Mon Club", playerCount: 5 },
-        { name: "Autre Club", playerCount: 3 }
-      ],
-      createdAt: "2025-11-10T...",
-      tournaments: [...]
-    }
-  ],
-  validations: { ... }
-}
-```
-
-### Synchronisation Cloud (Multi-Device)
-
-Via **Upstash Redis** avec contrôle manuel :
-
-| Action | Boutons |
-|--------|---------|
-| Sauvegarder vers cloud | CloudUpload (dans EventsManager) |
-| Récupérer depuis cloud | CloudDownload (header EventsManager) |
-| Exporter en local | Upload (par événement) |
-| Importer depuis local | Download (header EventsManager) |
+| Page | Action | Donnees |
+|------|--------|---------|
+| Stats | `Action=Stats` | Liste des clubs + nombre de joueurs |
+| Liste | `Action=Ls` | Joueurs avec club d'appartenance |
+| Grille americaine | `Action=Ga` | Resultats par ronde, Buchholz, performance |
 
 ## Style UI
 
-L'application utilise le style "Miami Vice" cyberpunk glassmorphism.
+- **Palette** : Miami Aqua `#008E97`, Miami Orange `#E04500`, Miami Navy `#013369`
+- **Typographie** : Audiowide (titres), Inter (corps)
+- **Effets** : Glassmorphism (`backdrop-filter: blur(15px) saturate(130%)`), floating particles, halftone waves
+- **Animations** : desactivables via toggle (economie batterie)
 
-### Couleurs
-- **Miami Aqua**: `#008E97`
-- **Miami Orange**: `#E04500`
-- **Miami Navy**: `#013369`
+## Navigateurs supportes
 
-### Typography
-- **Audiowide** - Titres principaux (NOS JOUEURS EN TOURNOI, titres événements)
-- **Inter** - Corps de texte
-
-### Effets
-- **Glassmorphism** : `backdrop-filter: blur(15px) saturate(130%)`
-- **Floating Particles** : 30 particules animées (Canvas 2D)
-- **Halftone Waves** : Vagues WebGL animées
-- **Désactivable** : Mode économie d'énergie
-
-## Scripts disponibles
-
-```bash
-# Développement
-npm run dev          # Next.js dev server (port 3000)
-
-# Production
-npm run build        # Build Next.js
-npm run start        # Start production server
-
-# Tests
-npm test             # Vitest (142 tests)
-
-# Code quality
-npm run lint         # ESLint check
-
-# Déploiement
-vercel --prod        # Deploy to production
+```
+last 2 Chrome versions
+last 2 Firefox versions
+last 2 Safari versions
+last 2 Edge versions
 ```
 
-## Qualité du code
+## Depannage
 
-### Tests
-- **142 tests Vitest** - 6 suites (parser, storage, 4 composants)
-- **0 ESLint errors**
-- **Git hooks** - pre-commit (lint) + pre-push (build)
+### Parser FFE echoue
 
-### Sécurité
-- Validation URLs FFE (whitelist echecs.asso.fr)
-- Security headers dans vercel.json
-- User-Agent headers (anti-bot FFE)
+Messages d'erreur contextuels :
+- "Tournoi introuvable" (404)
+- "Le serveur FFE rencontre des problemes" (500)
+- "Aucun club detecte. Le tournoi n'a peut-etre pas encore commence."
+- "Aucun joueur {club} trouve"
 
-## Dépannage
+### Sync ne fonctionne pas
 
-### Parser FFE échoue
-- Messages d'erreur contextuels :
-  - "Tournoi introuvable" (404)
-  - "Le serveur FFE rencontre des problèmes" (500)
-  - "Aucun club détecté. Le tournoi n'a peut-être pas encore commencé."
-  - "Aucun joueur {club} trouvé"
-- Regarder la console pour logs détaillés
-
-### Upstash sync ne fonctionne pas
-- Vérifier les env vars dans Vercel Dashboard
-- Vérifier les logs console `[Upstash Sync]`
-- Tester les routes API :
-  ```bash
-  curl -X POST https://nos-joueurs-en-tournoi.vercel.app/api/events/sync \
-    -H "Content-Type: application/json" \
-    -d '{"events":[],"validations":{},"currentEventId":""}'
-
-  curl https://nos-joueurs-en-tournoi.vercel.app/api/events/fetch
-  ```
+- Verifier `KV_REST_API_URL` et `KV_REST_API_TOKEN` dans Vercel Dashboard > Settings > Environment Variables
+- Verifier les logs console `[Upstash Sync]`
 
 ### Build errors
+
 ```bash
 rm -rf node_modules .next
 npm install
 npm run build
 ```
 
-## Contribution
-
-### Standards de code
-- **TypeScript strict** activé
-- **ESLint** configuré (0 errors tolérés)
-- Commits conventionnels: `feat:`, `fix:`, `docs:`, `chore:`
-
-### Avant de commit
-1. Le build passe : `npm run build`
-2. Les tests passent : `npm test`
-3. ESLint passe : `npm run lint`
-
 ## Licence
 
-Propriétaire - Pierre Alexandre Guillemin
-
-## Support
-
-Pour toute question technique :
-- Ouvrir une issue sur GitHub
-
----
-
-**Status du projet** : PRODUCTION - Next.js 16, PWA, Sync multi-appareils
-
-**URL de production** : https://nos-joueurs-en-tournoi.vercel.app
+Projet prive — Pierre Alexandre Guillemin
