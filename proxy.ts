@@ -43,7 +43,15 @@ export async function proxy(req: NextRequest) {
   if (!limiter) return NextResponse.next();
 
   const ip = getClientIP(req);
-  const { success, remaining } = await limiter.limit(ip);
+
+  let success: boolean;
+  let remaining: number;
+  try {
+    ({ success, remaining } = await limiter.limit(ip));
+  } catch {
+    console.warn('[proxy] Rate limit check failed, allowing request');
+    return NextResponse.next();
+  }
 
   if (!success) {
     return NextResponse.json(
