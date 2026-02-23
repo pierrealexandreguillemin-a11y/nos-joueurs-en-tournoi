@@ -22,12 +22,26 @@ export const playerSchema = z.object({
   validated: z.array(z.boolean()),
 });
 
+export const pairingSchema = z.object({
+  board: z.number().int().positive(),
+  whitePlayer: z.string().min(1),
+  blackPlayer: z.string().min(1),
+  whiteElo: z.number().int().nonnegative(),
+  blackElo: z.number().int().nonnegative(),
+  result: z.string(),
+  whitePoints: z.number().nonnegative(),
+  blackPoints: z.number().nonnegative(),
+  isExempt: z.boolean(),
+});
+
 export const tournamentSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   url: z.string().url(),
   lastUpdate: z.string(),
   players: z.array(playerSchema),
+  pairings: z.array(pairingSchema).optional(),
+  pairingsRound: z.number().int().positive().optional(),
 });
 
 export const eventSchema = z.object({
