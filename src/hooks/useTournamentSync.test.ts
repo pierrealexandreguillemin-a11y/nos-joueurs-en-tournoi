@@ -28,12 +28,16 @@ vi.mock('@/lib/scraper', () => ({
 // Mock parser
 const mockParseFFePages = vi.fn();
 const mockParseStatsClubs = vi.fn();
+const mockParsePairings = vi.fn();
 vi.mock('@/lib/parser', () => ({
   parseFFePages: (...args: unknown[]) => mockParseFFePages(...args),
   getListUrl: (url: string) => `${url}&Ligue=list`,
   getResultsUrl: (url: string) => `${url}&Ligue=results`,
   getStatsUrl: (url: string) => `${url}&Ligue=stats`,
+  getRoundUrl: (url: string, round: number) => `${url}&Action=${String(round).padStart(2, '0')}`,
   parseStatsClubs: (...args: unknown[]) => mockParseStatsClubs(...args),
+  parsePairings: (...args: unknown[]) => mockParsePairings(...args),
+  detectCurrentRound: vi.fn(() => 3),
 }));
 
 // Mock storage
@@ -75,6 +79,8 @@ describe('useTournamentSync', () => {
     onEventUpdate = vi.fn<(event: Event) => void>();
     // Reset identity to default for each test
     mockIdentity = { clubName: 'Test Club', clubSlug: 'test-club', createdAt: '2024-01-01' };
+    // Default: pairings fetch returns empty (silent fail-open)
+    mockParsePairings.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -213,6 +219,8 @@ describe('useTournamentSync', () => {
     const players = [makePlayer({ name: 'Alice', club: 'Hay Chess' })];
     mockScrapeFFEPair.mockResolvedValueOnce(['<list>', '<results>']);
     mockParseFFePages.mockReturnValueOnce({ players });
+    // Pairings fetch (silent, returns empty HTML)
+    mockScrapeFFE.mockResolvedValue('<html></html>');
 
     const event = makeTestEvent({ clubName: 'Hay Chess' });
     const { result } = renderSync(event);
@@ -230,6 +238,7 @@ describe('useTournamentSync', () => {
   it('fetchResults — erreur quand aucun joueur trouvé', async () => {
     mockScrapeFFEPair.mockResolvedValueOnce(['<list>', '<results>']);
     mockParseFFePages.mockReturnValueOnce({ players: [] });
+    mockScrapeFFE.mockResolvedValue('<html></html>');
 
     const event = makeTestEvent({ clubName: 'Hay Chess' });
     const { result } = renderSync(event);
@@ -281,6 +290,7 @@ describe('useTournamentSync', () => {
     const players = [makePlayer({ name: 'Alice', club: 'Hay Chess' })];
     mockScrapeFFEPair.mockResolvedValue(['<list>', '<results>']);
     mockParseFFePages.mockReturnValue({ players });
+    mockScrapeFFE.mockResolvedValue('<html></html>');
 
     const event = makeTestEvent({
       tournaments: [makeTournament('trn-1', 'U12'), makeTournament('trn-2', 'U14')],
@@ -304,6 +314,7 @@ describe('useTournamentSync', () => {
       .mockRejectedValueOnce(new Error('FFE down'))
       .mockResolvedValueOnce(['<list>', '<results>']);
     mockParseFFePages.mockReturnValue({ players });
+    mockScrapeFFE.mockResolvedValue('<html></html>');
 
     const event = makeTestEvent({
       tournaments: [makeTournament('trn-1', 'U12'), makeTournament('trn-2', 'U14')],
@@ -474,6 +485,82 @@ describe('useTournamentSync', () => {
       resolveScrape('<html></html>');
       mockParseStatsClubs.mockReturnValueOnce([]);
     });
+  });
+
+  // ── Pairings fetch ──────────────────────────────────────────────────
+
+  it('fetchResults inclut les pairings dans le Tournament retourné', async () => {
+    const players = [makePlayer({ name: 'Alice', club: 'Hay Chess' })];
+    mockScrapeFFEPair.mockResolvedValueOnce(['<list>', '<results>']);
+    mockParseFFePages.mockReturnValueOnce({ players });
+    // Pairings: first call (round N+1) returns pairings
+    const fakePairings = [{
+      board: 1, whitePlayer: 'ALICE', blackPlayer: 'BOB',
+      whiteElo: 1500, blackElo: 1400, result: '',
+      whitePoints: 2, blackPoints: 1, isExempt: false,
+    }];
+    mockScrapeFFE.mockResolvedValueOnce('<html>round</html>');
+    mockParsePairings.mockReturnValueOnce(fakePairings);
+
+    const event = makeTestEvent({ clubName: 'Hay Chess' });
+    const { result } = renderSync(event);
+
+    await act(async () => {
+      await result.current.handleRefresh(event.tournaments[0]);
+    });
+
+    const updatedEvent = onEventUpdate.mock.calls[0][0] as Event;
+    expect(updatedEvent.tournaments[0].pairings).toEqual(fakePairings);
+    expect(updatedEvent.tournaments[0].pairingsRound).toBe(4); // detectCurrentRound returns 3, so N+1=4
+  });
+
+  it('pairings vides si les deux rondes retournent 0 appariements', async () => {
+    const players = [makePlayer({ name: 'Alice', club: 'Hay Chess' })];
+    mockScrapeFFEPair.mockResolvedValueOnce(['<list>', '<results>']);
+    mockParseFFePages.mockReturnValueOnce({ players });
+    // Both round fetches return empty
+    mockScrapeFFE.mockResolvedValue('<html></html>');
+    mockParsePairings.mockReturnValue([]);
+
+    const event = makeTestEvent({ clubName: 'Hay Chess' });
+    const { result } = renderSync(event);
+
+    await act(async () => {
+      await result.current.handleRefresh(event.tournaments[0]);
+    });
+
+    const updatedEvent = onEventUpdate.mock.calls[0][0] as Event;
+    expect(updatedEvent.tournaments[0].pairings).toBeUndefined();
+    expect(updatedEvent.tournaments[0].pairingsRound).toBeUndefined();
+  });
+
+  it('pairings fallback sur ronde N si ronde N+1 vide', async () => {
+    const players = [makePlayer({ name: 'Alice', club: 'Hay Chess' })];
+    mockScrapeFFEPair.mockResolvedValueOnce(['<list>', '<results>']);
+    mockParseFFePages.mockReturnValueOnce({ players });
+    const fakePairings = [{
+      board: 1, whitePlayer: 'ALICE', blackPlayer: 'BOB',
+      whiteElo: 1500, blackElo: 1400, result: '1 - 0',
+      whitePoints: 2, blackPoints: 1, isExempt: false,
+    }];
+    // First call (N+1) returns empty, second call (N) returns pairings
+    mockScrapeFFE
+      .mockResolvedValueOnce('<html>empty</html>')
+      .mockResolvedValueOnce('<html>round</html>');
+    mockParsePairings
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce(fakePairings);
+
+    const event = makeTestEvent({ clubName: 'Hay Chess' });
+    const { result } = renderSync(event);
+
+    await act(async () => {
+      await result.current.handleRefresh(event.tournaments[0]);
+    });
+
+    const updatedEvent = onEventUpdate.mock.calls[0][0] as Event;
+    expect(updatedEvent.tournaments[0].pairings).toEqual(fakePairings);
+    expect(updatedEvent.tournaments[0].pairingsRound).toBe(3); // current round
   });
 
   // ── commitEvent persistence ───────────────────────────────────────────

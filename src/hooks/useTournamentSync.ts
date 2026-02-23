@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
+import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, getRoundUrl, parseStatsClubs, parsePairings, detectCurrentRound } from '@/lib/parser';
 import { scrapeFFE, scrapeFFEPair } from '@/lib/scraper';
 import { createClubStorage } from '@/lib/storage';
 import { useClub } from '@/contexts/ClubContext';
-import type { Event, Tournament } from '@/types';
+import type { Event, Tournament, Pairing } from '@/types';
 import type { ClubStorage } from '@/lib/storage';
 
 const UNKNOWN_ERROR = 'Erreur inconnue';
@@ -13,6 +13,45 @@ const UNKNOWN_ERROR = 'Erreur inconnue';
 interface UseTournamentSyncOptions {
   event: Event;
   onEventUpdate: (event: Event) => void;
+}
+
+/** Fetch pairings for a given round. Returns [] on failure (silent). */
+async function fetchPairingsForRound(
+  tournamentUrl: string,
+  roundNumber: number,
+): Promise<Pairing[]> {
+  try {
+    const roundUrl = getRoundUrl(tournamentUrl, roundNumber);
+    const html = await scrapeFFE(roundUrl, `de la ronde ${roundNumber}`);
+    return parsePairings(html);
+  } catch {
+    return [];
+  }
+}
+
+/** Try round N+1 first, fallback to round N */
+async function fetchBestPairings(
+  tournamentUrl: string,
+  currentRound: number,
+): Promise<{ pairings: Pairing[]; pairingsRound: number }> {
+  if (currentRound <= 0) {
+    return { pairings: [], pairingsRound: 0 };
+  }
+
+  // Try next round first
+  const nextRound = currentRound + 1;
+  const nextPairings = await fetchPairingsForRound(tournamentUrl, nextRound);
+  if (nextPairings.length > 0) {
+    return { pairings: nextPairings, pairingsRound: nextRound };
+  }
+
+  // Fallback to current round
+  const currentPairings = await fetchPairingsForRound(tournamentUrl, currentRound);
+  if (currentPairings.length > 0) {
+    return { pairings: currentPairings, pairingsRound: currentRound };
+  }
+
+  return { pairings: [], pairingsRound: 0 };
 }
 
 /** Build a reset event with club cleared and all tournament players removed */
@@ -24,6 +63,8 @@ function buildResetEvent(event: Event): Event {
       ...t,
       players: [],
       lastUpdate: '',
+      pairings: undefined,
+      pairingsRound: undefined,
     })),
   };
 }
@@ -38,9 +79,20 @@ async function fetchTournamentResults(
   const [htmlList, htmlResults] = await scrapeFFEPair(listUrl, resultsUrl);
   const { players } = parseFFePages(htmlList, htmlResults, clubName);
 
+  // Fetch pairings (best effort — failure returns empty, doesn't throw)
+  // Trade-off: sequential after results (+1-2 req, ~200-500ms latency)
+  // A non-blocking approach would require splitting commitEvent calls
+  const currentRound = detectCurrentRound(players);
+  const { pairings, pairingsRound } = await fetchBestPairings(
+    tournament.url,
+    currentRound,
+  );
+
   return {
     ...tournament,
     players,
+    pairings: pairings.length > 0 ? pairings : undefined,
+    pairingsRound: pairingsRound > 0 ? pairingsRound : undefined,
     lastUpdate: new Date().toISOString(),
   };
 }
