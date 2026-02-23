@@ -8,7 +8,7 @@
  */
 
 import * as cheerio from 'cheerio';
-import type { Player, Result, ClubStats, ClubInfo } from '@/types';
+import type { Player, Result, ClubStats, ClubInfo, Pairing, ClubPairing } from '@/types';
 
 /**
  * Extract tournament ID from FFE URL
@@ -63,6 +63,17 @@ export function getStatsUrl(tournamentUrl: string): string {
   const tournamentId = extractTournamentId(tournamentUrl);
   if (!tournamentId) return tournamentUrl;
   return `https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/${tournamentId}/${tournamentId}&Action=Stats`;
+}
+
+/**
+ * Convert tournament URL to Action=XX URL (round pairings)
+ * @param roundNumber - Round number (1-99)
+ */
+export function getRoundUrl(tournamentUrl: string, roundNumber: number): string {
+  const tournamentId = extractTournamentId(tournamentUrl);
+  if (!tournamentId) return tournamentUrl;
+  const padded = String(roundNumber).padStart(2, '0');
+  return `https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/${tournamentId}/${tournamentId}&Action=${padded}`;
 }
 
 function isClubsSectionHeader(text: string): boolean {
@@ -352,4 +363,110 @@ export function parseFFePages(
   const currentRound = detectCurrentRound(players);
 
   return { players, currentRound };
+}
+
+/**
+ * Parse a single pairing row from FFE round page
+ * Expected 8 columns: Ech. | Pts | Blancs | Elo | Res. | Noirs | Elo | Pts
+ */
+function parsePairingRow(cells: ReturnType<cheerio.CheerioAPI>, $: cheerio.CheerioAPI): Pairing | null {
+  if (cells.length < 8) return null;
+
+  const board = parseInt($(cells[0]).text().trim()) || 0;
+  if (board === 0) return null;
+
+  const whitePoints = parsePoints($(cells[1]).text().trim());
+  const whitePlayer = cleanPlayerName($(cells[2]).text().trim());
+  const whiteElo = parseElo($(cells[3]).text().trim());
+  const result = $(cells[4]).text().trim();
+  const blackPlayer = cleanPlayerName($(cells[5]).text().trim());
+  const blackElo = parseElo($(cells[6]).text().trim());
+  const blackPoints = parsePoints($(cells[7]).text().trim());
+
+  if (!whitePlayer) return null;
+
+  const isExempt = blackPlayer === 'EXEMPT' || blackPlayer === '';
+
+  return {
+    board,
+    whitePlayer,
+    blackPlayer: isExempt ? 'EXEMPT' : blackPlayer,
+    whiteElo,
+    blackElo,
+    result,
+    whitePoints,
+    blackPoints,
+    isExempt,
+  };
+}
+
+/**
+ * Parse FFE round page (Action=01..09) to extract pairings
+ * @param htmlRound - HTML from round pairings page
+ * @returns Array of all pairings for that round
+ */
+export function parsePairings(htmlRound: string): Pairing[] {
+  const $ = cheerio.load(htmlRound);
+  const pairings: Pairing[] = [];
+
+  $('tr').each((_, row) => {
+    const $row = $(row);
+    const cells = $row.find('td').filter((_, td) => {
+      const cls = $(td).attr('class') || '';
+      return cls.includes('papi_liste_f') || cls.includes('papi_liste_c');
+    });
+
+    if (cells.length < 8) return;
+
+    const pairing = parsePairingRow(cells, $);
+    if (pairing) pairings.push(pairing);
+  });
+
+  return pairings;
+}
+
+/**
+ * Filter pairings to club players and build ClubPairing[] perspective
+ * @param pairings - All pairings for the round
+ * @param playerClubMap - Map of player name -> club name
+ * @param clubName - Name of the club to filter by
+ * @returns Club pairings sorted by board number
+ */
+export function filterClubPairings(
+  pairings: Pairing[],
+  playerClubMap: Map<string, string>,
+  clubName: string,
+): ClubPairing[] {
+  const clubPairings: ClubPairing[] = [];
+
+  for (const pairing of pairings) {
+    const whiteClub = playerClubMap.get(pairing.whitePlayer);
+    const blackClub = playerClubMap.get(pairing.blackPlayer);
+
+    if (whiteClub === clubName) {
+      clubPairings.push({
+        board: pairing.board,
+        clubPlayerName: pairing.whitePlayer,
+        color: 'white',
+        opponentName: pairing.blackPlayer,
+        opponentElo: pairing.blackElo,
+        result: pairing.result,
+        isExempt: pairing.isExempt,
+      });
+    }
+
+    if (blackClub === clubName) {
+      clubPairings.push({
+        board: pairing.board,
+        clubPlayerName: pairing.blackPlayer,
+        color: 'black',
+        opponentName: pairing.whitePlayer,
+        opponentElo: pairing.whiteElo,
+        result: pairing.result,
+        isExempt: false,
+      });
+    }
+  }
+
+  return clubPairings.sort((a, b) => a.board - b.board);
 }

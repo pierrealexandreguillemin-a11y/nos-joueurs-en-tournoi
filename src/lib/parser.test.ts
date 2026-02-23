@@ -7,7 +7,10 @@ import {
   calculateClubStats,
   getListUrl,
   getStatsUrl,
+  getRoundUrl,
   parseStatsClubs,
+  parsePairings,
+  filterClubPairings,
 } from './parser';
 
 describe('parser.ts', () => {
@@ -370,6 +373,256 @@ describe('parser.ts', () => {
 
       const clubs = parseStatsClubs(html);
       expect(clubs[0]).toEqual({ name: 'Club A', playerCount: 4 });
+    });
+  });
+
+  describe('getRoundUrl', () => {
+    it('converts tournament URL to round 1 URL (Action=01)', () => {
+      const input = 'https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/68994/68994&Action=Ga';
+      const expected = 'https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/68994/68994&Action=01';
+      expect(getRoundUrl(input, 1)).toBe(expected);
+    });
+
+    it('converts tournament URL to round 9 URL (Action=09)', () => {
+      const input = 'https://www.echecs.asso.fr/FicheTournoi.aspx?Ref=68994';
+      const expected = 'https://www.echecs.asso.fr/Resultats.aspx?URL=Tournois/Id/68994/68994&Action=09';
+      expect(getRoundUrl(input, 9)).toBe(expected);
+    });
+
+    it('returns original URL when no tournament ID found', () => {
+      const input = 'https://example.com/no-id';
+      expect(getRoundUrl(input, 1)).toBe(input);
+    });
+  });
+
+  describe('parsePairings', () => {
+    function makePairingHTML(rows: string[][]): string {
+      const trs = rows.map(cells => {
+        const tds = cells.map(c => `<td class="papi_liste_c">${c}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      return `<table>${trs}</table>`;
+    }
+
+    it('parses standard 8-column pairing rows', () => {
+      const html = makePairingHTML([
+        ['1', '2', 'DUPONT JEAN', '1600 F', '1 - 0', 'MARTIN PAUL', '1450', '1.5'],
+        ['2', '1.5', 'DURAND MARIE', '1500', '', 'BERNARD LUC', '1400', '2'],
+      ]);
+
+      const pairings = parsePairings(html);
+
+      expect(pairings).toHaveLength(2);
+      expect(pairings[0].board).toBe(1);
+      expect(pairings[0].whitePlayer).toBe('DUPONT JEAN');
+      expect(pairings[0].whiteElo).toBe(1600);
+      expect(pairings[0].blackPlayer).toBe('MARTIN PAUL');
+      expect(pairings[0].blackElo).toBe(1450);
+      expect(pairings[0].result).toBe('1 - 0');
+      expect(pairings[0].whitePoints).toBe(2);
+      expect(pairings[0].blackPoints).toBe(1.5);
+      expect(pairings[0].isExempt).toBe(false);
+    });
+
+    it('detects EXEMPT player', () => {
+      const html = makePairingHTML([
+        ['3', '1', 'LEFEBVRE ALICE', '1300', '', 'EXEMPT', '0', '0'],
+      ]);
+
+      const pairings = parsePairings(html);
+
+      expect(pairings).toHaveLength(1);
+      expect(pairings[0].isExempt).toBe(true);
+      expect(pairings[0].blackPlayer).toBe('EXEMPT');
+      expect(pairings[0].blackElo).toBe(0);
+    });
+
+    it('returns empty array for HTML without pairing data', () => {
+      const html = '<html><body><p>No data</p></body></html>';
+      expect(parsePairings(html)).toEqual([]);
+    });
+
+    it('parses results that have been played (non-empty result)', () => {
+      const html = makePairingHTML([
+        ['1', '0', 'PLAYER A', '1500', '1/2 - 1/2', 'PLAYER B', '1600', '0'],
+      ]);
+
+      const pairings = parsePairings(html);
+      expect(pairings[0].result).toBe('1/2 - 1/2');
+    });
+
+    it('parses unplayed pairings (empty result)', () => {
+      const html = makePairingHTML([
+        ['1', '0', 'PLAYER A', '1500', '', 'PLAYER B', '1600', '0'],
+      ]);
+
+      const pairings = parsePairings(html);
+      expect(pairings[0].result).toBe('');
+    });
+
+    it('handles mixed papi_liste_f and papi_liste_c classes', () => {
+      const html = `<table><tr>
+        <td class="papi_liste_f">1</td>
+        <td class="papi_liste_c">0</td>
+        <td class="papi_liste_f">PLAYER A</td>
+        <td class="papi_liste_c">1500</td>
+        <td class="papi_liste_f"></td>
+        <td class="papi_liste_c">PLAYER B</td>
+        <td class="papi_liste_f">1600</td>
+        <td class="papi_liste_c">0</td>
+      </tr></table>`;
+
+      const pairings = parsePairings(html);
+      expect(pairings).toHaveLength(1);
+      expect(pairings[0].whitePlayer).toBe('PLAYER A');
+    });
+
+    it('skips rows with fewer than 8 cells', () => {
+      const html = `<table>
+        <tr><td class="papi_liste_c">Header</td></tr>
+        <tr>
+          <td class="papi_liste_c">1</td>
+          <td class="papi_liste_c">0</td>
+          <td class="papi_liste_c">PLAYER A</td>
+          <td class="papi_liste_c">1500</td>
+          <td class="papi_liste_c"></td>
+          <td class="papi_liste_c">PLAYER B</td>
+          <td class="papi_liste_c">1600</td>
+          <td class="papi_liste_c">0</td>
+        </tr>
+      </table>`;
+
+      const pairings = parsePairings(html);
+      expect(pairings).toHaveLength(1);
+    });
+
+    it('handles half points with ½ symbol', () => {
+      const html = makePairingHTML([
+        ['1', '2½', 'PLAYER A', '1500', '', 'PLAYER B', '1600', '1½'],
+      ]);
+
+      const pairings = parsePairings(html);
+      expect(pairings[0].whitePoints).toBe(2.5);
+      expect(pairings[0].blackPoints).toBe(1.5);
+    });
+  });
+
+  describe('filterClubPairings', () => {
+    const pairings = [
+      {
+        board: 1,
+        whitePlayer: 'DUPONT JEAN',
+        blackPlayer: 'MARTIN PAUL',
+        whiteElo: 1600,
+        blackElo: 1450,
+        result: '',
+        whitePoints: 2,
+        blackPoints: 1.5,
+        isExempt: false,
+      },
+      {
+        board: 2,
+        whitePlayer: 'BERNARD LUC',
+        blackPlayer: 'DURAND MARIE',
+        whiteElo: 1400,
+        blackElo: 1500,
+        result: '',
+        whitePoints: 1,
+        blackPoints: 2,
+        isExempt: false,
+      },
+      {
+        board: 3,
+        whitePlayer: 'LEFEBVRE ALICE',
+        blackPlayer: 'EXEMPT',
+        whiteElo: 1300,
+        blackElo: 0,
+        result: '',
+        whitePoints: 1,
+        blackPoints: 0,
+        isExempt: true,
+      },
+    ];
+
+    it('filters white player from club', () => {
+      const map = new Map([
+        ['DUPONT JEAN', 'Mon Club'],
+        ['MARTIN PAUL', 'Other Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].clubPlayerName).toBe('DUPONT JEAN');
+      expect(result[0].color).toBe('white');
+      expect(result[0].opponentName).toBe('MARTIN PAUL');
+      expect(result[0].opponentElo).toBe(1450);
+    });
+
+    it('filters black player from club', () => {
+      const map = new Map([
+        ['BERNARD LUC', 'Other Club'],
+        ['DURAND MARIE', 'Mon Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].clubPlayerName).toBe('DURAND MARIE');
+      expect(result[0].color).toBe('black');
+      expect(result[0].opponentName).toBe('BERNARD LUC');
+      expect(result[0].opponentElo).toBe(1400);
+    });
+
+    it('handles two club players facing each other (both perspectives)', () => {
+      const map = new Map([
+        ['DUPONT JEAN', 'Mon Club'],
+        ['MARTIN PAUL', 'Mon Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+
+      // Both players appear: white and black perspective on the same board
+      expect(result).toHaveLength(2);
+      expect(result[0].clubPlayerName).toBe('DUPONT JEAN');
+      expect(result[0].color).toBe('white');
+      expect(result[1].clubPlayerName).toBe('MARTIN PAUL');
+      expect(result[1].color).toBe('black');
+      expect(result[0].board).toBe(result[1].board);
+    });
+
+    it('handles EXEMPT pairing', () => {
+      const map = new Map([
+        ['LEFEBVRE ALICE', 'Mon Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].isExempt).toBe(true);
+      expect(result[0].opponentName).toBe('EXEMPT');
+      expect(result[0].opponentElo).toBe(0);
+    });
+
+    it('sorts results by board number', () => {
+      const map = new Map([
+        ['DURAND MARIE', 'Mon Club'],
+        ['DUPONT JEAN', 'Mon Club'],
+        ['LEFEBVRE ALICE', 'Mon Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+
+      expect(result.map(p => p.board)).toEqual([1, 2, 3]);
+    });
+
+    it('returns empty array when no club players found', () => {
+      const map = new Map([
+        ['NOBODY', 'Mon Club'],
+      ]);
+
+      const result = filterClubPairings(pairings, map, 'Mon Club');
+      expect(result).toEqual([]);
     });
   });
 
