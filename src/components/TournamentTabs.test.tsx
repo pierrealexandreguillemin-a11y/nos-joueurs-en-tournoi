@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen, fireEvent, waitFor } from '@testing-library/dom';
 import TournamentTabs from './TournamentTabs';
-import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs } from '@/lib/parser';
-import type { Event, Tournament, Player } from '@/types';
+import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs, filterClubPairings } from '@/lib/parser';
+import type { Event, Tournament, Player, Pairing } from '@/types';
 
 // Mock dependencies
 vi.mock('@/lib/parser', () => ({
@@ -12,7 +12,12 @@ vi.mock('@/lib/parser', () => ({
   getListUrl: vi.fn(),
   getResultsUrl: vi.fn(),
   getStatsUrl: vi.fn(),
+  getRoundUrl: vi.fn(),
   parseStatsClubs: vi.fn(),
+  parsePairings: vi.fn(() => []),
+  detectCurrentRound: vi.fn(() => 1),
+  filterClubPairings: vi.fn(() => []),
+  parsePlayerClubs: vi.fn(() => new Map()),
   calculateClubStats: vi.fn(() => ({
     round: 1,
     totalPoints: 1,
@@ -525,6 +530,79 @@ describe('TournamentTabs', () => {
         const changeClubButton = screen.getByRole('button', { name: /Changer de club/i });
         expect(changeClubButton).toBeDisabled();
       });
+    });
+  });
+
+  describe('Pairings Integration', () => {
+    const mockPairings: Pairing[] = [
+      {
+        board: 1, whitePlayer: 'ALICE', blackPlayer: 'BOB',
+        whiteElo: 1500, blackElo: 1400, result: '',
+        whitePoints: 2, blackPoints: 1, isExempt: false,
+      },
+    ];
+
+    const tournamentWithPairings: Tournament = {
+      ...mockTournament2,
+      pairings: mockPairings,
+      pairingsRound: 2,
+    };
+
+    const eventWithPairings: Event = {
+      ...mockEventWithClub,
+      tournaments: [tournamentWithPairings],
+    };
+
+    it('shows ViewToggle when tournament has players', () => {
+      render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
+
+      expect(screen.getByRole('group', { name: /Basculer/i })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Résultats/i })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Appariements/i })).toBeInTheDocument();
+    });
+
+    it('hides ViewToggle when tournament has no players', () => {
+      render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
+
+      expect(screen.queryByRole('group', { name: /Basculer/i })).not.toBeInTheDocument();
+    });
+
+    it('defaults to results view', () => {
+      render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
+
+      const resultsRadio = screen.getByRole('radio', { name: /Résultats/i });
+      expect(resultsRadio).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('switches to pairings view when Appariements is clicked', () => {
+      vi.mocked(filterClubPairings).mockReturnValue([{
+        board: 1, clubPlayerName: 'ALICE', color: 'white',
+        opponentName: 'BOB', opponentElo: 1400, result: '', isExempt: false,
+      }]);
+
+      render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
+
+      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      fireEvent.click(pairingsButton);
+
+      expect(pairingsButton).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('shows message when pairings not yet published', () => {
+      const eventNoPairings: Event = {
+        ...mockEventWithClub,
+        tournaments: [{
+          ...mockTournament2,
+          pairings: undefined,
+          pairingsRound: undefined,
+        }],
+      };
+
+      render(<TournamentTabs event={eventNoPairings} onEventUpdate={mockOnEventUpdate} />);
+
+      // Appariements button should be disabled
+      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      expect(pairingsButton).toBeDisabled();
     });
   });
 

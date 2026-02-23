@@ -1,9 +1,13 @@
 'use client';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import ClubStats from '@/components/ClubStats';
 import ClubSelector from '@/components/ClubSelector';
 import PlayerTable from '@/components/PlayerTable';
+import ViewToggle, { type ViewMode } from '@/components/ViewToggle';
+import PairingsTable from '@/components/PairingsTable';
+import { filterClubPairings } from '@/lib/parser';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, ArrowLeftRight } from 'lucide-react';
 import {
@@ -122,6 +126,66 @@ interface TournamentPanelProps {
   requestChangeClub: () => void;
 }
 
+interface TournamentContentProps {
+  tournament: Tournament;
+  event: Event;
+  loading: string | null;
+  viewMode: ViewMode;
+  handleRefresh: (tournament: Tournament) => void;
+  needsClubSelection: boolean | undefined;
+}
+
+function TournamentContent({
+  tournament, event, loading, viewMode, handleRefresh, needsClubSelection,
+}: TournamentContentProps) {
+  const hasPlayers = tournament.players.length > 0;
+  const hasPairings = (tournament.pairings?.length ?? 0) > 0;
+
+  const clubPairings = useMemo(() => {
+    if (!hasPairings || !event.clubName) return [];
+    const playerClubMap = new Map(
+      tournament.players.map(p => [p.name, p.club]),
+    );
+    return filterClubPairings(tournament.pairings!, playerClubMap, event.clubName);
+  }, [tournament.pairings, tournament.players, event.clubName, hasPairings]);
+
+  if (viewMode === 'pairings' && hasPairings) {
+    return <PairingsTable pairings={clubPairings} pairingsRound={tournament.pairingsRound ?? 0} />;
+  }
+
+  if (viewMode === 'pairings' && !hasPairings) {
+    return (
+      <Card className="miami-card text-center py-8">
+        <p className="text-muted-foreground">
+          Les appariements ne sont pas encore publiés.
+        </p>
+      </Card>
+    );
+  }
+
+  if (hasPlayers) return <PlayerTable tournament={tournament} />;
+
+  if (!loading && !needsClubSelection) {
+    return (
+      <Card className="miami-card text-center py-8">
+        <p className="text-muted-foreground">
+          {event.clubName
+            ? `Aucun joueur ${event.clubName} trouvé dans ce tournoi`
+            : 'Cliquez sur Actualiser pour détecter les clubs du tournoi'}
+        </p>
+        {!event.clubName && (
+          <Button variant="miami" size="sm" className="mt-4" onClick={() => handleRefresh(tournament)}>
+            <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+            Actualiser
+          </Button>
+        )}
+      </Card>
+    );
+  }
+
+  return null;
+}
+
 function TournamentPanel({
   tournament,
   event,
@@ -133,16 +197,32 @@ function TournamentPanel({
   handleClubSelect,
   requestChangeClub,
 }: TournamentPanelProps) {
-  const hasPlayers = tournament.players.length > 0;
+  const [viewMode, setViewMode] = useState<ViewMode>('results');
+  const [hasViewedPairings, setHasViewedPairings] = useState(false);
+  const prevRoundRef = useRef(tournament.pairingsRound);
+
+  const hasPairings = (tournament.pairings?.length ?? 0) > 0;
+
+  // Reset badge when pairingsRound changes
+  useEffect(() => {
+    if (tournament.pairingsRound !== prevRoundRef.current) {
+      prevRoundRef.current = tournament.pairingsRound;
+      // Justification: Reset viewed state when new pairings round is detected
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasViewedPairings(false);
+    }
+  }, [tournament.pairingsRound]);
+
+  const handleViewChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    if (mode === 'pairings') setHasViewedPairings(true);
+  };
 
   return (
     <>
       {needsClubSelection && (
         <Card className="miami-card">
-          <ClubSelector
-            clubs={event.availableClubs!}
-            onSelect={handleClubSelect}
-          />
+          <ClubSelector clubs={event.availableClubs!} onSelect={handleClubSelect} />
         </Card>
       )}
 
@@ -156,34 +236,29 @@ function TournamentPanel({
         requestChangeClub={requestChangeClub}
       />
 
+      {tournament.players.length > 0 && (
+        <ViewToggle
+          viewMode={viewMode}
+          onChange={handleViewChange}
+          hasPairings={hasPairings}
+          showBadge={hasPairings && !hasViewedPairings}
+        />
+      )}
+
       {error && loading === null && (
         <Card className="bg-red-50 border-red-200 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </Card>
       )}
 
-      {hasPlayers && <PlayerTable tournament={tournament} />}
-
-      {!hasPlayers && !loading && !needsClubSelection && (
-        <Card className="miami-card text-center py-8">
-          <p className="text-muted-foreground">
-            {event.clubName
-              ? `Aucun joueur ${event.clubName} trouvé dans ce tournoi`
-              : 'Cliquez sur Actualiser pour détecter les clubs du tournoi'}
-          </p>
-          {!event.clubName && (
-            <Button
-              variant="miami"
-              size="sm"
-              className="mt-4"
-              onClick={() => handleRefresh(tournament)}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
-              Actualiser
-            </Button>
-          )}
-        </Card>
-      )}
+      <TournamentContent
+        tournament={tournament}
+        event={event}
+        loading={loading}
+        viewMode={viewMode}
+        handleRefresh={handleRefresh}
+        needsClubSelection={needsClubSelection}
+      />
     </>
   );
 }
