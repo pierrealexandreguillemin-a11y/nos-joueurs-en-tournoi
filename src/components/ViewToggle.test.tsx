@@ -49,6 +49,14 @@ describe('ViewToggle', () => {
     expect(screen.queryByLabelText(/Nouveaux appariements disponibles/i)).not.toBeInTheDocument();
   });
 
+  it('calls onChange with results when clicking Résultats from pairings mode', () => {
+    const onChange = vi.fn();
+    render(<ViewToggle viewMode="pairings" onChange={onChange} hasPairings />);
+
+    fireEvent.click(screen.getByRole('radio', { name: /Résultats/i }));
+    expect(onChange).toHaveBeenCalledWith('results');
+  });
+
   it('has role=group on container', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings />);
 

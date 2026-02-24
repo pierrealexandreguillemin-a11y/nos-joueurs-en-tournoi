@@ -17,7 +17,6 @@ vi.mock('@/lib/parser', () => ({
   parsePairings: vi.fn(() => []),
   detectCurrentRound: vi.fn(() => 1),
   filterClubPairings: vi.fn(() => []),
-  parsePlayerClubs: vi.fn(() => new Map()),
   calculateClubStats: vi.fn(() => ({
     round: 1,
     totalPoints: 1,
@@ -588,7 +587,7 @@ describe('TournamentTabs', () => {
       expect(pairingsButton).toHaveAttribute('aria-checked', 'true');
     });
 
-    it('shows message when pairings not yet published', () => {
+    it('shows message when pairings not yet published and Appariements disabled', () => {
       const eventNoPairings: Event = {
         ...mockEventWithClub,
         tournaments: [{
@@ -603,6 +602,37 @@ describe('TournamentTabs', () => {
       // Appariements button should be disabled
       const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
       expect(pairingsButton).toBeDisabled();
+    });
+
+    it('constructs playerClubMap from tournament.players for filtering', () => {
+      const mockFilter = vi.mocked(filterClubPairings);
+      mockFilter.mockImplementation((_pairingsArr, playerClubMap) => {
+        // Verify the map was built from players
+        expect(playerClubMap.get('ALICE')).toBe('Mon Club');
+        return [];
+      });
+
+      const eventWithNamedPairings: Event = {
+        ...mockEventWithClub,
+        tournaments: [{
+          ...mockTournament2,
+          players: [{ ...mockPlayers[0], name: 'ALICE', club: 'Mon Club' }],
+          pairings: mockPairings,
+          pairingsRound: 2,
+        }],
+      };
+
+      render(<TournamentTabs event={eventWithNamedPairings} onEventUpdate={mockOnEventUpdate} />);
+
+      // Switch to pairings view to trigger filterClubPairings
+      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      fireEvent.click(pairingsButton);
+
+      expect(mockFilter).toHaveBeenCalledWith(
+        mockPairings,
+        expect.any(Map),
+        'Mon Club',
+      );
     });
   });
 

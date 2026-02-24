@@ -11,6 +11,7 @@ import {
   parseStatsClubs,
   parsePairings,
   filterClubPairings,
+  invertResult,
 } from './parser';
 
 describe('parser.ts', () => {
@@ -505,6 +506,78 @@ describe('parser.ts', () => {
       expect(pairings[0].whitePoints).toBe(2.5);
       expect(pairings[0].blackPoints).toBe(1.5);
     });
+
+    it('parses realistic FFE HTML with nested tags, &nbsp;, font, b elements', () => {
+      // Simulates real FFE output with <b>, <font>, &nbsp; and mixed classes
+      const html = `<table>
+        <tr class="papi_liste_t">
+          <td class="papi_liste_c" colspan="8"><b>Ronde 3</b></td>
+        </tr>
+        <tr>
+          <td class="papi_liste_f"><b>1</b></td>
+          <td class="papi_liste_c">&nbsp;2½&nbsp;</td>
+          <td class="papi_liste_f"><font color="#000000"><b>DUPONT&nbsp;&nbsp;Jean</b></font></td>
+          <td class="papi_liste_c"><font color="#808080">1541 F</font></td>
+          <td class="papi_liste_f"><b>1 - 0</b></td>
+          <td class="papi_liste_c"><font color="#000000">MARTIN&nbsp;Paul</font></td>
+          <td class="papi_liste_f"><font color="#808080">1450</font></td>
+          <td class="papi_liste_c">&nbsp;1½</td>
+        </tr>
+        <tr>
+          <td class="papi_liste_c">2</td>
+          <td class="papi_liste_f">1</td>
+          <td class="papi_liste_c"><span>LEFEBVRE  Alice</span></td>
+          <td class="papi_liste_f">1300</td>
+          <td class="papi_liste_c"></td>
+          <td class="papi_liste_f">EXEMPT</td>
+          <td class="papi_liste_c">0</td>
+          <td class="papi_liste_f">0</td>
+        </tr>
+      </table>`;
+
+      const pairings = parsePairings(html);
+
+      expect(pairings).toHaveLength(2);
+
+      // Row 1: nested <b>, <font>, &nbsp;
+      expect(pairings[0].board).toBe(1);
+      expect(pairings[0].whitePlayer).toBe('DUPONT JEAN');
+      expect(pairings[0].whiteElo).toBe(1541);
+      expect(pairings[0].result).toBe('1 - 0');
+      expect(pairings[0].blackPlayer).toBe('MARTIN PAUL');
+      expect(pairings[0].blackElo).toBe(1450);
+      expect(pairings[0].whitePoints).toBe(2.5);
+      expect(pairings[0].blackPoints).toBe(1.5);
+      expect(pairings[0].isExempt).toBe(false);
+
+      // Row 2: EXEMPT with <span>
+      expect(pairings[1].board).toBe(2);
+      expect(pairings[1].whitePlayer).toBe('LEFEBVRE ALICE');
+      expect(pairings[1].isExempt).toBe(true);
+      expect(pairings[1].blackPlayer).toBe('EXEMPT');
+    });
+  });
+
+  describe('invertResult', () => {
+    it('inverts "1 - 0" to "0 - 1"', () => {
+      expect(invertResult('1 - 0')).toBe('0 - 1');
+    });
+
+    it('inverts "0 - 1" to "1 - 0"', () => {
+      expect(invertResult('0 - 1')).toBe('1 - 0');
+    });
+
+    it('keeps "1/2 - 1/2" unchanged', () => {
+      expect(invertResult('1/2 - 1/2')).toBe('1/2 - 1/2');
+    });
+
+    it('returns empty string for empty result', () => {
+      expect(invertResult('')).toBe('');
+    });
+
+    it('returns as-is for malformed result without separator', () => {
+      expect(invertResult('forfait')).toBe('forfait');
+    });
   });
 
   describe('filterClubPairings', () => {
@@ -515,7 +588,7 @@ describe('parser.ts', () => {
         blackPlayer: 'MARTIN PAUL',
         whiteElo: 1600,
         blackElo: 1450,
-        result: '',
+        result: '1 - 0',
         whitePoints: 2,
         blackPoints: 1.5,
         isExempt: false,
@@ -526,7 +599,7 @@ describe('parser.ts', () => {
         blackPlayer: 'DURAND MARIE',
         whiteElo: 1400,
         blackElo: 1500,
-        result: '',
+        result: '0 - 1',
         whitePoints: 1,
         blackPoints: 2,
         isExempt: false,
@@ -544,7 +617,7 @@ describe('parser.ts', () => {
       },
     ];
 
-    it('filters white player from club', () => {
+    it('filters white player from club with correct result', () => {
       const map = new Map([
         ['DUPONT JEAN', 'Mon Club'],
         ['MARTIN PAUL', 'Other Club'],
@@ -557,9 +630,10 @@ describe('parser.ts', () => {
       expect(result[0].color).toBe('white');
       expect(result[0].opponentName).toBe('MARTIN PAUL');
       expect(result[0].opponentElo).toBe(1450);
+      expect(result[0].result).toBe('1 - 0'); // White perspective: unchanged
     });
 
-    it('filters black player from club', () => {
+    it('filters black player from club and inverts result', () => {
       const map = new Map([
         ['BERNARD LUC', 'Other Club'],
         ['DURAND MARIE', 'Mon Club'],
@@ -572,9 +646,10 @@ describe('parser.ts', () => {
       expect(result[0].color).toBe('black');
       expect(result[0].opponentName).toBe('BERNARD LUC');
       expect(result[0].opponentElo).toBe(1400);
+      expect(result[0].result).toBe('1 - 0'); // Original "0 - 1" inverted to black's perspective
     });
 
-    it('handles two club players facing each other (both perspectives)', () => {
+    it('handles two club players facing each other (both perspectives, results inverted for black)', () => {
       const map = new Map([
         ['DUPONT JEAN', 'Mon Club'],
         ['MARTIN PAUL', 'Mon Club'],
@@ -586,8 +661,10 @@ describe('parser.ts', () => {
       expect(result).toHaveLength(2);
       expect(result[0].clubPlayerName).toBe('DUPONT JEAN');
       expect(result[0].color).toBe('white');
+      expect(result[0].result).toBe('1 - 0'); // White won
       expect(result[1].clubPlayerName).toBe('MARTIN PAUL');
       expect(result[1].color).toBe('black');
+      expect(result[1].result).toBe('0 - 1'); // Black lost (inverted from "1 - 0")
       expect(result[0].board).toBe(result[1].board);
     });
 

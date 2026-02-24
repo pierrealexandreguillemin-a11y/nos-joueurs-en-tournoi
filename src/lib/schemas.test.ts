@@ -3,6 +3,7 @@ import {
   clubSlugSchema,
   resultSchema,
   playerSchema,
+  pairingSchema,
   tournamentSchema,
   eventSchema,
   syncBodySchema,
@@ -65,6 +66,48 @@ describe('Zod schemas', () => {
     });
   });
 
+  describe('pairingSchema', () => {
+    const validPairing = {
+      board: 1,
+      whitePlayer: 'DUPONT JEAN',
+      blackPlayer: 'MARTIN PAUL',
+      whiteElo: 1600,
+      blackElo: 1450,
+      result: '1 - 0',
+      whitePoints: 2,
+      blackPoints: 1.5,
+      isExempt: false,
+    };
+
+    it('accepts valid pairing', () => {
+      expect(pairingSchema.safeParse(validPairing).success).toBe(true);
+    });
+
+    it('accepts pairing with empty result (unplayed)', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, result: '' }).success).toBe(true);
+    });
+
+    it('rejects board number 0', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, board: 0 }).success).toBe(false);
+    });
+
+    it('rejects negative board number', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, board: -1 }).success).toBe(false);
+    });
+
+    it('rejects empty whitePlayer', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, whitePlayer: '' }).success).toBe(false);
+    });
+
+    it('rejects negative elo', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, whiteElo: -100 }).success).toBe(false);
+    });
+
+    it('accepts zero elo (EXEMPT)', () => {
+      expect(pairingSchema.safeParse({ ...validPairing, blackElo: 0 }).success).toBe(true);
+    });
+  });
+
   describe('tournamentSchema', () => {
     const validTournament = {
       id: 't1',
@@ -80,6 +123,27 @@ describe('Zod schemas', () => {
 
     it('rejects invalid url', () => {
       expect(tournamentSchema.safeParse({ ...validTournament, url: 'not-a-url' }).success).toBe(false);
+    });
+
+    it('accepts tournament with pairings and pairingsRound', () => {
+      const withPairings = {
+        ...validTournament,
+        pairings: [{
+          board: 1, whitePlayer: 'A', blackPlayer: 'B',
+          whiteElo: 1500, blackElo: 1400, result: '',
+          whitePoints: 0, blackPoints: 0, isExempt: false,
+        }],
+        pairingsRound: 3,
+      };
+      expect(tournamentSchema.safeParse(withPairings).success).toBe(true);
+    });
+
+    it('accepts tournament without pairings (optional)', () => {
+      expect(tournamentSchema.safeParse(validTournament).success).toBe(true);
+    });
+
+    it('rejects pairingsRound 0 (must be positive)', () => {
+      expect(tournamentSchema.safeParse({ ...validTournament, pairingsRound: 0 }).success).toBe(false);
     });
   });
 
