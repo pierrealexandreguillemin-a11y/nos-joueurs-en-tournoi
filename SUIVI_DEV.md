@@ -1,8 +1,8 @@
 # Suivi de developpement - Nos Joueurs en Tournoi
 
-> Derniere mise a jour : 2026-02-21
+> Derniere mise a jour : 2026-02-24
 > Branche : `master`
-> Dernier commit : `460d563`
+> Dernier commit : `0b17118`
 
 ---
 
@@ -10,15 +10,15 @@
 
 | Indicateur | Valeur | Seuil | Statut |
 |------------|--------|-------|--------|
-| Tests | 439 passed (20 suites) | - | OK |
-| Couverture Stmts | 94.80% | >= 70% | OK |
-| Couverture Branch | 86.40% | >= 70% | OK |
-| Couverture Funcs | 95.18% | >= 70% | OK |
-| Couverture Lines | 95.58% | >= 70% | OK |
+| Tests | 531 passed (25 suites) | - | OK |
+| Couverture Stmts | 95.05% | >= 70% | OK |
+| Couverture Branch | 85.79% | >= 70% | OK |
+| Couverture Funcs | 96.36% | >= 70% | OK |
+| Couverture Lines | 96.31% | >= 70% | OK |
 | ESLint errors | 0 | 0 | OK |
 | ESLint warnings | 0 | 0 | OK |
 | TypeScript errors | 0 | 0 | OK |
-| Duplication (jscpd) | 0.00% | <= 5% | OK |
+| Duplication (jscpd) | 0.11% | <= 5% | OK |
 | Vulnerabilites critiques | 0 | 0 | OK |
 | Build production | OK | - | OK |
 
@@ -164,6 +164,66 @@ Commit : `59b77a9`
 
 ---
 
+## Feature Appariements (session 2026-02-23 → 2026-02-24)
+
+### Implementation (8 commits)
+
+| Commit | Type | Description |
+|--------|------|-------------|
+| `c49eb06` | feat(types) | Ajout types `Pairing`, `ClubPairing`, `PairingColor` + schemas Zod |
+| `9d929d5` | feat(parser) | `getRoundUrl`, `parsePairings`, `filterClubPairings`, `detectCurrentRound`, `invertResult` |
+| `51e619c` | feat(sync) | Fetch appariements dans `fetchTournamentResults` (strategie N+1 fallback N) |
+| `a97cbd1` | feat(ui) | `ViewToggle` + `PairingsTable` + integration `TournamentTabs` |
+| `edd0b4b` | fix(parser) | Inversion resultat pour perspective joueur noir |
+| `5b7bbed` | test(pairings) | +18 tests (invertResult, schemas, fixture HTML realiste, coverage) |
+| `bb5de67` | test(parser) | Test format forfait FFE "1F - 0F" |
+| `0b17118` | fix(ui) | Audit UX/UI : aria-pressed, focus-visible, scope col, dark mode, useCallback |
+
+### Audit UX/UI post-implementation
+
+Audits par agents `ux-design-guardian` et `ui-design-guardian` en parallele.
+
+| Severite | Trouvailles | Statut |
+|----------|-------------|--------|
+| CRITIQUE | 5 (aria-pressed, focus-visible, scope col, double overflow, viewMode guard) | CORRIGE |
+| MAJEUR | 7 (useCallback, dark mode, toggle visibility, empty state, pairingsRound, labels) | CORRIGE |
+| MINEUR | 8 (tooltip, badge role, zebra opacity, result display, column rename) | CORRIGE |
+
+Commit correctif : `0b17118`
+
+### Fichiers crees
+
+| Fichier | Description |
+|---------|-------------|
+| `src/components/ViewToggle.tsx` | Toggle segmente Resultats/Appariements (aria-pressed, focus-visible, badge orange) |
+| `src/components/PairingsTable.tsx` | Table appariements du club (table, couleur, adversaire, elo, resultat) |
+| `src/components/ViewToggle.test.tsx` | 11 tests (rendu, aria, focus, badge, disabled, tooltip) |
+| `src/components/PairingsTable.test.tsx` | 11 tests (rendu, scope col, badges, exempt, etat vide) |
+
+### Fichiers modifies
+
+| Fichier | Modification |
+|---------|-------------|
+| `src/types/index.ts` | +3 types : `Pairing`, `ClubPairing`, `PairingColor` ; `Tournament` etendu |
+| `src/lib/schemas.ts` | +1 schema `pairingSchema` ; `tournamentSchema` etendu |
+| `src/lib/parser.ts` | +5 fonctions : `getRoundUrl`, `parsePairings`, `filterClubPairings`, `detectCurrentRound`, `invertResult` |
+| `src/hooks/useTournamentSync.ts` | `fetchPairingsForRound`, `fetchBestPairings`, integration dans `fetchTournamentResults` |
+| `src/components/TournamentTabs.tsx` | Integration ViewToggle + PairingsTable, extraction TournamentContent |
+| `src/lib/parser.test.ts` | +24 tests (getRoundUrl, parsePairings, filterClubPairings, invertResult) |
+| `src/components/TournamentTabs.test.tsx` | +5 tests integration appariements |
+
+### Impact sur les metriques
+
+| Metrique | Avant | Apres | Delta |
+|----------|-------|-------|-------|
+| Tests | 439 (20 suites) | 531 (25 suites) | +92 (+5 suites) |
+| Stmts | 94.80% | 95.05% | +0.25% |
+| Branch | 86.40% | 85.79% | -0.61% |
+| Funcs | 95.18% | 96.36% | +1.18% |
+| Lines | 95.58% | 96.31% | +0.73% |
+
+---
+
 ## TODO - Prochaine session
 
 ### Priorite 1 — Fiabilite et couverture
@@ -200,12 +260,13 @@ Commit : `59b77a9`
 
 ### Priorite 5 — Maintenance et DX
 
-- [ ] **Mettre a jour le README.md** — La section "Qualite du code" mentionne encore "142 tests" et un pre-commit basique. Mettre a jour avec les vrais chiffres (439 tests, 6 gates pre-push, normes ISO).
+- [x] **Mettre a jour le README.md** — Mis a jour avec 531 tests, 25 suites, feature appariements, inventaire complet.
 - [ ] **Pre-push Windows workaround** — Investiguer pourquoi Git for Windows kill le push quand la sortie coverage depasse ~40k chars. Options : rediriger stdout vers un fichier, ou desactiver le reporter table coverage en pre-push.
 - [ ] **Upgrade eslint a v9** — Le projet utilise eslint 8.x avec `.eslintrc.cjs` (legacy config). La v9 utilise `eslint.config.js` (flat config). Migration non urgente mais a planifier.
 
 ### Priorite 6 — Fonctionnalites
 
+- [x] **Appariements en direct** — Toggle Resultats/Appariements par onglet, scraping pages ronde FFE, filtrage club, badges couleur. DONE (8 commits, 2026-02-23/24).
 - [ ] **Nouvelles fonctionnalites** — A definir avec le product owner. Candidates :
   - Notifications push quand un resultat change
   - Historique des rondes (evolution score)

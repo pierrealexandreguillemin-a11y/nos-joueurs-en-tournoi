@@ -9,6 +9,7 @@ Choisissez votre club, suivez vos joueurs, validez les resultats ronde par ronde
 
 - **Choix dynamique du club** : detection automatique des clubs depuis la page FFE Stats
 - **Scraping automatique** des resultats FFE (parsing HTML optimise via Cheerio)
+- **Appariements en direct** : numero de table, couleur (Blancs/Noirs), adversaire, elo adversaire
 - **Affichage filtre** des joueurs du club selectionne
 - **Synchronisation multi-appareils** via Upstash Redis KV
 - **Multi-evenements** : gerer plusieurs tournois simultanement
@@ -101,6 +102,8 @@ src/
     common/               # Composants partages (FloatingParticles, MiamiGlass, ShimmerEffect)
     PlayerTable.tsx       # Table des joueurs (React.memo optimized)
     TournamentTabs.tsx    # Onglets par tournoi (2 phases: clubs -> resultats)
+    ViewToggle.tsx        # Toggle segmente Resultats / Appariements (aria-pressed)
+    PairingsTable.tsx     # Table appariements du club (table, couleur, adversaire, elo)
     EventForm.tsx         # Formulaire creation evenement (lazy-loaded)
     EventsManager.tsx     # Gestion multi-evenements + sync cloud
     ShareEventModal.tsx   # Partage par QR code (lazy-loaded)
@@ -127,7 +130,7 @@ src/
     storage.ts            # Facade storage (re-exports core + share)
     storage-core.ts       # CRUD localStorage namespace par club
     storage-share.ts      # Encode/decode events pour partage URL (lz-string)
-    parser.ts             # Parser HTML FFE (Stats, Ls, Ga) via Cheerio
+    parser.ts             # Parser HTML FFE (Stats, Ls, Ga, Rondes) via Cheerio
     scraper.ts            # Orchestration scraping FFE (error handling)
     club.ts               # Slugify, identity, migration legacy
     calculations.ts       # Calculs points, performance, Buchholz, tri
@@ -135,7 +138,7 @@ src/
     random.ts             # Generateur aleatoire securise (crypto.getRandomValues)
     utils.ts              # cn() (clsx + tailwind-merge)
   types/
-    index.ts              # Interfaces TypeScript (Event, Player, Tournament, etc.)
+    index.ts              # Interfaces TypeScript (Event, Player, Tournament, Pairing, etc.)
 
 proxy.ts                  # Rate limiting middleware (Next.js 16 convention)
 vercel.json               # Headers securite (CSP, HSTS, CORS)
@@ -146,7 +149,7 @@ vitest.setup.ts           # Setup jsdom + localStorage polyfill
 
 ## Tests
 
-**466 tests** repartis dans **23 fichiers**. Framework : Vitest 4 + Testing Library + jsdom.
+**531 tests** repartis dans **25 fichiers**. Framework : Vitest 4 + Testing Library + jsdom.
 
 ### Lancer les tests
 
@@ -172,15 +175,15 @@ npm run test:coverage     # Avec couverture
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
 | `hmac.test.ts` | 16 | Generation, verification, anti-replay 5 min, clock skew 10s, crypto.subtle check |
-| `schemas.test.ts` | 18 | Schemas Zod : clubSlug, result, player, tournament, event, syncBody |
-| `validation.test.ts` | 42 | URLs FFE, noms evenements/tournois, SLUG_REGEX (8 patterns) |
+| `schemas.test.ts` | 28 | Schemas Zod : clubSlug, result, player, tournament, pairing, event, syncBody |
+| `validation.test.ts` | 46 | URLs FFE, noms evenements/tournois, SLUG_REGEX (8 patterns) |
 | `storage.test.ts` | 56 | CRUD, export/import, isolation inter-clubs, BVA limites, share URL encode/decode |
 | `kv.test.ts` | 21 | Namespace KV, isolation clubs, key generation, edge cases |
 | `club.test.ts` | 25 | Slugify determinisme, accents, BVA longueur, migration legacy, identity |
 | `calculations.test.ts` | 34 | Points, performance, Buchholz, tri, moyenne elo, stats resultats |
 | `formatters.test.ts` | 28 | Formatage noms, elo, scores, pourcentages, dates, club, ronde |
-| `parser.test.ts` | 22 | Parser HTML FFE (Stats, Ls, Ga), clubs, resultats, rondes, invariance FFE |
-| `sync.test.ts` | 12 | Sync Upstash POST/GET, merge strategy, error paths |
+| `parser.test.ts` | 46 | Parser HTML FFE (Stats, Ls, Ga, Rondes), clubs, resultats, appariements, filterClubPairings |
+| `sync.test.ts` | 13 | Sync Upstash POST/GET, merge strategy, error paths |
 | `scraper.test.ts` | 8 | Scraping FFE, erreurs contextuelles |
 | `utils.test.ts` | 11 | Merge class names, gestion Tailwind conflicts |
 | `random.test.ts` | 7 | Distribution, unicite, plage [0,1) |
@@ -189,30 +192,32 @@ npm run test:coverage     # Avec couverture
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
-| `PlayerTable.test.tsx` | ~30 | Rendu table, headers dynamiques, rondes, validation checkboxes, persistence, edge cases |
-| `EventForm.test.tsx` | ~25 | Formulaire, ajout/suppression tournois, validation URL FFE, soumission, edge cases |
-| `TournamentTabs.test.tsx` | ~20 | Onglets, refresh 2 phases, changement club, dialog confirmation, etats vides |
-| `ClubStats.test.tsx` | ~10 | Statistiques club par ronde |
-| `ClubSelector.test.tsx` | ~10 | Selection club dans dropdown |
+| `PlayerTable.test.tsx` | 24 | Rendu table, headers dynamiques, rondes, validation checkboxes, persistence, edge cases |
+| `EventForm.test.tsx` | 30 | Formulaire, ajout/suppression tournois, validation URL FFE, soumission, edge cases |
+| `TournamentTabs.test.tsx` | 32 | Onglets, refresh 2 phases, changement club, dialog confirmation, appariements toggle, etats vides |
+| `ViewToggle.test.tsx` | 11 | Toggle Resultats/Appariements, aria-pressed, focus-visible, badge, disabled, tooltip |
+| `PairingsTable.test.tsx` | 11 | Table appariements, badges couleur, scope col, resultat/exempt/a-jouer, etat vide |
+| `ClubStats.test.tsx` | 10 | Statistiques club par ronde |
+| `ClubSelector.test.tsx` | 4 | Selection club dans dropdown |
 
 #### Hooks
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
-| `useTournamentSync.test.ts` | 25 | Etat initial, identity null, refresh fetchClubs/fetchResults, selection club, Ctrl+R, persistence |
+| `useTournamentSync.test.ts` | 27 | Etat initial, identity null, refresh fetchClubs/fetchResults, selection club, Ctrl+R, appariements, persistence |
 
 #### Integration
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
-| `integration.test.ts` | ~5 | Workflow complet : slug -> save -> retrieve -> isolation verifiee |
+| `integration.test.ts` | 4 | Workflow complet : slug -> save -> retrieve -> isolation verifiee |
 
 #### API Routes
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
-| `scrape/route.test.ts` | 5 | Validation URL, prevention SSRF (whitelist hostname) |
-| `events/routes.test.ts` | ~15 | Sync/fetch, validation slug Zod, HMAC verification, body size 1MB |
+| `scrape/route.test.ts` | 8 | Validation URL, prevention SSRF (whitelist hostname) |
+| `events/routes.test.ts` | 16 | Sync/fetch, validation slug Zod, HMAC verification, body size 1MB |
 
 #### Middleware
 
@@ -276,7 +281,7 @@ L'ecran d'onboarding demande le nom du club. Ce nom est slugifie (`"Hay Chess"` 
 
 **Phase 1 — Detection des clubs** : cliquer "Actualiser" -> l'app scrape la page FFE Stats -> dropdown des clubs detectes
 
-**Phase 2 — Resultats** : selectionner votre club -> l'app charge les resultats filtres (Ls + Ga)
+**Phase 2 — Resultats et appariements** : selectionner votre club -> l'app charge les resultats filtres (Ls + Ga) et les appariements de la ronde en cours ou suivante. Un toggle "Resultats | Appariements" permet de basculer entre les deux vues.
 
 ### 4. Partager
 
@@ -286,13 +291,14 @@ L'ecran d'onboarding demande le nom du club. Ce nom est slugifie (`"Hay Chess"` 
 
 ## Parser FFE
 
-Le parser utilise 3 pages FFE (Federation Francaise des Echecs) :
+Le parser utilise 4 types de pages FFE (Federation Francaise des Echecs) :
 
 | Page | Action | Donnees |
 |------|--------|---------|
 | Stats | `Action=Stats` | Liste des clubs + nombre de joueurs |
 | Liste | `Action=Ls` | Joueurs avec club d'appartenance |
 | Grille americaine | `Action=Ga` | Resultats par ronde, Buchholz, performance |
+| Ronde | `Action=01..09` | Appariements : table, blancs/noirs, elo, resultat |
 
 ## Style UI
 

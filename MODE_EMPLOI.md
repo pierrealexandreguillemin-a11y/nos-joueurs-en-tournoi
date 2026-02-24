@@ -78,7 +78,36 @@ A cote de chaque score, une case a cocher permet de valider le resultat (par exe
 
 ---
 
-## 5. Changer de club
+## 5. Consulter les appariements
+
+Quand les appariements d'une ronde sont publies sur le site FFE, un toggle **Resultats | Appariements** apparait sous les statistiques du club.
+
+### Basculer vers les appariements
+
+1. Cliquez sur **Appariements** dans le toggle
+2. Le tableau affiche pour chaque joueur de votre club :
+
+| Colonne | Signification |
+|---------|---------------|
+| Table | Numero d'echiquier (affiche en gros : c'est l'info n1 pour trouver sa place) |
+| Joueur | Nom du joueur de votre club |
+| Couleur | Badge **Blancs** (fond blanc) ou **Noirs** (fond noir) |
+| Adversaire | Nom de l'adversaire (ou "Exempt" si le joueur est exempte) |
+| Elo adv. | Classement Elo de l'adversaire |
+| Resultat | Score si la partie est terminee, "A jouer" sinon, "Exempt" si pas d'adversaire |
+
+### Quand les appariements apparaissent-ils ?
+
+- L'application cherche d'abord les appariements de la **ronde suivante** (N+1)
+- Si la ronde suivante n'est pas encore publiee, elle affiche ceux de la **ronde en cours** (N)
+- Un **point orange** sur le bouton Appariements signale des appariements non encore consultes
+- Le bouton Appariements est grise tant que les appariements ne sont pas publies
+
+Pour revenir aux resultats, cliquez sur **Resultats**.
+
+---
+
+## 6. Changer de club
 
 Si vous avez selectionne le mauvais club, pas de panique :
 
@@ -88,7 +117,7 @@ Si vous avez selectionne le mauvais club, pas de panique :
 
 ---
 
-## 6. Partager un evenement
+## 7. Partager un evenement
 
 ### Par QR code ou lien
 
@@ -112,7 +141,7 @@ Si l'evenement existe deja, vous pouvez choisir de le remplacer ou de garder les
 
 ---
 
-## 7. Gerer plusieurs evenements
+## 8. Gerer plusieurs evenements
 
 Cliquez sur **Gerer les evenements** pour :
 
@@ -120,11 +149,11 @@ Cliquez sur **Gerer les evenements** pour :
 - **Basculer** entre evenements en cliquant dessus
 - **Supprimer** un evenement (icone poubelle rouge, avec confirmation)
 - **Creer** un nouvel evenement
-- **Exporter / Importer / Partager** (voir section 6)
+- **Exporter / Importer / Partager** (voir section 7)
 
 ---
 
-## 8. Synchronisation cloud (optionnel)
+## 9. Synchronisation cloud (optionnel)
 
 Vous pouvez sauvegarder vos donnees dans le cloud pour les retrouver sur un autre appareil :
 
@@ -135,7 +164,7 @@ La synchronisation se fait manuellement, a votre initiative.
 
 ---
 
-## 9. Autres fonctions
+## 10. Autres fonctions
 
 ### Desactiver les animations
 
@@ -168,4 +197,5 @@ Si vous changez de club d'echecs, cliquez sur votre nom de club dans la barre du
 | 2 | Creez un evenement avec les URLs FFE |
 | 3 | Cliquez Actualiser et choisissez votre club |
 | 4 | Suivez vos joueurs ronde par ronde |
-| 5 | Partagez par QR code, lien ou fichier |
+| 5 | Consultez les appariements (table, couleur, adversaire) |
+| 6 | Partagez par QR code, lien ou fichier |
