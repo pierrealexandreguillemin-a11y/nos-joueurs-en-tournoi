@@ -426,6 +426,17 @@ export function parsePairings(htmlRound: string): Pairing[] {
 }
 
 /**
+ * Invert a FFE result string from white's perspective to black's perspective.
+ * "1 - 0" → "0 - 1", "0 - 1" → "1 - 0", "1/2 - 1/2" → "1/2 - 1/2", "" → ""
+ */
+export function invertResult(result: string): string {
+  if (!result) return result;
+  const parts = result.split(' - ');
+  if (parts.length !== 2) return result;
+  return `${parts[1]} - ${parts[0]}`;
+}
+
+/**
  * Filter pairings to club players and build ClubPairing[] perspective
  * @param pairings - All pairings for the round
  * @param playerClubMap - Map of player name -> club name
@@ -462,7 +473,7 @@ export function filterClubPairings(
         color: 'black',
         opponentName: pairing.whitePlayer,
         opponentElo: pairing.whiteElo,
-        result: pairing.result,
+        result: invertResult(pairing.result),
         isExempt: false,
       });
     }

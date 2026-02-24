@@ -80,14 +80,17 @@ async function fetchTournamentResults(
   const { players } = parseFFePages(htmlList, htmlResults, clubName);
 
   // Fetch pairings (best effort — failure returns empty, doesn't throw)
-  // Trade-off: sequential after results (+1-2 req, ~200-500ms latency)
-  // A non-blocking approach would require splitting commitEvent calls
+  // Trade-off: sequential after results (+1-2 req, ~200-500ms latency).
+  // Parallel (Promise.all N+1/N) would save ~200ms but complicate error handling.
   const currentRound = detectCurrentRound(players);
   const { pairings, pairingsRound } = await fetchBestPairings(
     tournament.url,
     currentRound,
   );
 
+  // Design: raw pairings (all players, not filtered) are stored in Tournament.
+  // This allows club switch without refetching pairings. Trade-off: ~4KB extra
+  // per tournament in localStorage (50 pairings × 80 bytes). Acceptable for 5MB limit.
   return {
     ...tournament,
     players,
@@ -163,8 +166,8 @@ interface SyncSetters {
   setError: (v: string | null) => void;
 }
 
-/** Hook for FFE fetch / refresh / club-select callbacks */
-function useSyncCallbacks(
+/** Hook for FFE fetch / refresh callbacks */
+function useFetchCallbacks(
   event: Event,
   commitEvent: (e: Event) => void,
   { setLoading, setError }: SyncSetters,
@@ -228,7 +231,16 @@ function useSyncCallbacks(
     }
   }, [event.clubName, fetchClubs, fetchResults]);
 
-  const handleClubSelect = useCallback(async (clubName: string) => {
+  return { handleRefresh };
+}
+
+/** Hook for club selection with sequential tournament refresh */
+function useClubSelectCallback(
+  event: Event,
+  commitEvent: (e: Event) => void,
+  { setLoading, setError }: SyncSetters,
+) {
+  return useCallback(async (clubName: string) => {
     let currentEvent: Event = { ...event, clubName };
     commitEvent(currentEvent);
 
@@ -255,8 +267,6 @@ function useSyncCallbacks(
       }
     }
   }, [event, commitEvent, setLoading, setError]);
-
-  return { fetchClubs, fetchResults, handleRefresh, handleClubSelect };
 }
 
 export default function useTournamentSync({ event, onEventUpdate }: UseTournamentSyncOptions) {
@@ -273,9 +283,9 @@ export default function useTournamentSync({ event, onEventUpdate }: UseTournamen
     onEventUpdate(updatedEvent);
   }, [onEventUpdate, storage]);
 
-  const { handleRefresh, handleClubSelect } = useSyncCallbacks(
-    event, commitEvent, { setLoading, setError },
-  );
+  const syncSetters = { setLoading, setError };
+  const { handleRefresh } = useFetchCallbacks(event, commitEvent, syncSetters);
+  const handleClubSelect = useClubSelectCallback(event, commitEvent, syncSetters);
 
   const {
     changeClubDialogOpen, playerCount,
