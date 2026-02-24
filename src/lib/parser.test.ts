@@ -578,6 +578,11 @@ describe('parser.ts', () => {
     it('returns as-is for malformed result without separator', () => {
       expect(invertResult('forfait')).toBe('forfait');
     });
+
+    it('inverts FFE forfait format "1F - 0F" to "0F - 1F"', () => {
+      expect(invertResult('1F - 0F')).toBe('0F - 1F');
+      expect(invertResult('0F - 1F')).toBe('1F - 0F');
+    });
   });
 
   describe('filterClubPairings', () => {
