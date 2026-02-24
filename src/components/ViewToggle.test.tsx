@@ -7,22 +7,22 @@ describe('ViewToggle', () => {
   it('renders both buttons', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings />);
 
-    expect(screen.getByRole('radio', { name: /Résultats/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Appariements/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Résultats/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Appariements/i })).toBeInTheDocument();
   });
 
-  it('marks the active button with aria-checked', () => {
+  it('marks the active button with aria-pressed', () => {
     render(<ViewToggle viewMode="pairings" onChange={vi.fn()} hasPairings />);
 
-    expect(screen.getByRole('radio', { name: /Résultats/i })).toHaveAttribute('aria-checked', 'false');
-    expect(screen.getByRole('radio', { name: /Appariements/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: /Résultats/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /Appariements/i })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('calls onChange when clicking inactive button', () => {
     const onChange = vi.fn();
     render(<ViewToggle viewMode="results" onChange={onChange} hasPairings />);
 
-    fireEvent.click(screen.getByRole('radio', { name: /Appariements/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Appariements/i }));
     expect(onChange).toHaveBeenCalledWith('pairings');
   });
 
@@ -30,7 +30,7 @@ describe('ViewToggle', () => {
     const onChange = vi.fn();
     render(<ViewToggle viewMode="results" onChange={onChange} hasPairings={false} />);
 
-    const btn = screen.getByRole('radio', { name: /Appariements/i });
+    const btn = screen.getByRole('button', { name: /Appariements/i });
     expect(btn).toBeDisabled();
 
     fireEvent.click(btn);
@@ -53,7 +53,7 @@ describe('ViewToggle', () => {
     const onChange = vi.fn();
     render(<ViewToggle viewMode="pairings" onChange={onChange} hasPairings />);
 
-    fireEvent.click(screen.getByRole('radio', { name: /Résultats/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Résultats/i }));
     expect(onChange).toHaveBeenCalledWith('results');
   });
 
@@ -61,5 +61,26 @@ describe('ViewToggle', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings />);
 
     expect(screen.getByRole('group')).toBeInTheDocument();
+  });
+
+  it('has focus-visible ring class on buttons', () => {
+    render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings />);
+
+    const btn = screen.getByRole('button', { name: /Résultats/i });
+    expect(btn.className).toContain('focus-visible:ring-2');
+  });
+
+  it('shows tooltip on disabled Appariements button', () => {
+    render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings={false} />);
+
+    const btn = screen.getByRole('button', { name: /Appariements/i });
+    expect(btn).toHaveAttribute('title', expect.stringContaining('pas encore publiés'));
+  });
+
+  it('badge has role=status for screen reader announcement', () => {
+    render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings showBadge />);
+
+    const badge = screen.getByLabelText(/Nouveaux appariements disponibles/i);
+    expect(badge).toHaveAttribute('role', 'status');
   });
 });

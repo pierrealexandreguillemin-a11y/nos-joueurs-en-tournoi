@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render } from '@testing-library/react';
-import { screen, fireEvent, waitFor } from '@testing-library/dom';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import TournamentTabs from './TournamentTabs';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, parseStatsClubs, filterClubPairings } from '@/lib/parser';
 import type { Event, Tournament, Player, Pairing } from '@/types';
@@ -552,15 +551,16 @@ describe('TournamentTabs', () => {
       tournaments: [tournamentWithPairings],
     };
 
-    it('shows ViewToggle when tournament has players', () => {
+    it('shows ViewToggle when club is selected', () => {
       render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
 
-      expect(screen.getByRole('group', { name: /Basculer/i })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: /Résultats/i })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: /Appariements/i })).toBeInTheDocument();
+      const toggle = screen.getByRole('group', { name: /Basculer/i });
+      expect(toggle).toBeInTheDocument();
+      expect(within(toggle).getByRole('button', { name: /Résultats/i })).toBeInTheDocument();
+      expect(within(toggle).getByRole('button', { name: /Appariements/i })).toBeInTheDocument();
     });
 
-    it('hides ViewToggle when tournament has no players', () => {
+    it('hides ViewToggle when no club selected', () => {
       render(<TournamentTabs event={mockEvent} onEventUpdate={mockOnEventUpdate} />);
 
       expect(screen.queryByRole('group', { name: /Basculer/i })).not.toBeInTheDocument();
@@ -569,8 +569,9 @@ describe('TournamentTabs', () => {
     it('defaults to results view', () => {
       render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
 
-      const resultsRadio = screen.getByRole('radio', { name: /Résultats/i });
-      expect(resultsRadio).toHaveAttribute('aria-checked', 'true');
+      const toggle = screen.getByRole('group', { name: /Basculer/i });
+      const resultsBtn = within(toggle).getByRole('button', { name: /Résultats/i });
+      expect(resultsBtn).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('switches to pairings view when Appariements is clicked', () => {
@@ -581,10 +582,10 @@ describe('TournamentTabs', () => {
 
       render(<TournamentTabs event={eventWithPairings} onEventUpdate={mockOnEventUpdate} />);
 
-      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      const pairingsButton = screen.getByRole('button', { name: /Appariements/i });
       fireEvent.click(pairingsButton);
 
-      expect(pairingsButton).toHaveAttribute('aria-checked', 'true');
+      expect(pairingsButton).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('shows message when pairings not yet published and Appariements disabled', () => {
@@ -600,7 +601,7 @@ describe('TournamentTabs', () => {
       render(<TournamentTabs event={eventNoPairings} onEventUpdate={mockOnEventUpdate} />);
 
       // Appariements button should be disabled
-      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      const pairingsButton = screen.getByRole('button', { name: /Appariements/i });
       expect(pairingsButton).toBeDisabled();
     });
 
@@ -625,7 +626,7 @@ describe('TournamentTabs', () => {
       render(<TournamentTabs event={eventWithNamedPairings} onEventUpdate={mockOnEventUpdate} />);
 
       // Switch to pairings view to trigger filterClubPairings
-      const pairingsButton = screen.getByRole('radio', { name: /Appariements/i });
+      const pairingsButton = screen.getByRole('button', { name: /Appariements/i });
       fireEvent.click(pairingsButton);
 
       expect(mockFilter).toHaveBeenCalledWith(

@@ -72,7 +72,8 @@ describe('PairingsTable', () => {
   it('displays Exempt for exempt pairings', () => {
     render(<PairingsTable pairings={mockPairings} pairingsRound={4} />);
 
-    expect(screen.getByText('Exempt')).toBeInTheDocument();
+    // Exempt appears in both opponent and result columns
+    expect(screen.getAllByText('Exempt').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows result when available', () => {
@@ -81,15 +82,38 @@ describe('PairingsTable', () => {
     expect(screen.getByText('0 - 1')).toBeInTheDocument();
   });
 
+  it('shows "À jouer" for unplayed non-exempt pairings', () => {
+    render(<PairingsTable pairings={mockPairings} pairingsRound={4} />);
+
+    expect(screen.getByText('À jouer')).toBeInTheDocument();
+  });
+
   it('shows empty state when no pairings', () => {
     render(<PairingsTable pairings={[]} pairingsRound={4} />);
 
-    expect(screen.getByText(/Aucun appariement disponible/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aucun joueur du club/i)).toBeInTheDocument();
   });
 
   it('has correct table aria-label with round number', () => {
     render(<PairingsTable pairings={mockPairings} pairingsRound={4} />);
 
     expect(screen.getByRole('table')).toHaveAttribute('aria-label', 'Appariements ronde 4');
+  });
+
+  it('has scope="col" on all column headers', () => {
+    render(<PairingsTable pairings={mockPairings} pairingsRound={4} />);
+
+    const headers = screen.getAllByRole('columnheader');
+    headers.forEach(th => {
+      expect(th).toHaveAttribute('scope', 'col');
+    });
+  });
+
+  it('uses updated column labels', () => {
+    render(<PairingsTable pairings={mockPairings} pairingsRound={4} />);
+
+    expect(screen.getByText('Table')).toBeInTheDocument();
+    expect(screen.getByText('Résultat')).toBeInTheDocument();
+    expect(screen.getByText('Elo adv.')).toBeInTheDocument();
   });
 });

@@ -10,13 +10,15 @@ interface ViewToggleProps {
   showBadge?: boolean;
 }
 
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miami-aqua focus-visible:ring-offset-2';
+
 const ViewToggle = memo(function ViewToggle({
   viewMode,
   onChange,
   hasPairings,
   showBadge = false,
 }: ViewToggleProps) {
-  const baseClass = 'relative px-3 py-1.5 text-sm font-medium rounded-md transition-all';
+  const baseClass = `relative px-3 py-1.5 text-sm font-medium rounded-md transition-all ${FOCUS_RING}`;
   const activeClass = 'bg-gradient-to-r from-miami-aqua to-miami-navy text-white shadow-sm';
   const inactiveClass = 'text-muted-foreground hover:text-foreground';
   const disabledClass = 'opacity-50 cursor-not-allowed';
@@ -29,8 +31,7 @@ const ViewToggle = memo(function ViewToggle({
     >
       <button
         type="button"
-        role="radio"
-        aria-checked={viewMode === 'results'}
+        aria-pressed={viewMode === 'results'}
         className={`${baseClass} ${viewMode === 'results' ? activeClass : inactiveClass}`}
         onClick={() => onChange('results')}
       >
@@ -38,17 +39,18 @@ const ViewToggle = memo(function ViewToggle({
       </button>
       <button
         type="button"
-        role="radio"
-        aria-checked={viewMode === 'pairings'}
+        aria-pressed={viewMode === 'pairings'}
         aria-disabled={!hasPairings}
         disabled={!hasPairings}
         className={`${baseClass} ${viewMode === 'pairings' ? activeClass : inactiveClass} ${!hasPairings ? disabledClass : ''}`}
         onClick={() => onChange('pairings')}
+        title={!hasPairings ? 'Les appariements ne sont pas encore publiés' : undefined}
       >
         Appariements
         {showBadge && hasPairings && (
           <span
             className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-miami-orange"
+            role="status"
             aria-label="Nouveaux appariements disponibles"
           />
         )}

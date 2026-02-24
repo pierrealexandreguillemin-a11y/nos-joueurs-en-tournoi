@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import ClubStats from '@/components/ClubStats';
@@ -142,15 +142,15 @@ function TournamentContent({
   const hasPairings = (tournament.pairings?.length ?? 0) > 0;
 
   const clubPairings = useMemo(() => {
-    if (!hasPairings || !event.clubName) return [];
+    if (viewMode !== 'pairings' || !tournament.pairings?.length || !event.clubName) return [];
     const playerClubMap = new Map(
       tournament.players.map(p => [p.name, p.club]),
     );
-    return filterClubPairings(tournament.pairings!, playerClubMap, event.clubName);
-  }, [tournament.pairings, tournament.players, event.clubName, hasPairings]);
+    return filterClubPairings(tournament.pairings, playerClubMap, event.clubName);
+  }, [viewMode, tournament.pairings, tournament.players, event.clubName]);
 
   if (viewMode === 'pairings' && hasPairings) {
-    return <PairingsTable pairings={clubPairings} pairingsRound={tournament.pairingsRound ?? 0} />;
+    return <PairingsTable pairings={clubPairings} pairingsRound={tournament.pairingsRound ?? 1} />;
   }
 
   if (viewMode === 'pairings' && !hasPairings) {
@@ -159,6 +159,10 @@ function TournamentContent({
         <p className="text-muted-foreground">
           Les appariements ne sont pas encore publiés.
         </p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => handleRefresh(tournament)}>
+          <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+          Vérifier maintenant
+        </Button>
       </Card>
     );
   }
@@ -213,10 +217,10 @@ function TournamentPanel({
     }
   }, [tournament.pairingsRound]);
 
-  const handleViewChange = (mode: ViewMode) => {
+  const handleViewChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
     if (mode === 'pairings') setHasViewedPairings(true);
-  };
+  }, []);
 
   return (
     <>
@@ -236,7 +240,7 @@ function TournamentPanel({
         requestChangeClub={requestChangeClub}
       />
 
-      {tournament.players.length > 0 && (
+      {event.clubName && (
         <ViewToggle
           viewMode={viewMode}
           onChange={handleViewChange}
@@ -293,7 +297,6 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
               key={tournament.id}
               value={tournament.id}
               aria-label={`Tournoi ${tournament.name}`}
-              aria-controls={`tournament-panel-${tournament.id}`}
             >
               {tournament.name}
             </TabsTrigger>
@@ -305,9 +308,6 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
             key={tournament.id}
             value={tournament.id}
             className="space-y-4"
-            id={`tournament-panel-${tournament.id}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${tournament.id}`}
           >
             <TournamentPanel
               tournament={tournament}
