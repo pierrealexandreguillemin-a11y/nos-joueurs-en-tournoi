@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 
 /**
  * POST /api/scrape
@@ -66,13 +67,6 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Scrape error:', error);
-    return NextResponse.json(
-      {
-        error: 'Scraping failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
+    return apiError('/scrape', error);
   }
 }

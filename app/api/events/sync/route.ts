@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiError } from '@/lib/api-error';
 import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
 import { syncBodySchema } from '@/lib/schemas';
@@ -65,13 +66,6 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('[API /sync] Error syncing to Upstash:', error);
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
+    return apiError('/sync', error);
   }
 }
