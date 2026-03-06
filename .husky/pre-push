@@ -29,6 +29,6 @@ npm audit --json 2>/dev/null | node -e "
 " || exit 1
 
 echo "[6/6] Tests with coverage (ISO 25010 Testability)..."
-npx vitest run --coverage || exit 1
+npx vitest run --coverage --reporter=dot --coverage.reporter=json || exit 1
 
 echo "=== All checks passed ==="
