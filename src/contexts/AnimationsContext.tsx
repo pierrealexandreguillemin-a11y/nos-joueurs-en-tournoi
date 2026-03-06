@@ -22,7 +22,6 @@ export function AnimationsProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAnimationsEnabled(value);
     // Justification: Mounted flag must be set after client-side hydration to avoid SSR mismatch
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

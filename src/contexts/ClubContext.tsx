@@ -24,7 +24,6 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIdentity(saved);
     // Justification: Loaded flag must be set after client-side hydration to avoid SSR mismatch
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoaded(true);
   }, []);
 

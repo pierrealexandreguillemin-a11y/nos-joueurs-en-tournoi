@@ -9,7 +9,6 @@ interface FloatingPathsProps {
 
 function FloatingPaths({ position }: FloatingPathsProps) {
   // Memoize paths — secureRandom() is a stable module import, not a reactive dependency
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const paths = useMemo(() => {
     return Array.from({ length: 36 }, (_, i) => ({
       id: i,

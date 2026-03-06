@@ -147,9 +147,7 @@ function useShareURLImport(
     if (exportedData) {
       if (exportedData.event && storage.getCurrentEvent()?.id === exportedData.event.id) {
         // Duplicate detected — prompt user for resolution
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPendingImport(exportedData);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDuplicateDialogOpen(true);
       } else {
         const result = storage.importEvent(exportedData);
@@ -194,11 +192,8 @@ function useHomePage() {
     const storage = createClubStorage(identity.clubSlug);
     const event = storage.getCurrentEvent();
     // Hydration from localStorage — setState in effect is the standard React pattern
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentEvent(event);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowEventForm(!event);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, [isLoaded, identity]);
 
