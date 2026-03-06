@@ -1,8 +1,8 @@
 # Suivi de developpement - Nos Joueurs en Tournoi
 
-> Derniere mise a jour : 2026-02-24
+> Derniere mise a jour : 2026-03-06
 > Branche : `master`
-> Dernier commit : `0b17118`
+> Dernier commit : `492996e`
 
 ---
 
@@ -57,7 +57,7 @@ npx lint-staged
 [3/6] npm run build                   (Build production)
 [4/6] jscpd src app --threshold 5     (ISO 5055 Duplication)
 [5/6] npm audit --audit-level=critical(OWASP A06)
-[6/6] vitest run --coverage           (ISO 25010 Testability)
+[6/6] vitest run --reporter=dot --coverage --coverage.reporter=json (ISO 25010 Testability)
 ```
 
 ### ESLint plugins actifs
@@ -261,8 +261,8 @@ Commit correctif : `0b17118`
 ### Priorite 5 — Maintenance et DX
 
 - [x] **Mettre a jour le README.md** — Mis a jour avec 531 tests, 25 suites, feature appariements, inventaire complet.
-- [ ] **Pre-push Windows workaround** — Investiguer pourquoi Git for Windows kill le push quand la sortie coverage depasse ~40k chars. Options : rediriger stdout vers un fichier, ou desactiver le reporter table coverage en pre-push.
-- [ ] **Upgrade eslint a v9** — Le projet utilise eslint 8.x avec `.eslintrc.cjs` (legacy config). La v9 utilise `eslint.config.js` (flat config). Migration non urgente mais a planifier.
+- [x] **Pre-push Windows workaround** — Fix via `--reporter=dot --coverage.reporter=json` (supprime la table coverage stdout). DONE.
+- [x] **Upgrade eslint a v9** — Migration ESLint 8→9 flat config (`eslint.config.mjs`), sonarjs 4.0.1, security 3.0.1. DONE.
 
 ### Priorite 6 — Fonctionnalites
 
@@ -281,7 +281,7 @@ Commit correctif : `0b17118`
 |---------|-------------|
 | `.husky/pre-commit` | lint-staged strict |
 | `.husky/pre-push` | 6 portes qualite ISO/OWASP couvrant src + app |
-| `.eslintrc.cjs` | plugins security/sonarjs, regles ISO, no-console |
+| `eslint.config.mjs` | ESLint 9 flat config, plugins security/sonarjs, regles ISO, no-console |
 | `package.json` | lint-staged, scripts duplication/typecheck, overrides minimatch |
 | `src/lib/storage.ts` | DRY refactor — public API delegue a _helpers (-130 lignes) |
 | `src/lib/sync.ts` | Rename MongoDB -> Upstash, suppression console.log |
@@ -298,9 +298,9 @@ Commit correctif : `0b17118`
 
 ## Problemes connus
 
-### Git push --no-verify sur Windows
+### Git push --no-verify sur Windows (RESOLU)
 
-Le pre-push genere ~40k chars de sortie (table coverage Vitest). Git for Windows interprete ce volume comme un echec et annule le push, meme si tous les checks passent. **Workaround actuel** : `git push --no-verify`. La CI/CD GitHub Actions resoudra ce probleme en deplacant les checks dans le pipeline distant.
+Le pre-push generait ~40k chars de sortie (table coverage Vitest). Git for Windows interpretait ce volume comme un echec et annulait le push. **Fix** : `--reporter=dot --coverage.reporter=json` dans le pre-push hook supprime la table coverage verbose. Le push fonctionne normalement sans `--no-verify`.
 
 ### Vulnerabilites npm (transitives)
 

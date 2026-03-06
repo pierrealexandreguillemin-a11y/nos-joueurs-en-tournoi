@@ -66,7 +66,7 @@ app/api/x/__tests__/    # Tests API routes
 
 ## ESLint
 
-Config dans `.eslintrc.cjs`. Regles ISO 5055 :
+Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 
 | Regle | Valeur | Norme |
 |-------|--------|-------|
@@ -139,7 +139,7 @@ test(scope): description     # Ajout/modification tests
 3. `next build` (production)
 4. `jscpd --threshold 5` (duplication)
 5. `npm audit` (0 critical)
-6. `vitest run --coverage` (466+ tests)
+6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (466+ tests, dot reporter pour eviter stdout overflow Windows)
 
 **Tout push qui echoue un gate est bloque.**
 
@@ -226,7 +226,7 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `next.config.ts` | Next.js + bundle analyzer + cache headers images |
 | `vercel.json` | Headers securite, CORS, cache static |
 | `tsconfig.json` | TypeScript strict, alias `@/` |
-| `.eslintrc.cjs` | ESLint + security + sonarjs + ISO 5055 |
+| `eslint.config.mjs` | ESLint 9 flat config + security + sonarjs + ISO 5055 |
 | `vitest.config.ts` | Tests unitaires (jsdom, coverage v8) |
 | `vitest.config.e2e.ts` | Tests E2E (30s timeout, 120s hook timeout) |
 | `vitest.setup.ts` | localStorage polyfill + jest-dom |

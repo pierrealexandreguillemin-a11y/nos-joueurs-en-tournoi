@@ -34,7 +34,7 @@ Choisissez votre club, suivez vos joueurs, validez les resultats ronde par ronde
 | Auth API | HMAC-SHA256 avec anti-replay (5 min) |
 | Analytics | Vercel Analytics (Core Web Vitals) |
 | Tests | Vitest 4, Testing Library, jsdom |
-| Linting | ESLint 8 (security, sonarjs, typescript-eslint) |
+| Linting | ESLint 9 (flat config, security, sonarjs, typescript-eslint) |
 | CI | Husky pre-push (6 quality gates) |
 | Deploy | Vercel (auto-deploy on push) |
 
