@@ -11,12 +11,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useClub } from '@/contexts/ClubContext';
 
-const MENU_STYLE = {
-  background: 'rgba(255, 255, 255, 0.95)',
-  backdropFilter: 'blur(10px)',
-  border: '1px solid rgba(0, 142, 151, 0.3)', /* theme: --primary */
-  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-} as const;
 
 export default function ClubHeader() {
   const { identity, clearClub } = useClub();
@@ -69,7 +63,7 @@ export default function ClubHeader() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div ref={menuRef} role="menu" className="absolute right-0 top-full mt-2 z-50 rounded-lg py-1 min-w-[200px]" style={MENU_STYLE}>
+          <div ref={menuRef} role="menu" className="absolute right-0 top-full mt-2 z-50 rounded-lg py-1 min-w-[200px] menu-dropdown">
             <div className="px-3 py-2 border-b border-primary/20">
               <div className="text-xs text-secondary/80">Identifiant</div>
               <code className="text-sm text-secondary font-mono">{identity.clubSlug}</code>

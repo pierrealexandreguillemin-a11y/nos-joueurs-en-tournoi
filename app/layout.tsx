@@ -6,6 +6,7 @@ import '../src/styles/globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { AnimationsProvider } from '@/contexts/AnimationsContext';
 import { ClubProvider } from '@/contexts/ClubContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 const audiowide = Audiowide({
   weight: '400',
@@ -95,12 +96,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${audiowide.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${audiowide.variable}`} data-theme="miami" data-mode="dark">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('njt-theme');var m=localStorage.getItem('njt-mode');if(t==='miami'||t==='neutral')document.documentElement.dataset.theme=t;if(m==='light'||m==='dark')document.documentElement.dataset.mode=m;}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={inter.className}>
         <ClubProvider>
-          <AnimationsProvider>
-            {children}
-          </AnimationsProvider>
+          <ThemeProvider>
+            <AnimationsProvider>
+              {children}
+            </AnimationsProvider>
+          </ThemeProvider>
         </ClubProvider>
         <Analytics />
       </body>

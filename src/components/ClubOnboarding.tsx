@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { slugifyClubName } from '@/lib/club';
 import { useClub } from '@/contexts/ClubContext';
-import { PAGE_GRADIENT } from '@/lib/theme';
-
 export default function ClubOnboarding() {
   const { setClub } = useClub();
   const [clubName, setClubName] = useState('');
@@ -36,9 +34,7 @@ export default function ClubOnboarding() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: PAGE_GRADIENT
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-4 page-background">
       <div className="glass-card w-full max-w-md p-8">
         <h1 className="text-2xl font-bold text-center mb-2 cyberpunk-title">
           NOS JOUEURS EN TOURNOI

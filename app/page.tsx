@@ -35,13 +35,12 @@ const FloatingParticles = NextDynamic(() => import('@/components/common/Floating
   loading: () => null,
 });
 
-import { PAGE_GRADIENT } from '@/lib/theme';
 
 // ── Sub-components ───────────────────────────────────────────────────
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" role="status" aria-live="polite" style={{ background: PAGE_GRADIENT }}>
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden page-background" role="status" aria-live="polite">
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">Chargement...</div>
@@ -244,7 +243,7 @@ export default function Home() {
   if (!mounted) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: PAGE_GRADIENT }}>
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden page-background">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-secondary focus:rounded">
         Aller au contenu principal
       </a>

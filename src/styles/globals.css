@@ -3,27 +3,78 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* shadcn semantic tokens — Miami Vice theme (OKLCH) */
+/* =============================================
+   OKLCH L/C/H Decomposition
+   Theme → chromaticity (C+H)
+   Mode  → lightness (L)
+   Composition → assembles semantic tokens
+   ============================================= */
+
+/* Theme: Miami Vice — chromatic identities */
+[data-theme="miami"] {
+  --primary-c: 0.1003;   --primary-h: 202.7;     /* aqua */
+  --secondary-c: 0.1066; --secondary-h: 255.1;    /* navy */
+  --accent-c: 0.2193;    --accent-h: 37.7;        /* orange */
+  --destructive-c: 0.2082; --destructive-h: 25.4;
+  --muted-c: 0.0364;     --muted-h: 259.7;        /* near-achromatic navy tint */
+  --muted-fg-c: 0.0348;  --muted-fg-h: 256.8;
+  /* Glass parameters */
+  --glass-blur: 15px;
+  --glass-saturate: 130%;
+  --glass-bg-opacity: 0.05;
+  --glass-bg-opacity-card: 0.12;
+  --glass-border-opacity: 0.12;
+  --glass-border-opacity-card: 0.18;
+}
+
+/* Mode: Dark — lightness values */
+[data-mode="dark"] {
+  --bg-l: 0.3261;
+  --fg-l: 1.0000;
+  --primary-l: 0.5890;
+  --primary-fg-l: 1.0000;
+  --secondary-l: 0.3261;
+  --secondary-fg-l: 1.0000;
+  --accent-l: 0.6647;
+  --accent-fg-l: 1.0000;
+  --destructive-l: 0.6356;
+  --destructive-fg-l: 1.0000;
+  --muted-l: 0.2753;
+  --muted-fg-l: 0.7100;
+  --card-l: 0.2753;
+  --card-fg-l: 1.0000;
+  --popover-l: 1.0000;
+  --popover-fg-l: 0.3261;
+  --border-l: 0.7100;
+  --input-l: 0.7100;
+  --ring-l: 0.5890;
+}
+
+/* Composition: assembles L + C + H into semantic tokens */
 :root {
-  --background: 0.3261 0.1066 255.1;  /* #013369 navy */
-  --foreground: 1.0000 0 0;           /* white */
-  --primary: 0.5890 0.1003 202.7;     /* #008E97 aqua */
-  --primary-foreground: 1.0000 0 0;
-  --secondary: 0.3261 0.1066 255.1;   /* #013369 navy */
-  --secondary-foreground: 1.0000 0 0;
-  --accent: 0.6647 0.2193 37.7;       /* #FC4F00 orange */
-  --accent-foreground: 1.0000 0 0;
-  --destructive: 0.6356 0.2082 25.4;
-  --destructive-foreground: 1.0000 0 0;
-  --muted: 0.2753 0.0364 259.7;
-  --muted-foreground: 0.7100 0.0348 256.8;
-  --card: 0.2753 0.0364 259.7;
-  --card-foreground: 1.0000 0 0;
-  --popover: 1.0000 0 0;
-  --popover-foreground: 0.3261 0.1066 255.1;
-  --border: 0.7100 0.0348 256.8;
-  --input: 0.7100 0.0348 256.8;
-  --ring: 0.5890 0.1003 202.7;        /* aqua focus ring */
+  /* Chromatic tokens: L from mode, C+H from theme */
+  --primary: var(--primary-l) var(--primary-c) var(--primary-h);
+  --secondary: var(--secondary-l) var(--secondary-c) var(--secondary-h);
+  --accent: var(--accent-l) var(--accent-c) var(--accent-h);
+  --destructive: var(--destructive-l) var(--destructive-c) var(--destructive-h);
+  --ring: var(--ring-l) var(--primary-c) var(--primary-h);
+  /* Near-achromatic: L from mode, C+H from theme neutral */
+  --background: var(--bg-l) var(--secondary-c) var(--secondary-h);
+  --muted: var(--muted-l) var(--muted-c) var(--muted-h);
+  --muted-foreground: var(--muted-fg-l) var(--muted-fg-c) var(--muted-fg-h);
+  --card: var(--card-l) var(--muted-c) var(--muted-h);
+  --border: var(--border-l) var(--muted-fg-c) var(--muted-fg-h);
+  --input: var(--input-l) var(--muted-fg-c) var(--muted-fg-h);
+  --popover-foreground: var(--popover-fg-l) var(--secondary-c) var(--secondary-h);
+  /* Pure achromatic: L from mode, C=0 H=0 */
+  --foreground: var(--fg-l) 0 0;
+  --primary-foreground: var(--primary-fg-l) 0 0;
+  --secondary-foreground: var(--secondary-fg-l) 0 0;
+  --accent-foreground: var(--accent-fg-l) 0 0;
+  --destructive-foreground: var(--destructive-fg-l) 0 0;
+  --card-foreground: var(--card-fg-l) 0 0;
+  --popover: var(--popover-l) 0 0;
+  /* Layout */
   --radius: 0.75rem;
 }
 
@@ -84,24 +135,38 @@
   }
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities — parameterized by theme */
 .glass-surface {
-  backdrop-filter: blur(15px) saturate(130%);
-  -webkit-backdrop-filter: blur(15px) saturate(130%);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: rgba(255, 255, 255, var(--glass-bg-opacity));
+  border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
 }
 
-/* Glass Card — visible opacity (12%) */
+/* Glass Card — visible opacity */
 .glass-card {
   border-radius: var(--radius);
   padding: 1.5rem;
-  backdrop-filter: blur(15px) saturate(130%);
-  -webkit-backdrop-filter: blur(15px) saturate(130%);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: rgba(255, 255, 255, var(--glass-bg-opacity-card));
+  border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity-card));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* Menu dropdown */
+.menu-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid oklch(var(--primary) / 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* Page background — uses semantic tokens */
+.page-background {
+  background: linear-gradient(135deg, oklch(var(--primary)) 0%, oklch(var(--secondary)) 25%, oklch(var(--secondary)) 75%, oklch(var(--primary)) 100%);
 }
 
 /* Dialog title with gradient text */

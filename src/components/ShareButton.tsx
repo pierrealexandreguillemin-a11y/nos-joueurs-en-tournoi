@@ -19,13 +19,13 @@ const APP_URL = 'https://nos-joueurs-en-tournoi.vercel.app';
 function QRCodeCard() {
   return (
     <Card className="p-6 glass-surface flex flex-col items-center gap-4">
-      <div className="bg-white p-4 rounded-lg">
+      <div className="bg-white p-4 rounded-lg text-secondary">
         <QRCodeSVG
           value={APP_URL}
           size={200}
           level="H"
           includeMargin={true}
-          fgColor="#013369" /* theme: --secondary */
+          fgColor="currentColor"
         />
       </div>
       <p className="text-sm text-secondary/70 text-center">
