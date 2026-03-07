@@ -27,7 +27,7 @@ export default function DuplicateEventDialog({
 }: DuplicateEventDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <AlertDialogContent className="glass-surface border-white/20">
+      <AlertDialogContent className="glass-surface border-foreground/20">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl dialog-title-gradient">
             Événement déjà existant
