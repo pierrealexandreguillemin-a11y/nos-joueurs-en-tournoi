@@ -56,7 +56,7 @@ function QRCodeSection({ shareData, qrSize, qrCodeTooBig }: {
           includeMargin={true}
         />
       </div>
-      <p className="text-xs text-center text-miami-navy/60 px-2">
+      <p className="text-xs text-center text-secondary/60 px-2">
         Scannez ce QR code avec un autre appareil pour importer l&apos;événement
       </p>
     </div>
@@ -70,10 +70,10 @@ function ShareURLSection({ url, copied, onCopy }: {
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-miami-navy">Lien de partage</label>
+      <label className="text-sm font-medium text-secondary">Lien de partage</label>
       <div className="flex gap-2">
-        <div className="flex-1 p-3 rounded-md miami-glass-foreground border border-miami-aqua/20 max-h-24 overflow-auto">
-          <code className="text-xs break-all text-miami-navy/80">
+        <div className="flex-1 p-3 rounded-md glass-surface border border-primary/20 max-h-24 overflow-auto">
+          <code className="text-xs break-all text-secondary/80">
             {url}
           </code>
         </div>
@@ -84,7 +84,7 @@ function ShareURLSection({ url, copied, onCopy }: {
           className={`flex-shrink-0 transition-colors ${
             copied
               ? 'bg-green-100 border-green-500 text-green-700'
-              : 'miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10'
+              : 'glass-surface border-primary/30 hover:bg-primary/10'
           }`}
           title="Copier le lien"
         >
@@ -97,8 +97,8 @@ function ShareURLSection({ url, copied, onCopy }: {
 
 function ShareInstructions() {
   return (
-    <div className="text-sm text-miami-navy/70 space-y-2 p-4 rounded-lg miami-glass-foreground border border-miami-aqua/10">
-      <p className="font-semibold text-miami-navy">Comment utiliser :</p>
+    <div className="text-sm text-secondary/70 space-y-2 p-4 rounded-lg glass-surface border border-primary/10">
+      <p className="font-semibold text-secondary">Comment utiliser :</p>
       <ul className="list-disc list-inside space-y-1 ml-2">
         <li>Scannez le QR code avec votre téléphone</li>
         <li>Ou copiez et partagez le lien</li>
@@ -175,24 +175,24 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" size="icon" className="miami-glass-foreground border-miami-aqua/30">
+          <Button variant="outline" size="icon" className="glass-surface border-primary/30">
             <Share2 className="w-4 h-4" />
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto miami-card border-miami-aqua/30">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto glass-card border-primary/30">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-miami-aqua to-miami-navy bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl dialog-title-gradient">
             Partager l&apos;événement
           </DialogTitle>
-          <DialogDescription className="text-miami-navy/70">
+          <DialogDescription className="text-secondary/70">
             {eventName}
           </DialogDescription>
         </DialogHeader>
 
         {!shareData ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-miami-navy/60">Génération du lien...</div>
+            <div className="text-secondary/60">Génération du lien...</div>
           </div>
         ) : (
           <div className="space-y-4 pb-2">

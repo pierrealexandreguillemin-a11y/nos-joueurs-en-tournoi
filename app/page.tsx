@@ -35,15 +35,13 @@ const FloatingParticles = NextDynamic(() => import('@/components/common/Floating
   loading: () => null,
 });
 
-// ── Shared style constants (sonarjs/no-duplicate-string) ─────────────
-const MIAMI_GRADIENT = 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)';
-const BLUR_SATURATE = 'blur(15px) saturate(130%)';
+import { PAGE_GRADIENT } from '@/lib/theme';
 
 // ── Sub-components ───────────────────────────────────────────────────
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" role="status" aria-live="polite" style={{ background: MIAMI_GRADIENT }}>
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" role="status" aria-live="polite" style={{ background: PAGE_GRADIENT }}>
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-white text-xl">Chargement...</div>
@@ -62,13 +60,7 @@ interface PageHeaderProps {
 function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeaderProps) {
   return (
     <header className="mb-6">
-      <div className="rounded-lg p-6" style={{
-        background: 'rgba(255, 255, 255, 0.22)',
-        backdropFilter: BLUR_SATURATE,
-        WebkitBackdropFilter: BLUR_SATURATE,
-        border: '1px solid rgba(255, 255, 255, 0.28)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 16px rgba(0,0,0,0.15)',
-      }}>
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Image
@@ -113,16 +105,10 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
 
 function EmptyState({ onCreateEvent }: { onCreateEvent: () => void }) {
   return (
-    <div className="rounded-lg p-12 text-center" style={{
-      background: 'rgba(255, 255, 255, 0.12)',
-      backdropFilter: BLUR_SATURATE,
-      WebkitBackdropFilter: BLUR_SATURATE,
-      border: '1px solid rgba(255, 255, 255, 0.18)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15)',
-    }}>
+    <div className="glass-card p-12 text-center">
       <h2 className="text-xl font-semibold mb-2">Aucun événement actif</h2>
       <p className="text-muted-foreground mb-4">Créez un nouvel événement pour commencer</p>
-      <Button variant="miami" onClick={onCreateEvent}>
+      <Button variant="gradient" onClick={onCreateEvent}>
         Créer un événement
       </Button>
     </div>
@@ -258,8 +244,8 @@ export default function Home() {
   if (!mounted) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: MIAMI_GRADIENT }}>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-miami-navy focus:rounded">
+    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden" style={{ background: PAGE_GRADIENT }}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-secondary focus:rounded">
         Aller au contenu principal
       </a>
       <Toaster position="top-right" richColors />

@@ -24,7 +24,7 @@ function generateParticles(density: number): Particle[] {
     duration: secureRandom() * 25 + 15,
     delay: secureRandom() * -20,
     layer: secureRandom() > 0.7 ? 'front' : 'back',
-    color: secureRandom() > 0.6 ? '#008E97' : 'rgba(255, 255, 255, 0.6)',
+    color: secureRandom() > 0.6 ? '#008E97' /* theme: --primary */ : 'rgba(255, 255, 255, 0.6)',
   }));
 }
 

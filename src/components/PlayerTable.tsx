@@ -49,11 +49,11 @@ interface ClubTotalsRowProps {
 
 const ClubTotalsRow = memo(function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
-    <TableRow className="bg-gradient-to-r from-miami-aqua/10 to-miami-navy/10 border-b-2 border-miami-aqua/30">
-      <TableHead className="font-bold text-miami-navy" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
+    <TableRow className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b-2 border-primary/30">
+      <TableHead className="font-bold text-secondary" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
-        <TableHead key={`round-${i}`} className="text-center font-bold text-miami-aqua">
+        <TableHead key={`round-${i}`} className="text-center font-bold text-primary">
           {total > 0 ? total : '-'}
         </TableHead>
       ))}
@@ -138,7 +138,7 @@ interface PlayerRowProps {
 const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, playerValidation, tournamentId, onValidationChange }: PlayerRowProps) {
   return (
     <TableRow
-      className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/3 hover:bg-miami-aqua/3'}
+      className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-primary/3 hover:bg-primary/3'}
     >
       <TableCell className="font-medium">{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
@@ -218,7 +218,7 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
   }), [maxRounds, tournament.players]);
 
   return (
-    <Card className="miami-card overflow-hidden">
+    <Card className="glass-card overflow-hidden">
       <div className="overflow-x-auto">
         <Table aria-label={`Résultats des joueurs — ${tournament.name}`}>
           <TableHeader>

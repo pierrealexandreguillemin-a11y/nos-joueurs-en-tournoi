@@ -19,12 +19,12 @@ function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
   onCopyAll: () => void;
 }) {
   return (
-    <DialogContent className="sm:max-w-[600px] miami-card border-miami-aqua/30 max-h-[80vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-[600px] glass-card border-primary/30 max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
           🐛 Debug Panel
         </DialogTitle>
-        <DialogDescription className="text-miami-navy/70">
+        <DialogDescription className="text-secondary/70">
           Informations techniques pour diagnostic
         </DialogDescription>
       </DialogHeader>
@@ -43,7 +43,7 @@ function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
           </Button>
         </div>
 
-        <div className="text-xs text-miami-navy/60 space-y-1">
+        <div className="text-xs text-secondary/60 space-y-1">
           <p>• Vérifiez la console (F12) pour les logs détaillés</p>
           <p>• &quot;Copier Toutes les Données&quot; = tout le localStorage</p>
           <p>• Envoyez ces infos pour diagnostic</p>
@@ -107,7 +107,7 @@ export default function DebugPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="fixed bottom-4 right-4 miami-glass-foreground border-amber-500/50 z-50"
+          className="fixed bottom-4 right-4 glass-surface border-amber-500/50 z-50"
           title="Debug Panel"
           onClick={handleDebug}
         >

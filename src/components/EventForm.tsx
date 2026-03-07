@@ -108,7 +108,7 @@ function FormActions({ onCancel }: { onCancel?: () => void }) {
           Annuler
         </Button>
       )}
-      <Button type="submit" variant="miami">
+      <Button type="submit" variant="gradient">
         Créer l&apos;événement
       </Button>
     </div>
@@ -190,7 +190,7 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
   };
 
   return (
-    <Card className="miami-card">
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle>Créer un nouvel événement</CardTitle>
       </CardHeader>

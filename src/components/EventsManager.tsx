@@ -54,23 +54,23 @@ function EventCard({ event, isCurrent, onSwitch, onExport, onDelete, onCloudUplo
     <Card
       className={`p-4 cursor-pointer transition-all ${
         isCurrent
-          ? 'bg-gradient-to-r from-miami-aqua/20 to-miami-navy/10 border-miami-aqua/50 shadow-lg'
-          : 'miami-glass-foreground hover:border-miami-aqua/30 hover:shadow-md'
+          ? 'bg-gradient-to-r from-primary/20 to-secondary/10 border-primary/50 shadow-lg'
+          : 'glass-surface hover:border-primary/30 hover:shadow-md'
       }`}
       onClick={() => onSwitch(event.id)}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-lg text-miami-aqua">{event.name}</h3>
+            <h3 className="font-bold text-lg text-primary">{event.name}</h3>
             {isCurrent && (
-              <Badge className="bg-miami-aqua text-white">
+              <Badge className="bg-primary text-white">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Actif
               </Badge>
             )}
           </div>
-          <div className="text-sm text-miami-aqua/70 space-y-1">
+          <div className="text-sm text-primary/70 space-y-1">
             <div>{event.tournaments.length} tournoi(s)</div>
             <div className="text-xs">
               Créé le {new Date(event.createdAt).toLocaleDateString('fr-FR')}
@@ -106,7 +106,7 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
             <Button
               variant="ghost"
               size="icon"
-              className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+              className="text-primary hover:text-primary/80 hover:bg-primary/10"
               title="Partager avec QR code"
               aria-label="Partager avec QR code"
             >
@@ -118,7 +118,7 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
       <Button
         variant="ghost"
         size="icon"
-        className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+        className="text-primary hover:text-primary/80 hover:bg-primary/10"
         onClick={(e) => {
           e.stopPropagation();
           onExport(event.id);
@@ -131,7 +131,7 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
       <Button
         variant="ghost"
         size="icon"
-        className="text-miami-aqua hover:text-miami-aqua/80 hover:bg-miami-aqua/10"
+        className="text-primary hover:text-primary/80 hover:bg-primary/10"
         onClick={(e) => {
           e.stopPropagation();
           onCloudUpload();
@@ -169,10 +169,10 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
     <DialogHeader>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-miami-aqua to-miami-navy bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl dialog-title-gradient">
             Événements
           </DialogTitle>
-          <DialogDescription className="text-miami-aqua/80">
+          <DialogDescription className="text-primary/80">
             Sélectionnez un événement ou supprimez ceux que vous ne souhaitez plus suivre.
           </DialogDescription>
         </div>
@@ -181,7 +181,7 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
             variant="outline"
             size="icon"
             onClick={onImportClick}
-            className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
+            className="glass-surface border-primary/30 hover:bg-primary/10"
             title="Importer depuis fichier JSON"
             aria-label="Importer depuis fichier JSON"
           >
@@ -191,13 +191,13 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
             variant="outline"
             size="icon"
             onClick={onCloudDownload}
-            className="miami-glass-foreground border-miami-aqua/30 hover:bg-miami-aqua/10"
+            className="glass-surface border-primary/30 hover:bg-primary/10"
             title="Télécharger depuis le cloud"
             aria-label="Télécharger depuis le cloud"
           >
             <CloudDownload className="w-4 h-4" aria-hidden="true" />
           </Button>
-          <Button variant="miami" onClick={onNewEvent}>
+          <Button variant="gradient" onClick={onNewEvent}>
             Nouvel événement
           </Button>
         </div>
@@ -215,17 +215,17 @@ interface DeleteConfirmDialogProps {
 function DeleteConfirmDialog({ open, onOpenChange, onConfirm }: DeleteConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="miami-card border-miami-aqua/30">
+      <AlertDialogContent className="glass-card border-primary/30">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-miami-aqua font-bold">
+          <AlertDialogTitle className="text-primary font-bold">
             Supprimer l&apos;événement ?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-miami-aqua/80">
+          <AlertDialogDescription className="text-primary/80">
             Cette action est irréversible. Tous les tournois et données associés seront supprimés définitivement.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="border-miami-navy/30">Annuler</AlertDialogCancel>
+          <AlertDialogCancel className="border-secondary/30">Annuler</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700 text-white"
@@ -447,11 +447,11 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="miami-glass-foreground border-miami-aqua/30 text-miami-navy hover:bg-miami-aqua/10">
+          <Button variant="outline" className="glass-surface border-primary/30 text-secondary hover:bg-primary/10">
             Gérer les événements
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[600px] miami-card border-miami-aqua/30">
+        <DialogContent className="sm:max-w-[600px] glass-card border-primary/30">
           <DialogHeaderBar
             onImportClick={() => fileInputRef.current?.click()}
             onCloudDownload={handleCloudDownload}
@@ -466,7 +466,7 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
           />
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {events.length === 0 ? (
-              <div className="text-center py-8 text-miami-aqua font-semibold">
+              <div className="text-center py-8 text-primary font-semibold">
                 Aucun événement créé
               </div>
             ) : (

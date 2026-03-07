@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { slugifyClubName } from '@/lib/club';
 import { useClub } from '@/contexts/ClubContext';
+import { PAGE_GRADIENT } from '@/lib/theme';
 
 export default function ClubOnboarding() {
   const { setClub } = useClub();
@@ -36,15 +37,9 @@ export default function ClubOnboarding() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: 'linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #008E97 100%)'
+      background: PAGE_GRADIENT
     }}>
-      <div className="w-full max-w-md rounded-lg p-8" style={{
-        background: 'rgba(255, 255, 255, 0.22)',
-        backdropFilter: 'blur(15px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(15px) saturate(130%)',
-        border: '1px solid rgba(255, 255, 255, 0.28)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 16px rgba(0,0,0,0.15)'
-      }}>
+      <div className="glass-card w-full max-w-md p-8">
         <h1 className="text-2xl font-bold text-center mb-2 cyberpunk-title">
           NOS JOUEURS EN TOURNOI
         </h1>
@@ -66,7 +61,7 @@ export default function ClubOnboarding() {
                 setError('');
               }}
               placeholder="Ex : Hay Chess, Marseille-Echecs..."
-              className="mt-1 bg-white/90 border-white/30 text-miami-navy placeholder:text-miami-navy/50"
+              className="mt-1 bg-white/90 border-white/30 text-secondary placeholder:text-secondary/50"
               autoFocus
             />
             {error && (
@@ -82,7 +77,7 @@ export default function ClubOnboarding() {
 
           <Button
             type="submit"
-            variant="miami"
+            variant="gradient"
             className="w-full"
             disabled={!clubName.trim()}
           >

@@ -13,8 +13,8 @@ const TabsList = React.forwardRef<
     ref={ref}
     className={cn(
       "inline-flex h-10 items-center justify-center rounded-md p-1 text-muted-foreground",
-      "miami-glass-foreground",
-      "border border-miami-aqua/20",
+      "glass-surface",
+      "border border-primary/20",
       className
     )}
     {...props}
@@ -30,11 +30,11 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miami-aqua focus-visible:ring-offset-2",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
-      "data-[state=active]:bg-gradient-to-r data-[state=active]:from-miami-aqua data-[state=active]:to-miami-navy",
+      "data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary",
       "data-[state=active]:text-white data-[state=active]:shadow-lg",
-      "hover:text-miami-aqua",
+      "hover:text-primary",
       className
     )}
     {...props}

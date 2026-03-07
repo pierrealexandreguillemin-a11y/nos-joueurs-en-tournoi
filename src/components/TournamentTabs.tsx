@@ -50,7 +50,7 @@ function StatsCard({
   const isLoading = loading === tournament.id;
 
   return (
-    <Card className="miami-card">
+    <Card className="glass-card">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           {tournament.players.length > 0 && (
@@ -155,7 +155,7 @@ function TournamentContent({
 
   if (viewMode === 'pairings' && !hasPairings) {
     return (
-      <Card className="miami-card text-center py-8">
+      <Card className="glass-card text-center py-8">
         <p className="text-muted-foreground">
           Les appariements ne sont pas encore publiés.
         </p>
@@ -171,14 +171,14 @@ function TournamentContent({
 
   if (!loading && !needsClubSelection) {
     return (
-      <Card className="miami-card text-center py-8">
+      <Card className="glass-card text-center py-8">
         <p className="text-muted-foreground">
           {event.clubName
             ? `Aucun joueur ${event.clubName} trouvé dans ce tournoi`
             : 'Cliquez sur Actualiser pour détecter les clubs du tournoi'}
         </p>
         {!event.clubName && (
-          <Button variant="miami" size="sm" className="mt-4" onClick={() => handleRefresh(tournament)}>
+          <Button variant="gradient" size="sm" className="mt-4" onClick={() => handleRefresh(tournament)}>
             <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
             Actualiser
           </Button>
@@ -225,7 +225,7 @@ function TournamentPanel({
   return (
     <>
       {needsClubSelection && (
-        <Card className="miami-card">
+        <Card className="glass-card">
           <ClubSelector clubs={event.availableClubs!} onSelect={handleClubSelect} />
         </Card>
       )}
@@ -291,7 +291,7 @@ export default function TournamentTabs({ event, onEventUpdate }: TournamentTabsP
         onValueChange={setActiveTab}
         aria-label="Gestion des tournois"
       >
-        <TabsList className="miami-glass-foreground" role="tablist">
+        <TabsList className="glass-surface" role="tablist">
           {event.tournaments.map(tournament => (
             <TabsTrigger
               key={tournament.id}

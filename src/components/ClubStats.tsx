@@ -21,7 +21,7 @@ export default function ClubStats({ eventName, clubName, players, currentRound }
         </h2>
         <Badge variant="info">{players.length} joueurs</Badge>
         {eventName && (
-          <span className="text-base text-miami-aqua ml-2">
+          <span className="text-base text-primary ml-2">
             {eventName}
           </span>
         )}

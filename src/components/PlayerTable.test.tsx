@@ -417,10 +417,10 @@ describe('PlayerTable', () => {
       expect(screen.getByText('R3')).toBeInTheDocument();
     });
 
-    it('applies miami-card styling', () => {
+    it('applies glass-card styling', () => {
       render(<PlayerTable tournament={mockTournament} />);
 
-      const card = screen.getByRole('table').closest('.miami-card');
+      const card = screen.getByRole('table').closest('.glass-card');
       expect(card).toBeInTheDocument();
     });
   });

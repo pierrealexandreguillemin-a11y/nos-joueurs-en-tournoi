@@ -3,28 +3,28 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* Miami Vice Complete Color Palette */
+/* shadcn semantic tokens — Miami Vice theme (OKLCH) */
 :root {
-  /* Couleurs principales */
-  --miami-aqua: #008E97;      /* Aqua/Teal principal */
-  --miami-orange: #FC4F00;    /* Orange vif */
-  --miami-navy: #013369;      /* Bleu marine profond */
-
-  /* Variations */
-  --miami-aqua-light: #00A8B5;   /* Aqua plus clair */
-  --miami-aqua-dark: #006B73;    /* Aqua plus fonce */
-  --miami-orange-light: #FF6B2B; /* Orange plus clair */
-
-  /* Neutres */
-  --miami-white: #FFFFFF;
-  --miami-gray: #8B9DC3;      /* Gris bleute */
-
-  /* Extensions pour Miami Crystal UI System */
-  --miami-crystal-bg: #f8fafc;
-  --miami-crystal-surface: #ffffff;
-  --miami-crystal-border: #e2e8f0;
-  --miami-crystal-text: #1e293b;
-  --miami-crystal-text-muted: #64748b;
+  --background: 0.3261 0.1066 255.1;  /* #013369 navy */
+  --foreground: 1.0000 0 0;           /* white */
+  --primary: 0.5890 0.1003 202.7;     /* #008E97 aqua */
+  --primary-foreground: 1.0000 0 0;
+  --secondary: 0.3261 0.1066 255.1;   /* #013369 navy */
+  --secondary-foreground: 1.0000 0 0;
+  --accent: 0.6647 0.2193 37.7;       /* #FC4F00 orange */
+  --accent-foreground: 1.0000 0 0;
+  --destructive: 0.6356 0.2082 25.4;
+  --destructive-foreground: 1.0000 0 0;
+  --muted: 0.2753 0.0364 259.7;
+  --muted-foreground: 0.7100 0.0348 256.8;
+  --card: 0.2753 0.0364 259.7;
+  --card-foreground: 1.0000 0 0;
+  --popover: 1.0000 0 0;
+  --popover-foreground: 0.3261 0.1066 255.1;
+  --border: 0.7100 0.0348 256.8;
+  --input: 0.7100 0.0348 256.8;
+  --ring: 0.5890 0.1003 202.7;        /* aqua focus ring */
+  --radius: 0.75rem;
 }
 
 /* Base styles */
@@ -84,16 +84,17 @@
   }
 }
 
-/* Miami Crystal UI System - Glassmorphism Utilities */
-.miami-glass-foreground {
+/* Glassmorphism Utilities */
+.glass-surface {
   backdrop-filter: blur(15px) saturate(130%);
+  -webkit-backdrop-filter: blur(15px) saturate(130%);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
 }
 
-/* Miami Card avec opacite visible (12% au lieu de 1-5%) */
-.miami-card {
+/* Glass Card — visible opacity (12%) */
+.glass-card {
   border-radius: var(--radius);
   padding: 1.5rem;
   backdrop-filter: blur(15px) saturate(130%);
@@ -101,6 +102,15 @@
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* Dialog title with gradient text */
+.dialog-title-gradient {
+  font-weight: 700;
+  background: linear-gradient(to right, oklch(var(--primary)), oklch(var(--secondary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ========================================

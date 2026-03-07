@@ -27,9 +27,9 @@ export default function DuplicateEventDialog({
 }: DuplicateEventDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <AlertDialogContent className="miami-glass-foreground border-white/20">
+      <AlertDialogContent className="glass-surface border-white/20">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-miami-aqua to-miami-navy bg-clip-text text-transparent">
+          <AlertDialogTitle className="text-xl dialog-title-gradient">
             Événement déjà existant
           </AlertDialogTitle>
           <AlertDialogDescription className="text-foreground/90">
@@ -42,13 +42,13 @@ export default function DuplicateEventDialog({
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
           <AlertDialogCancel
             onClick={onCancel}
-            className="miami-glass-button hover:bg-white/20 border-white/30"
+            className="glass-surface hover:bg-white/20 border-white/30"
           >
             Annuler
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onKeepBoth}
-            className="miami-glass-button hover:bg-miami-aqua/30 border-miami-aqua/50"
+            className="glass-surface hover:bg-primary/30 border-primary/50"
           >
             Garder les deux
           </AlertDialogAction>

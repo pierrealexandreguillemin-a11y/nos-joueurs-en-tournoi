@@ -10,7 +10,7 @@ interface ViewToggleProps {
   showBadge?: boolean;
 }
 
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miami-aqua focus-visible:ring-offset-2';
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
 
 const ViewToggle = memo(function ViewToggle({
   viewMode,
@@ -19,7 +19,7 @@ const ViewToggle = memo(function ViewToggle({
   showBadge = false,
 }: ViewToggleProps) {
   const baseClass = `relative px-3 py-1.5 text-sm font-medium rounded-md transition-all ${FOCUS_RING}`;
-  const activeClass = 'bg-gradient-to-r from-miami-aqua to-miami-navy text-white shadow-sm';
+  const activeClass = 'bg-gradient-to-r from-primary to-secondary text-white shadow-sm';
   const inactiveClass = 'text-muted-foreground hover:text-foreground';
   const disabledClass = 'opacity-50 cursor-not-allowed';
 
@@ -49,7 +49,7 @@ const ViewToggle = memo(function ViewToggle({
         Appariements
         {showBadge && hasPairings && (
           <span
-            className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-miami-orange"
+            className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent"
             role="status"
             aria-label="Nouveaux appariements disponibles"
           />

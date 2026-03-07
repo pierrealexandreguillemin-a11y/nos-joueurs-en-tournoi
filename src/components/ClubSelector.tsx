@@ -22,7 +22,7 @@ export default function ClubSelector({ clubs, onSelect }: ClubSelectorProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Users className="h-4 w-4 text-miami-aqua" aria-hidden="true" />
+        <Users className="h-4 w-4 text-primary" aria-hidden="true" />
         <Label htmlFor="club-select" className="text-sm font-semibold">
           Choisissez votre club
         </Label>
@@ -34,7 +34,7 @@ export default function ClubSelector({ clubs, onSelect }: ClubSelectorProps) {
         id="club-select"
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
-        className="w-full rounded-md border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-miami-aqua/50"
+        className="w-full rounded-md border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         aria-label="Sélectionner un club"
       >
         <option value="" disabled>
@@ -47,7 +47,7 @@ export default function ClubSelector({ clubs, onSelect }: ClubSelectorProps) {
         ))}
       </select>
       <Button
-        variant="miami"
+        variant="gradient"
         size="sm"
         onClick={handleConfirm}
         disabled={!selected}

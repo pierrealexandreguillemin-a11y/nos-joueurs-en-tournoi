@@ -44,10 +44,10 @@ interface PairingRowProps {
 const PairingRow = memo(function PairingRow({ pairing, index }: PairingRowProps) {
   return (
     <TableRow
-      className={index % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-miami-aqua/10 hover:bg-miami-aqua/10'}
+      className={index % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-primary/10 hover:bg-primary/10'}
     >
       <TableCell className="text-center">
-        <span className="text-xl font-bold text-miami-navy">{pairing.board}</span>
+        <span className="text-xl font-bold text-secondary">{pairing.board}</span>
       </TableCell>
       <TableCell className="font-medium">{pairing.clubPlayerName}</TableCell>
       <TableCell className="text-center">
@@ -78,7 +78,7 @@ interface PairingsTableProps {
 export default memo(function PairingsTable({ pairings, pairingsRound }: PairingsTableProps) {
   if (pairings.length === 0) {
     return (
-      <Card className="miami-card text-center py-8">
+      <Card className="glass-card text-center py-8">
         <p className="text-muted-foreground">
           Aucun joueur du club n&apos;est apparié dans cette ronde.
         </p>
@@ -87,7 +87,7 @@ export default memo(function PairingsTable({ pairings, pairingsRound }: Pairings
   }
 
   return (
-    <Card className="miami-card overflow-hidden">
+    <Card className="glass-card overflow-hidden">
       <Table aria-label={`Appariements ronde ${pairingsRound}`}>
         <TableHeader>
           <TableRow>
