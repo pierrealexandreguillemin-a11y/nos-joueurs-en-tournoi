@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nos Joueurs en Tournoi — Liquid Glass (Playground)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,900&display=swap" rel="stylesheet">
+<script>
+(function(){
+  var s=localStorage.getItem('njt-theme');
+  if(s){document.documentElement.dataset.theme=s;return}
+  if(window.matchMedia('(prefers-color-scheme:dark)').matches)
+    document.documentElement.dataset.theme='dark';
+})();
+</script>
+<style>
+/* ================================================================
+   TOKENS — Light
+   ================================================================ */
+:root, [data-theme="light"] {
+  --bg-page: oklch(0.975 0.005 260);
+  --text-1: oklch(0.22 0.03 260);
+  --text-2: oklch(0.5 0.03 260);
+  --text-inv: oklch(1 0 0);
+
+  --accent: oklch(0.546 0.195 263);
+  --accent-hover: oklch(0.488 0.195 264);
+
+  --green: oklch(0.627 0.161 145);
+  --amber: oklch(0.666 0.163 65);
+  --red: oklch(0.577 0.215 27);
+
+  --glass-bg: oklch(1 0 0 / 0.55);
+  --glass-border: oklch(1 0 0 / 0.22);
+  --glass-border-h: oklch(1 0 0 / 0.38);
+  --glass-ref-1: oklch(1 0 0 / 0.14);
+  --glass-ref-2: oklch(1 0 0 / 0.04);
+  --glass-sh-1: oklch(0 0 0 / 0.03);
+  --glass-sh-2: oklch(0 0 0 / 0.05);
+  --glass-inset: oklch(1 0 0 / 0.22);
+  --glass-glow: oklch(0.546 0.195 263 / 0.06);
+
+  --orb-1: oklch(0.65 0.15 250 / 0.08);
+  --orb-2: oklch(0.65 0.12 180 / 0.06);
+  --orb-3: oklch(0.65 0.1 310 / 0.05);
+
+  --input-bg: oklch(1 0 0 / 0.5);
+  --input-bg-f: oklch(1 0 0 / 0.75);
+
+  --row-hover: oklch(0 0 0 / 0.025);
+  --row-stripe: oklch(0 0 0 / 0.025);
+  --row-line: oklch(0 0 0 / 0.05);
+  --total-bg: oklch(0 0 0 / 0.03);
+
+  --noise-o: 0.025;
+  --header-bg: oklch(0.14 0.025 265 / 0.82);
+  --header-border: oklch(1 0 0 / 0.08);
+
+  --font-display: 'Satoshi', 'DM Sans', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+/* ================================================================
+   TOKENS — Dark
+   ================================================================ */
+[data-theme="dark"] {
+  --bg-page: oklch(0.13 0.02 265);
+  --text-1: oklch(0.92 0.005 260);
+  --text-2: oklch(0.6 0.02 260);
+
+  --accent: oklch(0.65 0.2 260);
+  --accent-hover: oklch(0.6 0.2 262);
+
+  --green: oklch(0.7 0.17 145);
+  --amber: oklch(0.72 0.16 65);
+  --red: oklch(0.65 0.2 27);
+
+  --glass-bg: oklch(0.2 0.015 265 / 0.4);
+  --glass-border: oklch(1 0 0 / 0.08);
+  --glass-border-h: oklch(1 0 0 / 0.16);
+  --glass-ref-1: oklch(1 0 0 / 0.06);
+  --glass-ref-2: oklch(1 0 0 / 0.02);
+  --glass-sh-1: oklch(0 0 0 / 0.25);
+  --glass-sh-2: oklch(0 0 0 / 0.18);
+  --glass-inset: oklch(1 0 0 / 0.06);
+  --glass-glow: oklch(0.65 0.2 262 / 0.12);
+
+  --orb-1: oklch(0.45 0.2 250 / 0.14);
+  --orb-2: oklch(0.45 0.15 180 / 0.1);
+  --orb-3: oklch(0.45 0.12 310 / 0.07);
+
+  --input-bg: oklch(0.18 0.015 265 / 0.4);
+  --input-bg-f: oklch(0.22 0.02 265 / 0.5);
+
+  --row-hover: oklch(1 0 0 / 0.03);
+  --row-stripe: oklch(1 0 0 / 0.03);
+  --row-line: oklch(1 0 0 / 0.04);
+  --total-bg: oklch(1 0 0 / 0.03);
+
+  --noise-o: 0.035;
+  --header-bg: oklch(0.1 0.02 265 / 0.88);
+  --header-border: oklch(1 0 0 / 0.06);
+}
+
+/* ================================================================
+   TRANSITIONS — smooth theme switch
+   ================================================================ */
+html[data-theme] { transition: background-color 0.5s ease; }
+body, .glass, .stat-card, .site-header, .btn, .badge, .form-input, .toast,
+.tab, thead th, tbody td, .section-title, .stat-value, .stat-label {
+  transition: background 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.4s ease;
+}
+
+/* ================================================================
+   RESET & BASE
+   ================================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: var(--font-body);
+  color: var(--text-1);
+  background: var(--bg-page);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { min-height: 100vh; position: relative; overflow-x: hidden; }
+
+/* ================================================================
+   BACKGROUND — ambient gradient orbs
+   ================================================================ */
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 55vw; height: 55vw; max-width: 700px; max-height: 700px;
+  background: var(--orb-1);
+  top: -15%; left: -10%;
+  animation: orb-1 28s ease-in-out infinite;
+}
+.orb-2 {
+  width: 45vw; height: 45vw; max-width: 550px; max-height: 550px;
+  background: var(--orb-2);
+  bottom: -10%; right: -8%;
+  animation: orb-2 36s ease-in-out infinite;
+}
+.orb-3 {
+  width: 35vw; height: 35vw; max-width: 420px; max-height: 420px;
+  background: var(--orb-3);
+  top: 40%; right: 15%;
+  animation: orb-3 32s ease-in-out infinite;
+}
+
+@keyframes orb-1 {
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(30px,50px) scale(1.06)}
+  50%{transform:translate(-20px,30px) scale(0.97)}
+  75%{transform:translate(15px,-25px) scale(1.03)}
+}
+@keyframes orb-2 {
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(-40px,-30px) scale(1.04)}
+  50%{transform:translate(30px,-20px) scale(1.07)}
+  75%{transform:translate(-25px,40px) scale(0.96)}
+}
+@keyframes orb-3 {
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(25px,-35px) scale(1.05)}
+  66%{transform:translate(-30px,25px) scale(0.95)}
+}
+
+/* ================================================================
+   NOISE OVERLAY — grain texture
+   ================================================================ */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: var(--noise-o);
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ================================================================
+   GLASS MATERIAL
+   ================================================================ */
+.glass {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 1px 2px var(--glass-sh-1),
+    0 4px 16px var(--glass-sh-2),
+    inset 0 1px 0 var(--glass-inset);
+}
+
+/* Refraction highlight */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--glass-ref-1) 0%,
+    var(--glass-ref-2) 40%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+.glass:hover {
+  border-color: var(--glass-border-h);
+  box-shadow:
+    0 2px 4px var(--glass-sh-1),
+    0 8px 28px var(--glass-sh-2),
+    inset 0 1px 0 var(--glass-inset),
+    0 0 24px var(--glass-glow);
+}
+
+.glass:hover::before { opacity: 1; }
+
+/* Content above refraction layer */
+.glass > * { position: relative; z-index: 1; }
+
+/* ================================================================
+   LAYOUT
+   ================================================================ */
+.page-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ================================================================
+   HEADER — frosted dark glass
+   ================================================================ */
+.site-header {
+  background: var(--header-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--header-border);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-icon {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: 0 0 12px oklch(0.546 0.195 263 / 0.3);
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-inv);
+  letter-spacing: -0.01em;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-club {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: oklch(1 0 0 / 0.08);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: oklch(0.85 0.005 260);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.header-club:hover { background: oklch(1 0 0 / 0.14); }
+
+.header-club-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: oklch(0.765 0.151 163);
+  box-shadow: 0 0 6px oklch(0.765 0.151 163 / 0.5);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 0.08);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  color: oklch(0.85 0.01 260);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s, transform 0.3s;
+  line-height: 1;
+}
+.theme-toggle:hover { background: oklch(1 0 0 / 0.16); transform: rotate(20deg); }
+.theme-toggle svg { width: 18px; height: 18px; }
+
+[data-theme="light"] .sun-icon { display: none; }
+[data-theme="dark"] .moon-icon { display: none; }
+
+/* ================================================================
+   SECTION TITLES
+   ================================================================ */
+.section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 36px 0 20px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* ================================================================
+   STATS CARDS — glass panels
+   ================================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow:
+    0 1px 2px var(--glass-sh-1),
+    0 4px 12px var(--glass-sh-2),
+    inset 0 1px 0 var(--glass-inset);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--glass-ref-1) 0%, var(--glass-ref-2) 40%, transparent 60%);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  border-color: var(--glass-border-h);
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px var(--glass-sh-1),
+    0 8px 24px var(--glass-sh-2),
+    inset 0 1px 0 var(--glass-inset),
+    0 0 20px var(--glass-glow);
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--text-1);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  position: relative;
+}
+
+.stat-change {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.stat-change.positive { color: var(--green); }
+.stat-change.neutral  { color: var(--text-2); }
+
+/* ================================================================
+   BUTTONS
+   ================================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: 0.45; pointer-events: none; }
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-inv);
+  border-color: oklch(from var(--accent) l c h / 0.4);
+  box-shadow: 0 1px 3px oklch(from var(--accent) l c h / 0.25), inset 0 1px 0 oklch(1 0 0 / 0.15);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 2px 10px oklch(from var(--accent) l c h / 0.3), inset 0 1px 0 oklch(1 0 0 / 0.2);
+}
+
+.btn-secondary {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-1);
+  border-color: var(--glass-border);
+}
+.btn-secondary:hover {
+  border-color: var(--glass-border-h);
+  box-shadow: 0 0 12px var(--glass-glow);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+}
+.btn-ghost:hover {
+  background: oklch(from var(--text-1) l c h / 0.06);
+  color: var(--text-1);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: var(--text-inv);
+  border-color: oklch(from var(--red) l c h / 0.4);
+  box-shadow: 0 1px 3px oklch(from var(--red) l c h / 0.25), inset 0 1px 0 oklch(1 0 0 / 0.12);
+}
+.btn-danger:hover {
+  filter: brightness(0.9);
+  box-shadow: 0 2px 10px oklch(from var(--red) l c h / 0.3);
+}
+
+.btn-sm { font-size: 13px; padding: 7px 12px; }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+
+/* ================================================================
+   BADGES — tinted glass pills
+   ================================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 999px;
+  line-height: 1.4;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid;
+}
+
+.badge-default {
+  background: oklch(from var(--text-2) l c h / 0.08);
+  color: var(--text-2);
+  border-color: oklch(from var(--text-2) l c h / 0.1);
+}
+.badge-blue {
+  background: oklch(from var(--accent) l c h / 0.1);
+  color: var(--accent);
+  border-color: oklch(from var(--accent) l c h / 0.15);
+}
+.badge-green {
+  background: oklch(from var(--green) l c h / 0.1);
+  color: var(--green);
+  border-color: oklch(from var(--green) l c h / 0.15);
+}
+.badge-amber {
+  background: oklch(from var(--amber) l c h / 0.1);
+  color: var(--amber);
+  border-color: oklch(from var(--amber) l c h / 0.15);
+}
+.badge-red {
+  background: oklch(from var(--red) l c h / 0.1);
+  color: var(--red);
+  border-color: oklch(from var(--red) l c h / 0.15);
+}
+
+/* ================================================================
+   FORM
+   ================================================================ */
+.form-group { margin-bottom: 20px; }
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 6px;
+}
+
+.form-label .required { color: var(--red); }
+
+.form-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-1);
+  background: var(--input-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.form-input::placeholder { color: var(--text-2); opacity: 0.7; }
+
+.form-input:focus {
+  outline: none;
+  background: var(--input-bg-f);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px oklch(from var(--accent) l c h / 0.12), 0 0 16px oklch(from var(--accent) l c h / 0.06);
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 4px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  margin-top: 24px;
+}
+
+/* ================================================================
+   TABS
+   ================================================================ */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 24px;
+}
+
+.tab {
+  position: relative;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text-1); }
+
+.tab.active { color: var(--accent); }
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px oklch(from var(--accent) l c h / 0.4);
+  border-radius: 1px 1px 0 0;
+}
+
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+
+/* ================================================================
+   TABLE
+   ================================================================ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+thead th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--row-line);
+  vertical-align: middle;
+}
+
+tbody tr { transition: background 0.15s; }
+tbody tr:nth-child(even) { background: var(--row-stripe); }
+tbody tr:hover { background: var(--row-hover); }
+tbody tr:last-child td { border-bottom: none; }
+
+.player-name { font-weight: 600; color: var(--text-1); }
+
+.elo { font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.round-cell { text-align: center; font-variant-numeric: tabular-nums; min-width: 40px; }
+
+.result-win  { color: var(--green); font-weight: 600; }
+.result-draw { color: var(--amber); font-weight: 600; }
+.result-loss { color: var(--red); font-weight: 600; }
+
+.total-row { background: var(--total-bg); font-weight: 600; }
+.total-row td { border-bottom: none; border-top: 1px solid var(--glass-border); }
+
+/* ================================================================
+   CARD BODY
+   ================================================================ */
+.card-body { padding: 24px; }
+
+/* ================================================================
+   TOAST — glass notification
+   ================================================================ */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px var(--glass-sh-2), inset 0 1px 0 var(--glass-inset);
+  font-size: 14px;
+  color: var(--text-1);
+  min-width: 280px;
+  max-width: 400px;
+  animation: toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.toast-success .toast-icon { background: oklch(from var(--green) l c h / 0.15); color: var(--green); }
+.toast-error   .toast-icon { background: oklch(from var(--red) l c h / 0.15); color: var(--red); }
+.toast-info    .toast-icon { background: oklch(from var(--accent) l c h / 0.15); color: var(--accent); }
+
+.toast.hiding { animation: toast-out 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(40px) scale(0.95); filter: blur(4px); }
+  to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(40px); }
+}
+
+/* ================================================================
+   LAST UPDATE
+   ================================================================ */
+.last-update {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 8px;
+}
+
+.update-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px oklch(from var(--green) l c h / 0.5);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ================================================================
+   REFRESH & SPIN
+   ================================================================ */
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ================================================================
+   SHOWCASE
+   ================================================================ */
+.showcase-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.showcase-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  margin-bottom: 20px;
+}
+
+.showcase-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* ================================================================
+   STAGGERED ENTRANCE — blur reveal
+   ================================================================ */
+.fade-up { animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); filter: blur(8px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.12s; }
+.delay-3 { animation-delay: 0.2s; }
+.delay-4 { animation-delay: 0.28s; }
+.delay-5 { animation-delay: 0.35s; }
+
+/* ================================================================
+   PALETTE SWATCHES
+   ================================================================ */
+.palette-strip { display: flex; gap: 4px; margin-top: 8px; }
+
+.palette-swatch {
+  width: 40px; height: 24px;
+  border-radius: 6px;
+  border: 1px solid oklch(from var(--text-1) l c h / 0.08);
+}
+
+.palette-swatch-label {
+  font-size: 10px;
+  color: var(--text-2);
+  text-align: center;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.palette-swatch.swatch-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: var(--glass-border);
+}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .header-title { font-size: 15px; }
+  .section-title { font-size: 20px; }
+  .stat-value { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background orbs -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Noise grain overlay -->
+<div class="noise-overlay" aria-hidden="true"></div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-icon" aria-hidden="true">&#9822;</div>
+      <span class="header-title">Nos Joueurs en Tournoi</span>
+    </div>
+    <nav class="header-nav" aria-label="Actions principales">
+      <div class="header-club" role="button" tabindex="0" aria-label="Club actif">
+        <span class="header-club-dot"></span>
+        Échiquier Parisien
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Basculer thème clair/sombre">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<div class="page-container">
+
+  <!-- STATS -->
+  <div class="section-bar fade-up delay-1">
+    <div>
+      <h2 class="section-title">Championnat Départemental 75</h2>
+      <p class="section-subtitle">Open A &middot; Ronde 4/7</p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="refreshDemo(this)">
+      <span class="refresh-icon">&#8635;</span> Actualiser
+    </button>
+  </div>
+
+  <div class="stats-grid fade-up delay-2">
+    <div class="stat-card">
+      <div class="stat-label">Joueurs du club</div>
+      <div class="stat-value">5</div>
+      <div class="stat-change neutral">sur 42 participants</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Score total</div>
+      <div class="stat-value">12.5</div>
+      <div class="stat-change positive">&#9650; +3.5 cette ronde</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Moyenne</div>
+      <div class="stat-value">2.5</div>
+      <div class="stat-change neutral">pts / joueur</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Elo moyen</div>
+      <div class="stat-value">1 487</div>
+      <div class="stat-change neutral">club</div>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="glass fade-up delay-3" style="border-radius: var(--radius-xl);">
+    <div class="tabs" role="tablist">
+      <button class="tab active" role="tab" aria-selected="true" onclick="switchTab(event)">Résultats</button>
+      <button class="tab" role="tab" aria-selected="false" onclick="switchTab(event)">Appariements</button>
+    </div>
+
+    <div class="card-body" style="padding-top: 0;">
+      <div class="last-update">
+        <span class="update-dot"></span>
+        Dernière mise à jour : 07/03/2026 14:23
+      </div>
+
+      <div class="table-wrap" style="margin-top: 16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Joueur</th><th>Elo</th>
+              <th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><div class="player-name">MARTIN Alice</div></td>
+              <td class="elo">1620</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-draw">&frac12;</td>
+              <td class="round-cell result-win">1</td>
+              <td><strong>3.5</strong></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><div class="player-name">DURAND Bob</div></td>
+              <td class="elo">1540</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-loss">0</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-draw">&frac12;</td>
+              <td><strong>2.5</strong></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><div class="player-name">PETIT Claire</div></td>
+              <td class="elo">1485</td>
+              <td class="round-cell result-draw">&frac12;</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-loss">0</td>
+              <td class="round-cell result-win">1</td>
+              <td><strong>2.5</strong></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><div class="player-name">MOREAU David</div></td>
+              <td class="elo">1410</td>
+              <td class="round-cell result-loss">0</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-loss">0</td>
+              <td><strong>2.0</strong></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><div class="player-name">LEROY Emma</div></td>
+              <td class="elo">1380</td>
+              <td class="round-cell result-win">1</td>
+              <td class="round-cell result-loss">0</td>
+              <td class="round-cell result-draw">&frac12;</td>
+              <td class="round-cell result-draw">&frac12;</td>
+              <td><strong>2.0</strong></td>
+            </tr>
+            <tr class="total-row">
+              <td></td><td>Total club</td><td></td>
+              <td class="round-cell">3.5</td>
+              <td class="round-cell">3</td>
+              <td class="round-cell">3</td>
+              <td class="round-cell">3</td>
+              <td><strong>12.5</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="section-bar fade-up delay-4" style="margin-top: 48px;">
+    <div>
+      <h2 class="section-title">Créer un événement</h2>
+      <p class="section-subtitle">Ajoutez un tournoi FFE à suivre</p>
+    </div>
+  </div>
+
+  <div class="glass fade-up delay-5" style="border-radius: var(--radius-xl);">
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label" for="eventName">Nom de l'événement <span class="required">*</span></label>
+        <input class="form-input" id="eventName" type="text" placeholder="ex : Championnat Départemental 75">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="clubName">Nom du club (optionnel)</label>
+        <input class="form-input" id="clubName" type="text" placeholder="ex : Échiquier Parisien">
+        <p class="form-hint">Si vide, les clubs seront détectés depuis la page FFE</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tournois <span class="required">*</span></label>
+        <div class="form-row">
+          <input class="form-input" type="text" placeholder="Nom (ex : Open A)">
+          <input class="form-input" type="text" placeholder="URL FFE du tournoi">
+        </div>
+        <p class="form-hint" style="margin-top: 8px;">
+          <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 500;" onclick="event.preventDefault(); showToast('info', 'Ajout d\'un tournoi supplémentaire')">+ Ajouter un tournoi</a>
+        </p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="showToast('info', 'Création annulée')">Annuler</button>
+        <button class="btn btn-primary" onclick="showToast('success', 'Événement créé avec succès !')">Créer l'événement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOWCASE -->
+  <div class="showcase-section fade-up delay-5">
+    <h3 class="showcase-title">Composants UI — Liquid Glass</h3>
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 20px;">
+      Design system OKLCH + CSS relative colors + backdrop-filter glass material.
+    </p>
+
+    <div style="margin-bottom: 28px;">
+      <div class="showcase-title" style="font-size: 11px; margin-bottom: 12px;">Boutons</div>
+      <div class="showcase-row">
+        <button class="btn btn-primary">Primaire</button>
+        <button class="btn btn-secondary">Secondaire</button>
+        <button class="btn btn-ghost">Ghost</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-primary" disabled>Désactivé</button>
+        <button class="btn btn-primary btn-sm">Petit</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 28px;">
+      <div class="showcase-title" style="font-size: 11px; margin-bottom: 12px;">Badges</div>
+      <div class="showcase-row">
+        <span class="badge badge-default">Défaut</span>
+        <span class="badge badge-blue">Info</span>
+        <span class="badge badge-green">&#10003; Succès</span>
+        <span class="badge badge-amber">&#9888; Attention</span>
+        <span class="badge badge-red">Erreur</span>
+        <span class="badge badge-blue">5 joueurs</span>
+        <span class="badge badge-default">Ronde 4</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 28px;">
+      <div class="showcase-title" style="font-size: 11px; margin-bottom: 12px;">Notifications (toasts)</div>
+      <div class="showcase-row">
+        <button class="btn btn-secondary btn-sm" onclick="showToast('success', 'Événement importé avec succès !')">Toast succes</button>
+        <button class="btn btn-secondary btn-sm" onclick="showToast('error', 'Lien de partage invalide')">Toast erreur</button>
+        <button class="btn btn-secondary btn-sm" onclick="showToast('info', 'Mise à jour en cours...')">Toast info</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 28px;">
+      <div class="showcase-title" style="font-size: 11px; margin-bottom: 12px;">Palette (OKLCH) &amp; Glass</div>
+      <div class="palette-strip">
+        <div>
+          <div class="palette-swatch swatch-glass"></div>
+          <div class="palette-swatch-label">Glass</div>
+        </div>
+        <div style="margin-left: 8px;">
+          <div class="palette-swatch" style="background: var(--accent);"></div>
+          <div class="palette-swatch-label">Accent</div>
+        </div>
+        <div>
+          <div class="palette-swatch" style="background: var(--accent-hover);"></div>
+          <div class="palette-swatch-label">Hover</div>
+        </div>
+        <div style="margin-left: 8px;">
+          <div class="palette-swatch" style="background: var(--green);"></div>
+          <div class="palette-swatch-label">Win</div>
+        </div>
+        <div>
+          <div class="palette-swatch" style="background: var(--amber);"></div>
+          <div class="palette-swatch-label">Draw</div>
+        </div>
+        <div>
+          <div class="palette-swatch" style="background: var(--red);"></div>
+          <div class="palette-swatch-label">Loss</div>
+        </div>
+        <div style="margin-left: 8px;">
+          <div class="palette-swatch" style="background: var(--text-1);"></div>
+          <div class="palette-swatch-label">Text 1</div>
+        </div>
+        <div>
+          <div class="palette-swatch" style="background: var(--text-2);"></div>
+          <div class="palette-swatch-label">Text 2</div>
+        </div>
+        <div>
+          <div class="palette-swatch" style="background: var(--bg-page);"></div>
+          <div class="palette-swatch-label">Page</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="showcase-title" style="font-size: 11px; margin-bottom: 12px;">Typographie</div>
+      <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+        <div>
+          <p style="font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--text-1); letter-spacing: -0.03em; line-height: 1.2;">Satoshi 700</p>
+          <p style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Titres, valeurs statistiques</p>
+        </div>
+        <div>
+          <p style="font-family: var(--font-display); font-weight: 600; font-size: 20px; color: var(--text-1);">Satoshi 600</p>
+          <p style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Sous-titres, card titles</p>
+        </div>
+        <div>
+          <p style="font-family: var(--font-body); font-size: 15px; color: var(--text-1);">DM Sans 400 &mdash; corps de texte courant, labels, descriptions.</p>
+          <p style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Body, UI, formulaires</p>
+        </div>
+        <div>
+          <p style="font-family: var(--font-body); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2);">DM Sans 600 uppercase</p>
+          <p style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Labels, en-têtes tableaux</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+function toggleTheme() {
+  var t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('njt-theme', t);
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+  if (!localStorage.getItem('njt-theme'))
+    document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
+});
+
+function showToast(type, message) {
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  var icons = { success: '\u2713', error: '\u2717', info: 'i' };
+  t.innerHTML = '<span class="toast-icon">' + icons[type] + '</span><span>' + message + '</span>';
+  c.appendChild(t);
+  setTimeout(function() {
+    t.classList.add('hiding');
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+  }, 3000);
+}
+
+function switchTab(event) {
+  var tabs = event.target.parentNode.querySelectorAll('.tab');
+  tabs.forEach(function(tab) {
+    tab.classList.remove('active');
+    tab.setAttribute('aria-selected', 'false');
+  });
+  event.target.classList.add('active');
+  event.target.setAttribute('aria-selected', 'true');
+}
+
+function refreshDemo(btn) {
+  var icon = btn.querySelector('.refresh-icon');
+  icon.classList.add('spin');
+  btn.disabled = true;
+  setTimeout(function() {
+    icon.classList.remove('spin');
+    btn.disabled = false;
+    showToast('success', 'Résultats mis à jour');
+  }, 1200);
+}
+</script>
+
+</body>
+</html>
