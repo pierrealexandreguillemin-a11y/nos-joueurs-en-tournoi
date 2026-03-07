@@ -1,7 +1,8 @@
 // Next.js layout: metadata/viewport exports alongside component are standard
 /* eslint-disable react-refresh/only-export-components */
 import type { Metadata, Viewport } from 'next';
-import { Audiowide, Inter } from 'next/font/google';
+import { Audiowide, Inter, DM_Sans } from 'next/font/google';
+import localFont from 'next/font/local';
 import '../src/styles/globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { AnimationsProvider } from '@/contexts/AnimationsContext';
@@ -22,6 +23,26 @@ const inter = Inter({
   display: 'swap',
   variable: '--font-inter',
   preload: true,
+  fallback: ['system-ui', 'arial'],
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-dm-sans',
+  preload: false,
+  fallback: ['system-ui', 'arial'],
+});
+
+const satoshi = localFont({
+  src: [
+    { path: '../src/fonts/satoshi-400.woff2', weight: '400', style: 'normal' },
+    { path: '../src/fonts/satoshi-500.woff2', weight: '500', style: 'normal' },
+    { path: '../src/fonts/satoshi-700.woff2', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-satoshi',
+  preload: false,
   fallback: ['system-ui', 'arial'],
 });
 
@@ -96,7 +117,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${audiowide.variable}`} data-theme="miami" data-mode="dark">
+    <html lang="fr" className={`${inter.variable} ${audiowide.variable} ${dmSans.variable} ${satoshi.variable}`} data-theme="miami" data-mode="dark">
       <head>
         <script
           dangerouslySetInnerHTML={{

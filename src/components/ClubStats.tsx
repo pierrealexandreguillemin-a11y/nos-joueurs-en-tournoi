@@ -14,7 +14,7 @@ export default function ClubStats({ eventName, clubName, players, currentRound }
   const stats = calculateClubStats(players, currentRound);
 
   return (
-    <div className="space-y-2 font-audiowide">
+    <div className="space-y-2 font-display">
       <div className="flex items-center gap-2 flex-wrap">
         <h2 className="text-lg font-semibold">
           Stats {clubName || 'Club'} - Ronde {stats.round}

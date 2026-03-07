@@ -15,9 +15,15 @@ import ShareButton from '@/components/ShareButton';
 import AnimationsToggle from '@/components/AnimationsToggle';
 import ClubOnboarding from '@/components/ClubOnboarding';
 import ClubHeader from '@/components/ClubHeader';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 const DuplicateEventDialog = NextDynamic(() => import('@/components/DuplicateEventDialog'), { ssr: false });
+const AmbientOrbs = NextDynamic(() => import('@/components/AmbientOrbs'), {
+  ssr: false,
+  loading: () => null,
+});
 import { useAnimations } from '@/contexts/AnimationsContext';
 import { useClub } from '@/contexts/ClubContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Toaster } from 'sonner';
 import type { Event } from '@/types';
 import type { ExportedEvent } from '@/lib/storage';
@@ -43,7 +49,7 @@ function LoadingScreen() {
     <div className="min-h-screen p-4 md:p-8 relative overflow-hidden page-background" role="status" aria-live="polite">
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-white text-xl">Chargement...</div>
+          <div className="text-foreground text-xl">Chargement...</div>
         </div>
       </div>
     </div>
@@ -57,6 +63,8 @@ interface PageHeaderProps {
 }
 
 function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeaderProps) {
+  const { theme } = useTheme();
+
   return (
     <header className="mb-6">
       <div className="glass-card p-6">
@@ -88,7 +96,8 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
           </div>
           <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-end" aria-label="Actions principales">
             <ClubHeader />
-            <AnimationsToggle />
+            <ThemeSwitcher />
+            {theme === 'miami' && <AnimationsToggle />}
             <ShareButton />
             <EventsManager
               currentEventId={currentEvent?.id || ''}
@@ -232,6 +241,7 @@ function useHomePage() {
 
 export default function Home() {
   const { animationsEnabled } = useAnimations();
+  const { theme } = useTheme();
   const {
     isLoaded, identity, currentEvent, showEventForm, duplicateDialogOpen,
     pendingImport, mounted, setShowEventForm, setCurrentEvent,
@@ -242,19 +252,22 @@ export default function Home() {
   if (!identity) return <ClubOnboarding />;
   if (!mounted) return <LoadingScreen />;
 
+  const isMiami = theme === 'miami';
+
   return (
     <div className="min-h-screen p-4 md:p-8 relative overflow-hidden page-background">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-secondary focus:rounded">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-popover focus:text-secondary focus:rounded">
         Aller au contenu principal
       </a>
       <Toaster position="top-right" richColors />
-      {animationsEnabled && (
+      {animationsEnabled && isMiami && (
         <>
           <HalftoneWaves />
           <BackgroundPaths />
           <FloatingParticles density={30} speed={1} />
         </>
       )}
+      {!isMiami && <AmbientOrbs />}
       <div className="max-w-7xl mx-auto relative z-10">
         <PageHeader
           currentEvent={currentEvent}

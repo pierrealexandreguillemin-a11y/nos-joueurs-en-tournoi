@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -52,6 +51,10 @@ export default {
           DEFAULT: "oklch(var(--card))",
           foreground: "oklch(var(--card-foreground))",
         },
+      },
+      fontFamily: {
+        display: 'var(--font-display)',
+        body: 'var(--font-body)',
       },
       borderRadius: {
         lg: "var(--radius)",
