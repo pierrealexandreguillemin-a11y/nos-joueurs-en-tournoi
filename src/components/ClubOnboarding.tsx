@@ -39,13 +39,13 @@ export default function ClubOnboarding() {
         <h1 className="text-2xl font-bold text-center mb-2 cyberpunk-title">
           NOS JOUEURS EN TOURNOI
         </h1>
-        <p className="text-center text-white/80 mb-6">
+        <p className="text-center text-foreground/80 mb-6">
           Identifiez votre club pour commencer
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="clubName" className="text-white font-semibold">
+            <Label htmlFor="clubName" className="text-foreground font-semibold">
               Nom de votre club
             </Label>
             <Input
@@ -57,17 +57,17 @@ export default function ClubOnboarding() {
                 setError('');
               }}
               placeholder="Ex : Hay Chess, Marseille-Echecs..."
-              className="mt-1 bg-white/90 border-white/30 text-secondary placeholder:text-secondary/50"
+              className="mt-1 bg-popover/90 border-foreground/30 text-popover-foreground placeholder:text-popover-foreground/50"
               autoFocus
             />
             {error && (
-              <p className="text-red-300 text-sm mt-1">{error}</p>
+              <p className="text-destructive text-sm mt-1">{error}</p>
             )}
           </div>
 
           {slug && (
-            <div className="text-sm text-white/70">
-              Identifiant : <code className="bg-white/20 px-2 py-0.5 rounded text-white">{slug}</code>
+            <div className="text-sm text-foreground/70">
+              Identifiant : <code className="bg-foreground/20 px-2 py-0.5 rounded text-foreground">{slug}</code>
             </div>
           )}
 

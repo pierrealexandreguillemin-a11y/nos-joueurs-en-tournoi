@@ -64,7 +64,7 @@ function EventCard({ event, isCurrent, onSwitch, onExport, onDelete, onCloudUplo
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-bold text-lg text-primary">{event.name}</h3>
             {isCurrent && (
-              <Badge className="bg-primary text-white">
+              <Badge className="bg-primary text-primary-foreground">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Actif
               </Badge>
@@ -144,7 +144,7 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
       <Button
         variant="ghost"
         size="icon"
-        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
         onClick={(e) => {
           e.stopPropagation();
           onDelete(event.id);
@@ -228,7 +228,7 @@ function DeleteConfirmDialog({ open, onOpenChange, onConfirm }: DeleteConfirmDia
           <AlertDialogCancel className="border-secondary/30">Annuler</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             Supprimer
           </AlertDialogAction>

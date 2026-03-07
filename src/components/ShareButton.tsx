@@ -19,7 +19,7 @@ const APP_URL = 'https://nos-joueurs-en-tournoi.vercel.app';
 function QRCodeCard() {
   return (
     <Card className="p-6 glass-surface flex flex-col items-center gap-4">
-      <div className="bg-white p-4 rounded-lg text-secondary">
+      <div className="bg-popover p-4 rounded-lg text-secondary">
         <QRCodeSVG
           value={APP_URL}
           size={200}
@@ -39,7 +39,7 @@ function CopyUrlCard({ copied, onCopy }: { copied: boolean; onCopy: () => void }
   return (
     <Card className="p-4 glass-surface">
       <div className="flex items-center gap-2">
-        <code className="flex-1 text-sm text-secondary bg-white/50 px-3 py-2 rounded">
+        <code className="flex-1 text-sm text-secondary bg-popover/50 px-3 py-2 rounded">
           {APP_URL}
         </code>
         <Button

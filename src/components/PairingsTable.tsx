@@ -18,13 +18,13 @@ interface ColorBadgeProps {
 const ColorBadge = memo(function ColorBadge({ color }: ColorBadgeProps) {
   if (color === 'white') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-white text-black border border-gray-300 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-400">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-popover text-popover-foreground border border-border">
         Blancs
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-900 text-white dark:bg-gray-700 dark:border dark:border-gray-600">
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">
       Noirs
     </span>
   );
@@ -44,7 +44,7 @@ interface PairingRowProps {
 const PairingRow = memo(function PairingRow({ pairing, index }: PairingRowProps) {
   return (
     <TableRow
-      className={index % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-primary/10 hover:bg-primary/10'}
+      className={index % 2 === 0 ? 'bg-foreground/10 hover:bg-foreground/10' : 'bg-primary/10 hover:bg-primary/10'}
     >
       <TableCell className="text-center">
         <span className="text-xl font-bold text-secondary">{pairing.board}</span>

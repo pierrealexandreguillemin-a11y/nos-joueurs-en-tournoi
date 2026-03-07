@@ -19,7 +19,7 @@ const ViewToggle = memo(function ViewToggle({
   showBadge = false,
 }: ViewToggleProps) {
   const baseClass = `relative px-3 py-1.5 text-sm font-medium rounded-md transition-all ${FOCUS_RING}`;
-  const activeClass = 'bg-gradient-to-r from-primary to-secondary text-white shadow-sm';
+  const activeClass = 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-sm';
   const inactiveClass = 'text-muted-foreground hover:text-foreground';
   const disabledClass = 'opacity-50 cursor-not-allowed';
 

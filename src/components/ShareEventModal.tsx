@@ -34,9 +34,9 @@ function QRCodeSection({ shareData, qrSize, qrCodeTooBig }: {
 }) {
   if (qrCodeTooBig) {
     return (
-      <Alert className="border-red-500/50 bg-red-50">
-        <AlertCircle className="h-4 w-4 text-red-600" />
-        <AlertDescription className="text-red-800 text-sm">
+      <Alert className="border-destructive/50 bg-destructive/10">
+        <AlertCircle className="h-4 w-4 text-destructive" />
+        <AlertDescription className="text-destructive text-sm">
           <strong>Événement trop volumineux pour un QR code</strong>
           <br />
           Utilisez le bouton &quot;Export&quot; (téléchargement) pour partager cet événement via fichier JSON.
@@ -47,7 +47,7 @@ function QRCodeSection({ shareData, qrSize, qrCodeTooBig }: {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 p-4 sm:p-6 rounded-lg bg-white">
+    <div className="flex flex-col items-center gap-3 p-4 sm:p-6 rounded-lg bg-popover">
       <div className="flex items-center justify-center">
         <QRCodeSVG
           value={shareData.url}

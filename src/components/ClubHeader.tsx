@@ -48,7 +48,7 @@ export default function ClubHeader() {
   return (
     <div className="relative">
       <Badge
-        className="cursor-pointer bg-primary/20 text-white border-primary/40 hover:bg-primary/30 transition-colors px-3 py-1"
+        className="cursor-pointer bg-primary/20 text-foreground border-primary/40 hover:bg-primary/30 transition-colors px-3 py-1"
         onClick={() => setMenuOpen(!menuOpen)}
         onKeyDown={handleBadgeKeyDown}
         role="button"
@@ -72,7 +72,7 @@ export default function ClubHeader() {
               <Copy className="w-3.5 h-3.5 mr-2" aria-hidden="true" />
               Copier l&apos;identifiant
             </Button>
-            <Button variant="ghost" size="sm" role="menuitem" className="w-full justify-start rounded-none text-red-600 hover:bg-red-50" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}>
+            <Button variant="ghost" size="sm" role="menuitem" className="w-full justify-start rounded-none text-destructive hover:bg-destructive/10" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }}>
               <LogOut className="w-3.5 h-3.5 mr-2" aria-hidden="true" />
               Changer de club
             </Button>
@@ -90,7 +90,7 @@ export default function ClubHeader() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { clearClub(); setConfirmOpen(false); }} className="bg-red-600 hover:bg-red-700 text-white">
+            <AlertDialogAction onClick={() => { clearClub(); setConfirmOpen(false); }} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               Confirmer
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -33,7 +33,7 @@ const TabsTrigger = React.forwardRef<
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
       "data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary",
-      "data-[state=active]:text-white data-[state=active]:shadow-lg",
+      "data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg",
       "hover:text-primary",
       className
     )}

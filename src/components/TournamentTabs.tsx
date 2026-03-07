@@ -250,8 +250,8 @@ function TournamentPanel({
       )}
 
       {error && loading === null && (
-        <Card className="bg-red-50 border-red-200 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <Card className="bg-destructive/10 border-destructive/30 p-4">
+          <p className="text-sm text-destructive">{error}</p>
         </Card>
       )}
 

@@ -42,7 +42,7 @@ export default function DuplicateEventDialog({
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
           <AlertDialogCancel
             onClick={onCancel}
-            className="glass-surface hover:bg-white/20 border-white/30"
+            className="glass-surface hover:bg-foreground/20 border-foreground/30"
           >
             Annuler
           </AlertDialogCancel>
@@ -54,7 +54,7 @@ export default function DuplicateEventDialog({
           </AlertDialogAction>
           <AlertDialogAction
             onClick={onReplace}
-            className="bg-red-600 hover:bg-red-700 text-white border-red-700"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive"
           >
             Remplacer l&apos;existant
           </AlertDialogAction>

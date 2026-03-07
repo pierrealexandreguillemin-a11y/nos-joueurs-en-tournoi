@@ -25,6 +25,10 @@
   --glass-bg-opacity-card: 0.12;
   --glass-border-opacity: 0.12;
   --glass-border-opacity-card: 0.18;
+  --glass-inset-opacity: 0.15;
+  --glass-inset-opacity-card: 0.25;
+  --glass-shadow-opacity: 0.08;
+  --glass-shadow-opacity-card: 0.15;
 }
 
 /* Mode: Dark — lightness values */
@@ -50,36 +54,36 @@
   --ring-l: 0.5890;
 }
 
-/* Composition: assembles L + C + H into semantic tokens */
-:root {
-  /* Chromatic tokens: L from mode, C+H from theme */
-  --primary: var(--primary-l) var(--primary-c) var(--primary-h);
-  --secondary: var(--secondary-l) var(--secondary-c) var(--secondary-h);
-  --accent: var(--accent-l) var(--accent-c) var(--accent-h);
-  --destructive: var(--destructive-l) var(--destructive-c) var(--destructive-h);
-  --ring: var(--ring-l) var(--primary-c) var(--primary-h);
-  /* Near-achromatic: L from mode, C+H from theme neutral */
-  --background: var(--bg-l) var(--secondary-c) var(--secondary-h);
-  --muted: var(--muted-l) var(--muted-c) var(--muted-h);
-  --muted-foreground: var(--muted-fg-l) var(--muted-fg-c) var(--muted-fg-h);
-  --card: var(--card-l) var(--muted-c) var(--muted-h);
-  --border: var(--border-l) var(--muted-fg-c) var(--muted-fg-h);
-  --input: var(--input-l) var(--muted-fg-c) var(--muted-fg-h);
-  --popover-foreground: var(--popover-fg-l) var(--secondary-c) var(--secondary-h);
-  /* Pure achromatic: L from mode, C=0 H=0 */
-  --foreground: var(--fg-l) 0 0;
-  --primary-foreground: var(--primary-fg-l) 0 0;
-  --secondary-foreground: var(--secondary-fg-l) 0 0;
-  --accent-foreground: var(--accent-fg-l) 0 0;
-  --destructive-foreground: var(--destructive-fg-l) 0 0;
-  --card-foreground: var(--card-fg-l) 0 0;
-  --popover: var(--popover-l) 0 0;
-  /* Layout */
-  --radius: 0.75rem;
-}
-
-/* Base styles */
+/* Base styles + Composition (in @layer base for lower specificity than theme/mode selectors) */
 @layer base {
+  /* Composition: assembles L + C + H into semantic tokens */
+  :root {
+    /* Chromatic tokens: L from mode, C+H from theme */
+    --primary: var(--primary-l) var(--primary-c) var(--primary-h);
+    --secondary: var(--secondary-l) var(--secondary-c) var(--secondary-h);
+    --accent: var(--accent-l) var(--accent-c) var(--accent-h);
+    --destructive: var(--destructive-l) var(--destructive-c) var(--destructive-h);
+    --ring: var(--ring-l) var(--primary-c) var(--primary-h);
+    /* Near-achromatic: L from mode, C+H from theme neutral */
+    --background: var(--bg-l) var(--secondary-c) var(--secondary-h);
+    --muted: var(--muted-l) var(--muted-c) var(--muted-h);
+    --muted-foreground: var(--muted-fg-l) var(--muted-fg-c) var(--muted-fg-h);
+    --card: var(--card-l) var(--muted-c) var(--muted-h);
+    --border: var(--border-l) var(--muted-fg-c) var(--muted-fg-h);
+    --input: var(--input-l) var(--muted-fg-c) var(--muted-fg-h);
+    --popover-foreground: var(--popover-fg-l) var(--secondary-c) var(--secondary-h);
+    /* Pure achromatic: L from mode, C=0 H=0 */
+    --foreground: var(--fg-l) 0 0;
+    --primary-foreground: var(--primary-fg-l) 0 0;
+    --secondary-foreground: var(--secondary-fg-l) 0 0;
+    --accent-foreground: var(--accent-fg-l) 0 0;
+    --destructive-foreground: var(--destructive-fg-l) 0 0;
+    --card-foreground: var(--card-fg-l) 0 0;
+    --popover: var(--popover-l) 0 0;
+    /* Layout */
+    --radius: 0.75rem;
+  }
+
   html {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   }
@@ -88,21 +92,22 @@
     @apply antialiased;
   }
 
-  /* Scrollbar styles */
+  /* Scrollbar styles — uses semantic tokens */
   ::-webkit-scrollbar {
     width: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100;
+    background: oklch(var(--muted));
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 rounded;
+    background: oklch(var(--muted-foreground));
+    border-radius: var(--radius);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500;
+    background: oklch(var(--border));
   }
 }
 
@@ -135,13 +140,13 @@
   }
 }
 
-/* Glassmorphism Utilities — parameterized by theme */
+/* Glassmorphism Utilities — fully parameterized by theme */
 .glass-surface {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  background: rgba(255, 255, 255, var(--glass-bg-opacity));
-  border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
+  background: oklch(var(--foreground) / var(--glass-bg-opacity));
+  border: 1px solid oklch(var(--foreground) / var(--glass-border-opacity));
+  box-shadow: inset 0 1px 0 oklch(var(--foreground) / var(--glass-inset-opacity)), 0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity));
 }
 
 /* Glass Card — visible opacity */
@@ -150,18 +155,18 @@
   padding: 1.5rem;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  background: rgba(255, 255, 255, var(--glass-bg-opacity-card));
-  border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity-card));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15);
+  background: oklch(var(--foreground) / var(--glass-bg-opacity-card));
+  border: 1px solid oklch(var(--foreground) / var(--glass-border-opacity-card));
+  box-shadow: inset 0 1px 0 oklch(var(--foreground) / var(--glass-inset-opacity-card)), 0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card));
 }
 
-/* Menu dropdown */
+/* Menu dropdown — uses semantic popover token */
 .menu-dropdown {
-  background: rgba(255, 255, 255, 0.95);
+  background: oklch(var(--popover) / 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid oklch(var(--primary) / 0.3);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.15);
 }
 
 /* Page background — uses semantic tokens */

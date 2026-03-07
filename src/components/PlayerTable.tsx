@@ -138,7 +138,7 @@ interface PlayerRowProps {
 const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, playerValidation, tournamentId, onValidationChange }: PlayerRowProps) {
   return (
     <TableRow
-      className={playerIndex % 2 === 0 ? 'bg-white/10 hover:bg-white/10' : 'bg-primary/3 hover:bg-primary/3'}
+      className={playerIndex % 2 === 0 ? 'bg-foreground/10 hover:bg-foreground/10' : 'bg-primary/3 hover:bg-primary/3'}
     >
       <TableCell className="font-medium">{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
