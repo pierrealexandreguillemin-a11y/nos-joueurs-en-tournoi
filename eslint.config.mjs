@@ -81,7 +81,7 @@ export default [
 
   // ── Test files overrides ──────────────────────────────────────────────
   {
-    files: ['**/*.test.*', '**/__tests__/**'],
+    files: ['**/*.test.*', '**/__tests__/**', '**/*.e2e.*'],
     rules: {
       'max-lines-per-function': 'off',
       'sonarjs/no-duplicate-string': 'off',

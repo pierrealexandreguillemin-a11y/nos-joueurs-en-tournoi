@@ -77,7 +77,7 @@ Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 | `sonarjs/no-duplicate-string` | error | ISO 5055 Maintainability |
 | `no-console` | warn/error only | ISO 5055 Reliability |
 
-**Overrides tests** : `max-lines-per-function` et `no-duplicate-string` desactives dans `*.test.*`.
+**Overrides tests** : `max-lines-per-function` et `no-duplicate-string` desactives dans `*.test.*`, `__tests__/**`, `*.e2e.*`.
 
 ## Tests
 
@@ -86,6 +86,18 @@ Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 - Vitest 4 + jsdom + Testing Library
 - Setup : `vitest.setup.ts` (localStorage polyfill, jest-dom matchers)
 - Config : `vitest.config.ts` (alias `@/`, coverage v8)
+- E2E : `vitest.config.e2e.ts` (Puppeteer, 30s timeout, 120s hook timeout)
+
+### E2E (e2e/)
+
+- **Framework** : Vitest + Puppeteer (pas Playwright)
+- **Config** : `vitest.config.e2e.ts`, run via `npx vitest run --config vitest.config.e2e.ts`
+- **Target** : deployed app (`E2E_BASE_URL` ou `https://nos-joueurs-en-tournoi.vercel.app`)
+- **Helpers** : `e2e/helpers.ts` (`launchBrowser`, `freshVisit`, `typeInto`, `waitForText`)
+- **Mock FFE** : `refresh-results.e2e.ts` utilise `page.setRequestInterception(true)` pour mocker `/api/scrape`
+- **Lighthouse** : `lighthouse.e2e.ts` utilise `chrome-launcher` + `lighthouse` (seuils : perf 40, a11y 80, bp 80, seo 85)
+- **Accessibilite** : `accessibility.e2e.ts` utilise `@axe-core/puppeteer` (WCAG 2.1 AA)
+- **Toasts Sonner** : `innerText` ne capture pas les toasts Sonner (position fixed) ; utiliser `[data-sonner-toast]` selector ou `textContent`
 
 ### Conventions
 
@@ -139,7 +151,7 @@ test(scope): description     # Ajout/modification tests
 3. `next build` (production)
 4. `jscpd --threshold 5` (duplication)
 5. `npm audit` (0 critical)
-6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (466+ tests, dot reporter pour eviter stdout overflow Windows)
+6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (534+ tests, dot reporter pour eviter stdout overflow Windows)
 
 **Tout push qui echoue un gate est bloque.**
 

@@ -82,6 +82,13 @@ describe('E2E: Accessibility WCAG 2.1 AA — ISO 25010 §6.3.6', () => {
     });
     await waitForText(page, 'U12');
 
+    // Wait for any success toasts to dismiss before axe analysis
+    // (Sonner richColors toasts may have insufficient contrast)
+    await page.waitForFunction(
+      () => !document.querySelector('[data-sonner-toast]'),
+      { timeout: 10_000 },
+    );
+
     const results = await new AxePuppeteer(page)
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze();

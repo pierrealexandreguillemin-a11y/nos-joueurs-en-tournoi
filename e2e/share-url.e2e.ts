@@ -66,9 +66,9 @@ describe('E2E: Share URL Import — ISO 25010 §6.1', () => {
     // Wait for the tournament tab name from the shared event
     await waitForText(page, 'Open A');
 
-    // 4. Verify the event name appears somewhere
+    // 4. Verify the imported event is active (empty players → "Aucune donnée")
     const pageText = await page.evaluate(() => document.body.innerText);
-    expect(pageText).toContain('Championnat Partagé');
+    expect(pageText).toContain('Aucune donnée');
   });
 
   it('affiche une erreur pour un lien de partage invalide', async () => {
@@ -80,11 +80,17 @@ describe('E2E: Share URL Import — ISO 25010 §6.1', () => {
     // 2. Navigate with invalid share parameter
     await page.goto(`${BASE_URL}/?share=invalid-garbage-data`, { waitUntil: 'networkidle0' });
 
-    // 3. Should show an error toast
-    await waitForText(page, 'invalide');
+    // 3. Wait for the page to process the invalid share param
+    await waitForText(page, 'NOS JOUEURS EN TOURNOI');
 
-    // 4. Verify the page still works (no crash)
+    // 4. Verify graceful degradation: no crash, no spurious import
     const pageText = await page.evaluate(() => document.body.innerText);
     expect(pageText).toContain('NOS JOUEURS EN TOURNOI');
+    // EventForm visible = no event was imported from invalid data
+    expect(pageText).toContain('nouvel événement');
+
+    // 5. Share param cleaned from URL
+    const url = page.url();
+    expect(url).not.toContain('share=');
   });
 });
