@@ -1,8 +1,8 @@
 # Suivi de developpement - Nos Joueurs en Tournoi
 
-> Derniere mise a jour : 2026-03-06
+> Derniere mise a jour : 2026-03-07
 > Branche : `master`
-> Dernier commit : `492996e`
+> Dernier commit : `3c91ac9`
 
 ---
 
@@ -10,7 +10,8 @@
 
 | Indicateur | Valeur | Seuil | Statut |
 |------------|--------|-------|--------|
-| Tests | 531 passed (25 suites) | - | OK |
+| Tests | 534 passed (26 suites) | - | OK |
+| Tests E2E | 19 passed (6 suites) | - | OK |
 | Couverture Stmts | 95.05% | >= 70% | OK |
 | Couverture Branch | 85.79% | >= 70% | OK |
 | Couverture Funcs | 96.36% | >= 70% | OK |
@@ -107,9 +108,9 @@ Commit : `c946ad0`
 | A-02 | Pre-push jscpd ne couvrait que src/ | CORRIGE |
 | A-03 | npm script duplication idem | CORRIGE |
 | A-04 | SLUG_REGEX duplique dans 2 routes API | CORRIGE |
-| A-05 | `error instanceof Error` pattern (3 API catches) | TODO |
+| A-05 | `error instanceof Error` pattern (3 API catches) | CORRIGE (`apiError()` helper) |
 | A-06 | Nom app hardcode en 2 endroits (sous seuil sonarjs) | OK |
-| A-07 | error.message expose dans reponses 500 | TODO |
+| A-07 | error.message expose dans reponses 500 | CORRIGE (`apiError()` helper) |
 
 Commit : `59b77a9`
 
@@ -224,6 +225,38 @@ Commit correctif : `0b17118`
 
 ---
 
+## Session maintenance + E2E (2026-03-06 → 2026-03-07)
+
+### Pre-push fix + ESLint 9 migration
+
+| Commit | Description |
+|--------|-------------|
+| `2121ed2` | fix: pre-push dot reporter pour eviter Windows stdout overflow |
+| `492996e` | chore: migration ESLint 8→9 flat config (`eslint.config.mjs`) |
+
+### Securite OWASP A-05
+
+| Commit | Description |
+|--------|-------------|
+| `183bf64` | fix(security): `apiError()` helper — log complet serveur, message generique client |
+
+### E2E
+
+| Commit | Description |
+|--------|-------------|
+| `3c91ac9` | test(e2e): +refresh-results (mock FFE), +lighthouse, fix share-url + accessibility |
+
+### Corrections E2E pre-existants
+
+| Fichier | Probleme | Correction |
+|---------|----------|------------|
+| `share-url.e2e.ts` test 1 | Asserts event name invisible (players=[]) | Assert "Aucune donnee" (visible UI) |
+| `share-url.e2e.ts` test 2 | `waitForText('invalide')` timeout (Sonner toast) | Assert graceful degradation + URL cleanup |
+| `accessibility.e2e.ts` test 3 | Flaky color-contrast (Sonner richColors toast) | Wait for toasts to dismiss before axe |
+| `lighthouse.e2e.ts` | EPERM on `chrome.kill()` Windows | try/catch in afterAll |
+
+---
+
 ## TODO - Prochaine session
 
 ### Priorite 1 — Fiabilite et couverture
@@ -235,10 +268,7 @@ Commit correctif : `0b17118`
 
 ### Priorite 2 — Securite (OWASP)
 
-- [ ] **A-05 : Normaliser la gestion d'erreur API** — Les 3 routes API (`fetch`, `sync`, `scrape`) exposent `error.message` dans les reponses 500. Creer un helper `apiError(error)` qui :
-  - Log l'erreur complete cote serveur (`console.error`)
-  - Retourne un message generique au client (`"Internal server error"`)
-  - Ne leak jamais le message d'erreur original
+- [x] **A-05 : Normaliser la gestion d'erreur API** — `apiError(label, error)` dans `src/lib/api-error.ts`. Log complet serveur, message generique client. Les 3 routes (`fetch`, `sync`, `scrape`) migrees. DONE.
 - [ ] **Rate limiting API** — Ajouter un rate limiter sur `/api/scrape` pour eviter l'abus du proxy CORS vers FFE. Options : Upstash Ratelimit ou middleware Vercel.
 - [ ] **CSP headers** — Verifier/renforcer les Content-Security-Policy dans `vercel.json`.
 
@@ -250,13 +280,13 @@ Commit correctif : `0b17118`
 
 ### Priorite 4 — Tests E2E et accessibilite
 
-- [x] **Tests E2E Puppeteer** — 4 suites E2E creees :
-  - [x] Onboarding club (e2e/onboarding.e2e.ts)
-  - [x] Creation evenement (e2e/event-creation.e2e.ts)
-  - [ ] Actualisation resultats (avec mock FFE)
-  - [x] Partage par URL (e2e/share-url.e2e.ts)
-- [x] **Tests accessibilite axe-core** — 3 pages scannees WCAG 2.1 AA (e2e/accessibility.e2e.ts).
-- [ ] **Tests Lighthouse** — `lighthouse` est en devDependencies. Automatiser un audit performance/accessibility/SEO.
+- [x] **Tests E2E Puppeteer** — 6 suites E2E, 19 tests :
+  - [x] Onboarding club (e2e/onboarding.e2e.ts — 5 tests)
+  - [x] Creation evenement (e2e/event-creation.e2e.ts — 5 tests)
+  - [x] Actualisation resultats avec mock FFE (e2e/refresh-results.e2e.ts — 3 tests)
+  - [x] Partage par URL (e2e/share-url.e2e.ts — 2 tests)
+  - [x] Accessibilite axe-core WCAG 2.1 AA (e2e/accessibility.e2e.ts — 3 tests)
+  - [x] Lighthouse audit perf/a11y/bp/seo (e2e/lighthouse.e2e.ts — 1 test)
 
 ### Priorite 5 — Maintenance et DX
 
