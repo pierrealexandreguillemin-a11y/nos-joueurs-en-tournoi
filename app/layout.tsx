@@ -1,7 +1,7 @@
 // Next.js layout: metadata/viewport exports alongside component are standard
 /* eslint-disable react-refresh/only-export-components */
 import type { Metadata, Viewport } from 'next';
-import { Audiowide, Inter, DM_Sans } from 'next/font/google';
+import { Exo_2 } from 'next/font/google';
 import localFont from 'next/font/local';
 import '../src/styles/globals.css';
 import { Analytics } from '@vercel/analytics/next';
@@ -9,29 +9,12 @@ import { AnimationsProvider } from '@/contexts/AnimationsContext';
 import { ClubProvider } from '@/contexts/ClubContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
-const audiowide = Audiowide({
-  weight: '400',
+const exo2 = Exo_2({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-audiowide',
+  variable: '--font-exo2',
   preload: true,
-  fallback: ['cursive', 'system-ui'],
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-  preload: true,
-  fallback: ['system-ui', 'arial'],
-});
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-dm-sans',
-  preload: false,
-  fallback: ['system-ui', 'arial'],
+  fallback: ['system-ui', 'sans-serif'],
 });
 
 const satoshi = localFont({
@@ -117,7 +100,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${audiowide.variable} ${dmSans.variable} ${satoshi.variable}`} data-theme="miami" data-mode="dark">
+    <html lang="fr" className={`${exo2.variable} ${satoshi.variable}`} data-theme="miami" data-mode="dark">
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -125,7 +108,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body>
         <ClubProvider>
           <ThemeProvider>
             <AnimationsProvider>

@@ -16,11 +16,16 @@
   --secondary-c: 0.1066; --secondary-h: 255.1;    /* navy */
   --accent-c: 0.2193;    --accent-h: 37.7;        /* orange */
   --destructive-c: 0.2082; --destructive-h: 25.4;
+  --warning-c: 0.1600;   --warning-h: 65.0;       /* amber */
   --muted-c: 0.0364;     --muted-h: 259.7;        /* near-achromatic navy tint */
   --muted-fg-c: 0.0348;  --muted-fg-h: 256.8;
+  /* Neon palette — WCAG AA reduced brightness */
+  --neon-aqua: 0.65 0.10 202.7;
+  --neon-orange: 0.58 0.22 37.7;
   /* Fonts */
-  --font-display: var(--font-audiowide), 'Audiowide', cursive;
-  --font-body: var(--font-inter), 'Inter', system-ui, sans-serif;
+  /* Fonts — Exo 2 for both display and body */
+  --font-display: var(--font-exo2), 'Exo 2', system-ui, sans-serif;
+  --font-body: var(--font-exo2), 'Exo 2', system-ui, sans-serif;
   /* Glass parameters */
   --glass-blur: 15px;
   --glass-saturate: 130%;
@@ -42,31 +47,106 @@
   --destructive-c: 0.2150; --destructive-h: 27.0;
   --muted-c: 0.0050;     --muted-h: 260.0;        /* near-achromatic */
   --muted-fg-c: 0.0300;  --muted-fg-h: 260.0;
-  /* Fonts */
+  /* Fonts — Satoshi for both display and body */
   --font-display: var(--font-satoshi), 'Satoshi', system-ui, sans-serif;
-  --font-body: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
-  /* Glass parameters — liquid glass style */
+  --font-body: var(--font-satoshi), 'Satoshi', system-ui, sans-serif;
+  /* Glass shared parameters (opacity values set per-mode below) */
   --glass-blur: 24px;
   --glass-saturate: 180%;
-  --glass-bg-opacity: 0.08;
-  --glass-bg-opacity-card: 0.15;
-  --glass-border-opacity: 0.10;
-  --glass-border-opacity-card: 0.15;
-  --glass-inset-opacity: 0.10;
-  --glass-inset-opacity-card: 0.18;
-  --glass-shadow-opacity: 0.05;
-  --glass-shadow-opacity-card: 0.10;
-  /* Ambient orb colors */
-  --orb-1: oklch(0.65 0.15 250 / 0.08);
-  --orb-2: oklch(0.65 0.12 180 / 0.06);
-  --orb-3: oklch(0.65 0.10 310 / 0.05);
+  /* Border radius — larger for liquid glass aesthetic */
+  --radius: 1.25rem;
 }
 
-/* Neutral dark orb overrides */
+/* ================================================================
+   NEUTRAL DARK — exact tokens from playground-neutral.html [data-theme="dark"]
+   Bypasses L/C/H decomposition: each token set to final OKLCH value.
+   ================================================================ */
 [data-theme="neutral"][data-mode="dark"] {
+  /* Semantic tokens (direct override) */
+  --background: 0.13 0.02 265;
+  --foreground: 0.92 0.005 260;
+  --primary: 0.65 0.2 260;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.13 0.02 265;
+  --secondary-foreground: 0.92 0.005 260;
+  --accent: 0.7 0.17 145;
+  --accent-foreground: 1 0 0;
+  --accent-hover: 0.6 0.2 262;
+  --destructive: 0.65 0.2 27;
+  --destructive-foreground: 1 0 0;
+  --warning: 0.72 0.16 65;
+  --warning-foreground: 1 0 0;
+  --muted: 0.2 0.015 265;
+  --muted-foreground: 0.6 0.02 260;
+  --card: 0.2 0.015 265;
+  --card-foreground: 0.92 0.005 260;
+  --popover: 0.92 0 0;
+  --popover-foreground: 0.13 0.02 265;
+  --border: 0.6 0.02 260;
+  --input: 0.6 0.02 260;
+  --ring: 0.65 0.2 260;
+  /* Glass material — dark-tinted */
+  --glass-tint: 0.2 0.015 265;
+  --glass-bg-opacity: 0.40;
+  --glass-bg-opacity-card: 0.40;
+  --glass-border-opacity: 0.08;
+  --glass-border-opacity-card: 0.08;
+  --glass-inset-opacity: 0.06;
+  --glass-inset-opacity-card: 0.06;
+  --glass-shadow-opacity: 0.25;
+  --glass-shadow-opacity-card: 0.18;
+  /* Glass refraction + hover */
+  --glass-ref-1: oklch(1 0 0 / 0.06);
+  --glass-ref-2: oklch(1 0 0 / 0.02);
+  --glass-glow: oklch(0.65 0.2 262 / 0.12);
+  --glass-border-hover: oklch(1 0 0 / 0.16);
+  /* Ambient orbs */
   --orb-1: oklch(0.45 0.20 250 / 0.14);
   --orb-2: oklch(0.45 0.15 180 / 0.10);
   --orb-3: oklch(0.45 0.12 310 / 0.07);
+}
+
+/* ================================================================
+   NEUTRAL LIGHT — exact tokens from playground-neutral.html :root
+   ================================================================ */
+[data-theme="neutral"][data-mode="light"] {
+  /* Semantic tokens (direct override) */
+  --background: 0.975 0.005 260;
+  --foreground: 0.22 0.03 260;
+  --primary: 0.546 0.195 263;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.975 0.005 260;
+  --secondary-foreground: 0.22 0.03 260;
+  --accent: 0.627 0.161 145;
+  --accent-foreground: 1 0 0;
+  --accent-hover: 0.488 0.195 264;
+  --destructive: 0.577 0.215 27;
+  --destructive-foreground: 1 0 0;
+  --warning: 0.666 0.163 65;
+  --warning-foreground: 1 0 0;
+  --muted: 0.93 0.005 260;
+  --muted-foreground: 0.5 0.03 260;
+  --card: 0.96 0.005 260;
+  --card-foreground: 0.22 0.03 260;
+  --popover: 1 0 0;
+  --popover-foreground: 0.22 0.03 260;
+  --border: 0.8 0.005 260;
+  --input: 0.8 0.005 260;
+  --ring: 0.546 0.195 263;
+  /* Glass material — white-tinted, higher opacity */
+  --glass-bg-opacity: 0.55;
+  --glass-bg-opacity-card: 0.55;
+  --glass-border-opacity: 0.22;
+  --glass-border-opacity-card: 0.22;
+  --glass-inset-opacity: 0.22;
+  --glass-inset-opacity-card: 0.22;
+  --glass-shadow-opacity: 0.03;
+  --glass-shadow-opacity-card: 0.05;
+  /* Glass refraction + hover */
+  --glass-ref-1: oklch(1 0 0 / 0.14);
+  --glass-ref-2: oklch(1 0 0 / 0.04);
+  --glass-glow: oklch(0.546 0.195 263 / 0.06);
+  --glass-border-hover: oklch(1 0 0 / 0.38);
 }
 
 /* Mode: Dark — lightness values */
@@ -90,6 +170,8 @@
   --border-l: 0.7100;
   --input-l: 0.7100;
   --ring-l: 0.5890;
+  --warning-l: 0.7200;
+  --warning-fg-l: 1.0000;
 }
 
 /* Mode: Light — inverted lightness values */
@@ -113,6 +195,8 @@
   --border-l: 0.8000;
   --input-l: 0.8000;
   --ring-l: 0.4500;
+  --warning-l: 0.5500;
+  --warning-fg-l: 1.0000;
   /* Light mode glass — higher opacity for frosted white on light backgrounds */
   --glass-bg-opacity: 0.55;
   --glass-bg-opacity-card: 0.65;
@@ -134,6 +218,8 @@
     --accent: var(--accent-l) var(--accent-c) var(--accent-h);
     --destructive: var(--destructive-l) var(--destructive-c) var(--destructive-h);
     --ring: var(--ring-l) var(--primary-c) var(--primary-h);
+    --warning: var(--warning-l) var(--warning-c) var(--warning-h);
+    --accent-hover: calc(var(--accent-l) - 0.08) var(--accent-c) var(--accent-h);
     /* Near-achromatic: L from mode, C+H from theme neutral */
     --background: var(--bg-l) var(--secondary-c) var(--secondary-h);
     --muted: var(--muted-l) var(--muted-c) var(--muted-h);
@@ -148,8 +234,11 @@
     --secondary-foreground: var(--secondary-fg-l) 0 0;
     --accent-foreground: var(--accent-fg-l) 0 0;
     --destructive-foreground: var(--destructive-fg-l) 0 0;
+    --warning-foreground: var(--warning-fg-l) 0 0;
     --card-foreground: var(--card-fg-l) 0 0;
     --popover: var(--popover-l) 0 0;
+    /* Glass tint: white by default, dark-tinted for neutral dark */
+    --glass-tint: 1 0 0;
     /* Layout */
     --radius: 0.75rem;
   }
@@ -230,9 +319,12 @@ body,
 .glass-surface {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  background: oklch(1 0 0 / var(--glass-bg-opacity));
+  background: oklch(var(--glass-tint) / var(--glass-bg-opacity));
   border: 1px solid oklch(1 0 0 / var(--glass-border-opacity));
-  box-shadow: inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity)), 0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity));
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / var(--glass-shadow-opacity)),
+    0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+    inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity));
 }
 
 /* Glass Card — visible opacity */
@@ -241,9 +333,68 @@ body,
   padding: 1.5rem;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  background: oklch(1 0 0 / var(--glass-bg-opacity-card));
+  background: oklch(var(--glass-tint) / var(--glass-bg-opacity-card));
   border: 1px solid oklch(1 0 0 / var(--glass-border-opacity-card));
-  box-shadow: inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity-card)), 0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card));
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / var(--glass-shadow-opacity)),
+    0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+    inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity-card));
+}
+
+/* ================================================================
+   MIAMI GLASS HOVER — neon glow effect
+   ================================================================ */
+[data-theme="miami"] .glass-surface:hover,
+[data-theme="miami"] .glass-card:hover {
+  border-color: oklch(var(--neon-aqua) / 0.3);
+  box-shadow:
+    0 2px 4px oklch(0 0 0 / var(--glass-shadow-opacity)),
+    0 8px 28px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+    inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity)),
+    0 0 20px oklch(var(--neon-aqua) / 0.15);
+}
+
+/* ================================================================
+   NEUTRAL GLASS REFRACTION — ::before gradient highlight
+   Matches playground .glass::before refraction overlay
+   ================================================================ */
+[data-theme="neutral"] .glass-surface,
+[data-theme="neutral"] .glass-card {
+  position: relative;
+}
+
+[data-theme="neutral"] .glass-surface::before,
+[data-theme="neutral"] .glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--glass-ref-1) 0%, var(--glass-ref-2) 40%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+[data-theme="neutral"] .glass-surface > *,
+[data-theme="neutral"] .glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="neutral"] .glass-surface:hover,
+[data-theme="neutral"] .glass-card:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow:
+    0 2px 4px oklch(0 0 0 / var(--glass-shadow-opacity)),
+    0 8px 28px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+    inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity-card)),
+    0 0 24px var(--glass-glow);
+}
+
+[data-theme="neutral"] .glass-surface:hover::before,
+[data-theme="neutral"] .glass-card:hover::before {
+  opacity: 1;
 }
 
 /* Menu dropdown — uses semantic popover token */
@@ -277,6 +428,30 @@ body,
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ========================================
+   NOISE OVERLAY — NEUTRAL THEME
+   SVG grain texture from playground-neutral.html
+   ======================================== */
+
+[data-theme="neutral"] .noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-theme="neutral"][data-mode="light"] .noise-overlay {
+  opacity: 0.025;
+}
+
+[data-theme="neutral"][data-mode="dark"] .noise-overlay {
+  opacity: 0.035;
 }
 
 /* ========================================
@@ -332,6 +507,25 @@ body,
 }
 
 /* ========================================
+   STAGGERED ENTRANCE — blur reveal (neutral)
+   ======================================== */
+
+[data-theme="neutral"] .fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); filter: blur(8px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+[data-theme="neutral"] .delay-1 { animation-delay: 0.05s; }
+[data-theme="neutral"] .delay-2 { animation-delay: 0.12s; }
+[data-theme="neutral"] .delay-3 { animation-delay: 0.2s; }
+[data-theme="neutral"] .delay-4 { animation-delay: 0.28s; }
+[data-theme="neutral"] .delay-5 { animation-delay: 0.35s; }
+
+/* ========================================
    CYBERPUNK ANIMATIONS - AUDIOWIDE STYLE
    ======================================== */
 
@@ -339,13 +533,13 @@ body,
 @keyframes cyberpunk-glow-reduced {
   0%, 100% {
     text-shadow:
-      0 0 8px rgba(0, 168, 204, 0.6),
-      0 0 16px rgba(224, 69, 0, 0.4);
+      0 0 8px oklch(var(--neon-aqua) / 0.6),
+      0 0 16px oklch(var(--neon-orange) / 0.4);
   }
   50% {
     text-shadow:
-      0 0 12px rgba(0, 168, 204, 0.7),
-      0 0 24px rgba(224, 69, 0, 0.5);
+      0 0 12px oklch(var(--neon-aqua) / 0.7),
+      0 0 24px oklch(var(--neon-orange) / 0.5);
   }
 }
 
@@ -365,16 +559,16 @@ body,
 /* Cyberpunk Title Class - Main header style (WCAG AA compliant) — Miami only */
 [data-theme="miami"] .cyberpunk-title {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.05em;
-  /* Reduced brightness: #00D4FF -> #00A8CC, #FC4F00 -> #E04500 */
+  text-transform: uppercase;
   background: linear-gradient(
     90deg,
-    #00A8CC 0%,
-    #E04500 25%,
-    #00A8CC 50%,
-    #E04500 75%,
-    #00A8CC 100%
+    oklch(var(--neon-aqua)) 0%,
+    oklch(var(--neon-orange)) 25%,
+    oklch(var(--neon-aqua)) 50%,
+    oklch(var(--neon-orange)) 75%,
+    oklch(var(--neon-aqua)) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -383,8 +577,7 @@ body,
   animation:
     gradient-shift 3s ease infinite,
     cyberpunk-glow-reduced 2s ease-in-out infinite;
-  /* Reduced drop-shadow opacity: 50% -> 25% */
-  filter: drop-shadow(0 0 12px rgba(0, 168, 204, 0.25));
+  filter: drop-shadow(0 0 12px oklch(var(--neon-aqua) / 0.25));
 }
 
 /* Cyberpunk Chess Logo Animation — Miami only */
@@ -392,13 +585,13 @@ body,
   animation:
     logo-pulse 3s ease-in-out infinite,
     logo-glow 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 8px rgba(0, 168, 204, 0.4));
   transition: transform 0.3s ease;
 }
 
 [data-theme="miami"] .chess-logo:hover {
   transform: scale(1.1) rotate(-5deg);
-  filter: drop-shadow(0 0 12px rgba(224, 69, 0, 0.6));
+  animation: none;
+  filter: drop-shadow(0 0 12px oklch(var(--neon-orange) / 0.6));
 }
 
 /* Pulse animation */
@@ -414,23 +607,23 @@ body,
 /* Glow animation */
 @keyframes logo-glow {
   0%, 100% {
-    filter: drop-shadow(0 0 6px rgba(0, 168, 204, 0.3));
+    filter: drop-shadow(0 0 6px oklch(var(--neon-aqua) / 0.3));
   }
   50% {
-    filter: drop-shadow(0 0 10px rgba(224, 69, 0, 0.5));
+    filter: drop-shadow(0 0 10px oklch(var(--neon-orange) / 0.5));
   }
 }
 
 /* Gradient animation inside SVG */
 @keyframes chess-gradient-shift {
   0% {
-    stop-color: #00A8CC;
+    stop-color: oklch(var(--neon-aqua));
   }
   50% {
-    stop-color: #E04500;
+    stop-color: oklch(var(--neon-orange));
   }
   100% {
-    stop-color: #00A8CC;
+    stop-color: oklch(var(--neon-aqua));
   }
 }
 
