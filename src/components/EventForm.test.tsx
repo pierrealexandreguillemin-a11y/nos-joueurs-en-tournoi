@@ -365,6 +365,57 @@ describe('EventForm', () => {
     });
   });
 
+  describe('Validation alignment with validation.ts', () => {
+    it('rejects event name shorter than 3 characters', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillValidForm('AB', 'U12', 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/3 caractères minimum/i)).toBeInTheDocument();
+      });
+      expect(mockOnEventCreated).not.toHaveBeenCalled();
+    });
+
+    it('rejects tournament name shorter than 2 characters', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillValidForm('Test Event', 'A', 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/2 caractères minimum/i)).toBeInTheDocument();
+      });
+      expect(mockOnEventCreated).not.toHaveBeenCalled();
+    });
+
+    it('rejects URL that contains echecs.asso.fr but is not a valid FFE URL', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillValidForm('Test Event', 'U12', 'https://attacker.com/?r=echecs.asso.fr');
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/les urls doivent provenir de echecs\.asso\.fr/i)).toBeInTheDocument();
+      });
+      expect(mockOnEventCreated).not.toHaveBeenCalled();
+    });
+
+    it('rejects URL without protocol', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillValidForm('Test Event', 'U12', 'echecs.asso.fr/Resultats.aspx');
+      // Use fireEvent.submit to bypass jsdom type="url" constraint validation
+      fireEvent.submit(screen.getByRole('button', { name: /créer l'événement/i }).closest('form')!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/les urls doivent provenir de echecs\.asso\.fr/i)).toBeInTheDocument();
+      });
+      expect(mockOnEventCreated).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('handles whitespace-only event name as invalid', async () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);

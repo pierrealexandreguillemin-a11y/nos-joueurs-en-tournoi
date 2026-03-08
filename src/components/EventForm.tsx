@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { X, Plus } from 'lucide-react';
+import { isValidFFeUrl, isValidEventName, isValidTournamentName } from '@/lib/validation';
 import type { Event } from '@/types';
 
 interface TournamentInput {
@@ -125,6 +126,11 @@ function validateEventForm(
     return false;
   }
 
+  if (!isValidEventName(eventName)) {
+    setError('Le nom de l\'événement doit faire 3 caractères minimum');
+    return false;
+  }
+
   const validTournaments = tournaments.filter(t => t.name.trim() && t.url.trim());
   if (validTournaments.length === 0) {
     setError('Au moins un tournoi est requis');
@@ -132,8 +138,12 @@ function validateEventForm(
   }
 
   for (const tournament of validTournaments) {
-    if (!tournament.url.includes('echecs.asso.fr')) {
-      setError('Les URLs doivent provenir de echecs.asso.fr');
+    if (!isValidTournamentName(tournament.name)) {
+      setError('Le nom de catégorie doit faire 2 caractères minimum');
+      return false;
+    }
+    if (!isValidFFeUrl(tournament.url)) {
+      setError('Les URLs doivent provenir de echecs.asso.fr (incluez https://)');
       return false;
     }
   }
