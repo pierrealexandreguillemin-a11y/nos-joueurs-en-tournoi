@@ -223,6 +223,30 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 
 **Important** : `PlayerRow` recoit `playerValidation: Record<number, boolean>` (slice par joueur), pas l'objet `validationState` complet, pour que memo soit effectif.
 
+## Theme system
+
+### Architecture OKLCH
+
+- Deux themes : `miami` (cyberpunk) et `neutral` (liquid glass)
+- Deux modes : `light` et `dark` via `data-theme` + `data-mode` sur `<html>`
+- Couleurs : decomposition L/C/H (theme → C+H, mode → L)
+- Exception : neutral dark/light overrides directs (pas de L/C/H)
+
+### Neutral theme
+
+- **Background** : gris achromatic (C=0), L=0.27 dark / L=0.975 light
+- **Glass tint** : bleu froid subtil (C=0.015 H=250) pour elegance frosted glass
+- **Ambient orbs** : 3 orbes floues derriere le contenu (body = bg opaque, page-background = transparent)
+- **Orbs dark** : L=0.45-0.50, opacite 15-22% ; **light** : L=0.82-0.85, opacite 12-18%
+- **`text-secondary`** : differencie du background (L=0.35 dark) — ne jamais egaliser avec `--background`
+
+### Miami theme
+
+- Neon tokens : `--neon-aqua`, `--neon-orange` (WCAG AA)
+- `.cyberpunk-title` : gradient anime + glow (scope `[data-theme="miami"]` uniquement)
+- `.chess-logo` : pulse + glow anime (Miami only)
+- Background : HalftoneWaves + BackgroundPaths + FloatingParticles (Miami only, toggle via AnimationsToggle)
+
 ## Deploiement
 
 - **Plateforme** : Vercel (auto-deploy on push to `master`)
@@ -242,6 +266,6 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `vitest.config.ts` | Tests unitaires (jsdom, coverage v8) |
 | `vitest.config.e2e.ts` | Tests E2E (30s timeout, 120s hook timeout) |
 | `vitest.setup.ts` | localStorage polyfill + jest-dom |
-| `tailwind.config.ts` | Theme Miami Vice |
+| `tailwind.config.ts` | Theme Miami Vice + Neutral |
 | `.husky/pre-commit` | lint-staged |
 | `.husky/pre-push` | 6 quality gates |

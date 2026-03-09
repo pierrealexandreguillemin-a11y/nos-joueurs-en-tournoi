@@ -79,7 +79,7 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
               priority
               quality={90}
             />
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold cyberpunk-title">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground cyberpunk-title">
               NOS JOUEURS EN TOURNOI
             </h1>
           </div>
@@ -96,8 +96,8 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
           </div>
           <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-end" aria-label="Actions principales">
             <ClubHeader />
-            <ThemeSwitcher />
             {theme === 'miami' && <AnimationsToggle />}
+            <ThemeSwitcher />
             <ShareButton />
             <EventsManager
               currentEventId={currentEvent?.id || ''}

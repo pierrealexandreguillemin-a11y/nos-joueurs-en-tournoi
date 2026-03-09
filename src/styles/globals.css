@@ -62,13 +62,16 @@
    Bypasses L/C/H decomposition: each token set to final OKLCH value.
    ================================================================ */
 [data-theme="neutral"][data-mode="dark"] {
-  /* Semantic tokens (direct override) */
-  --background: 0.13 0.02 265;
-  --foreground: 0.92 0.005 260;
+  /* Semantic tokens (direct override)
+     Achromatic grays (C=0) for true neutral aesthetic.
+     Background L=0.27 (dark gray, not near-black).
+     Secondary L=0.35 differentiated from background for text-secondary contrast. */
+  --background: 0.27 0 0;
+  --foreground: 0.92 0 0;
   --primary: 0.65 0.2 260;
   --primary-foreground: 1 0 0;
-  --secondary: 0.13 0.02 265;
-  --secondary-foreground: 0.92 0.005 260;
+  --secondary: 0.35 0 0;
+  --secondary-foreground: 0.92 0 0;
   --accent: 0.7 0.17 145;
   --accent-foreground: 1 0 0;
   --accent-hover: 0.6 0.2 262;
@@ -76,34 +79,34 @@
   --destructive-foreground: 1 0 0;
   --warning: 0.72 0.16 65;
   --warning-foreground: 1 0 0;
-  --muted: 0.2 0.015 265;
-  --muted-foreground: 0.6 0.02 260;
-  --card: 0.2 0.015 265;
-  --card-foreground: 0.92 0.005 260;
+  --muted: 0.22 0 0;
+  --muted-foreground: 0.6 0 0;
+  --card: 0.23 0 0;
+  --card-foreground: 0.92 0 0;
   --popover: 0.92 0 0;
-  --popover-foreground: 0.13 0.02 265;
-  --border: 0.6 0.02 260;
-  --input: 0.6 0.02 260;
+  --popover-foreground: 0.27 0 0;
+  --border: 0.55 0 0;
+  --input: 0.55 0 0;
   --ring: 0.65 0.2 260;
-  /* Glass material — dark-tinted */
-  --glass-tint: 0.2 0.015 265;
-  --glass-bg-opacity: 0.40;
-  --glass-bg-opacity-card: 0.40;
-  --glass-border-opacity: 0.08;
-  --glass-border-opacity-card: 0.08;
+  /* Glass material — cold blue-tinted dark glass */
+  --glass-tint: 0.25 0.015 250;
+  --glass-bg-opacity: 0.38;
+  --glass-bg-opacity-card: 0.42;
+  --glass-border-opacity: 0.10;
+  --glass-border-opacity-card: 0.10;
   --glass-inset-opacity: 0.06;
-  --glass-inset-opacity-card: 0.06;
-  --glass-shadow-opacity: 0.25;
-  --glass-shadow-opacity-card: 0.18;
+  --glass-inset-opacity-card: 0.08;
+  --glass-shadow-opacity: 0.22;
+  --glass-shadow-opacity-card: 0.16;
   /* Glass refraction + hover */
-  --glass-ref-1: oklch(1 0 0 / 0.06);
-  --glass-ref-2: oklch(1 0 0 / 0.02);
-  --glass-glow: oklch(0.65 0.2 262 / 0.12);
-  --glass-border-hover: oklch(1 0 0 / 0.16);
-  /* Ambient orbs */
-  --orb-1: oklch(0.45 0.20 250 / 0.14);
-  --orb-2: oklch(0.45 0.15 180 / 0.10);
-  --orb-3: oklch(0.45 0.12 310 / 0.07);
+  --glass-ref-1: oklch(0.95 0.01 250 / 0.08);
+  --glass-ref-2: oklch(0.95 0.01 250 / 0.03);
+  --glass-glow: oklch(0.65 0.2 262 / 0.14);
+  --glass-border-hover: oklch(0.95 0.015 250 / 0.20);
+  /* Ambient orbs — subtle atmospheric glow behind content */
+  --orb-1: oklch(0.50 0.15 250 / 0.22);
+  --orb-2: oklch(0.45 0.12 180 / 0.18);
+  --orb-3: oklch(0.45 0.10 310 / 0.15);
 }
 
 /* ================================================================
@@ -133,20 +136,25 @@
   --border: 0.8 0.005 260;
   --input: 0.8 0.005 260;
   --ring: 0.546 0.195 263;
-  /* Glass material — white-tinted, higher opacity */
-  --glass-bg-opacity: 0.55;
-  --glass-bg-opacity-card: 0.55;
-  --glass-border-opacity: 0.22;
-  --glass-border-opacity-card: 0.22;
-  --glass-inset-opacity: 0.22;
-  --glass-inset-opacity-card: 0.22;
-  --glass-shadow-opacity: 0.03;
-  --glass-shadow-opacity-card: 0.05;
+  /* Glass material — blue-tinted frosted glass, airy opacity */
+  --glass-tint: 0.95 0.015 250;
+  --glass-bg-opacity: 0.35;
+  --glass-bg-opacity-card: 0.40;
+  --glass-border-opacity: 0.14;
+  --glass-border-opacity-card: 0.16;
+  --glass-inset-opacity: 0.12;
+  --glass-inset-opacity-card: 0.14;
+  --glass-shadow-opacity: 0.04;
+  --glass-shadow-opacity-card: 0.06;
   /* Glass refraction + hover */
-  --glass-ref-1: oklch(1 0 0 / 0.14);
-  --glass-ref-2: oklch(1 0 0 / 0.04);
-  --glass-glow: oklch(0.546 0.195 263 / 0.06);
-  --glass-border-hover: oklch(1 0 0 / 0.38);
+  --glass-ref-1: oklch(0.97 0.01 250 / 0.18);
+  --glass-ref-2: oklch(0.97 0.01 250 / 0.06);
+  --glass-glow: oklch(0.546 0.195 263 / 0.08);
+  --glass-border-hover: oklch(0.97 0.015 250 / 0.40);
+  /* Ambient orbs — pastel tints on bright background */
+  --orb-1: oklch(0.85 0.08 250 / 0.18);
+  --orb-2: oklch(0.82 0.06 180 / 0.14);
+  --orb-3: oklch(0.82 0.05 310 / 0.12);
 }
 
 /* Mode: Dark — lightness values */
@@ -416,9 +424,12 @@ body,
   background: linear-gradient(135deg, oklch(0.94 var(--primary-c) var(--primary-h)) 0%, oklch(0.92 var(--secondary-c) var(--secondary-h)) 25%, oklch(0.92 var(--secondary-c) var(--secondary-h)) 75%, oklch(0.94 var(--primary-c) var(--primary-h)) 100%);
 }
 
-/* Neutral theme: flat background instead of gradient (orbs provide atmosphere) */
-[data-theme="neutral"] .page-background {
+/* Neutral theme: background on body so orbs (z-index:-2) show through page-background */
+[data-theme="neutral"] body {
   background: oklch(var(--background));
+}
+[data-theme="neutral"] .page-background {
+  background: transparent;
 }
 
 /* Dialog title with gradient text */
