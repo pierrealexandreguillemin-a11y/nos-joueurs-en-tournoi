@@ -33,11 +33,11 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove }: To
     <div className="flex gap-2 items-end p-4 border rounded-lg bg-background/50">
       <div className="flex-1 space-y-2">
         <Label htmlFor={`tournament-name-${index}`}>
-          Nom (ex: U12, U14)
+          Catégorie
         </Label>
         <Input
           id={`tournament-name-${index}`}
-          placeholder="U12"
+          placeholder="Ex: U12, Open, Seniors"
           value={tournament.name}
           onChange={(e) => onUpdate(index, 'name', e.target.value)}
         />
@@ -87,6 +87,9 @@ function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove }: Tourname
           Ajouter un tournoi
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Pour chaque tournoi, copiez l&apos;URL depuis echecs.asso.fr &gt; votre tournoi &gt; page Résultats.
+      </p>
       {tournaments.map((tournament, index) => (
         <TournamentRow
           key={tournament.id}
@@ -203,6 +206,9 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     <Card className="glass-card">
       <CardHeader>
         <CardTitle>Créer un nouvel événement</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Un événement regroupe un ou plusieurs tournois FFE suivis simultanément.
+        </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -227,7 +233,7 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
               onChange={(e) => setClubName(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Si vide, les clubs seront détectés depuis la page FFE
+              Si vide, le nom du club sera détecté automatiquement depuis la page FFE.
             </p>
           </div>
 

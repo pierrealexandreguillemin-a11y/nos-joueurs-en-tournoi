@@ -18,7 +18,7 @@ function fillValidForm(
   tournamentUrl = 'https://echecs.asso.fr/Resultats.aspx?Action=Ga',
 ) {
   fillInput(screen.getByPlaceholderText(/championnat départemental/i), eventName);
-  fillInput(screen.getByLabelText(/nom \(ex: u12, u14\)/i), tournamentName);
+  fillInput(screen.getByLabelText(/catégorie/i), tournamentName);
   fillInput(screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i), tournamentUrl);
 }
 
@@ -41,7 +41,7 @@ describe('EventForm', () => {
     it('renders with one empty tournament by default', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      expect(screen.getByLabelText(/nom \(ex: u12, u14\)/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/catégorie/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/https:\/\/echecs\.asso\.fr/i)).toBeInTheDocument();
     });
 
@@ -112,7 +112,7 @@ describe('EventForm', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
-      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(2);
+      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(2);
     });
 
     it('shows remove button when multiple tournaments exist', () => {
@@ -129,7 +129,7 @@ describe('EventForm', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
-      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(2);
+      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(2);
 
       const buttons = screen.getAllByRole('button');
       const removeButtons = buttons.filter((btn: HTMLElement) =>
@@ -140,13 +140,13 @@ describe('EventForm', () => {
 
       fireEvent.click(removeButtons[0]);
 
-      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(1);
+      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(1);
     });
 
     it('does not remove last tournament when remove is attempted', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(1);
+      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(1);
     });
 
     it('can add multiple tournaments (5+)', () => {
@@ -157,13 +157,13 @@ describe('EventForm', () => {
         fireEvent.click(addButton);
       }
 
-      expect(screen.getAllByLabelText(/nom \(ex: u12, u14\)/i).length).toBe(6);
+      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(6);
     });
 
     it('updates tournament name correctly', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      const nameInput = screen.getByLabelText(/nom \(ex: u12, u14\)/i);
+      const nameInput = screen.getByLabelText(/catégorie/i);
       fillInput(nameInput, 'U12');
 
       expect(nameInput).toHaveValue('U12');
@@ -197,7 +197,7 @@ describe('EventForm', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
-      fillInput(screen.getByLabelText(/nom \(ex: u12, u14\)/i), 'U12');
+      fillInput(screen.getByLabelText(/catégorie/i), 'U12');
 
       fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
 
@@ -240,7 +240,7 @@ describe('EventForm', () => {
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
       // Fill first tournament completely
-      const nameInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
+      const nameInputs = screen.getAllByLabelText(/catégorie/i);
       fillInput(nameInputs[0], 'U12');
 
       const urlInputs = screen.getAllByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
@@ -326,7 +326,7 @@ describe('EventForm', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
-      const nameInputs = screen.getAllByLabelText(/nom \(ex: u12, u14\)/i);
+      const nameInputs = screen.getAllByLabelText(/catégorie/i);
       fillInput(nameInputs[0], 'U12');
       fillInput(nameInputs[1], 'U14');
 
@@ -453,6 +453,28 @@ describe('EventForm', () => {
       await waitFor(() => {
         expect(screen.getByText(/au moins un tournoi est requis/i)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Contextual help', () => {
+    it('displays explanatory text for what an event is', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+      expect(screen.getByText(/regroupe un ou plusieurs tournois/i)).toBeInTheDocument();
+    });
+
+    it('displays help text for club name field', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+      expect(screen.getByText(/détecté automatiquement/i)).toBeInTheDocument();
+    });
+
+    it('displays guidance for finding FFE URL', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+      expect(screen.getByText(/copiez l'URL depuis/i)).toBeInTheDocument();
+    });
+
+    it('uses inclusive placeholder for tournament name', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+      expect(screen.getByPlaceholderText(/ex: U12, Open/i)).toBeInTheDocument();
     });
   });
 });
