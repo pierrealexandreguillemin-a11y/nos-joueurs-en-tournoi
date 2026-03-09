@@ -10,7 +10,7 @@
 
 | Indicateur | Valeur | Seuil | Statut |
 |------------|--------|-------|--------|
-| Tests | 534 passed (26 suites) | - | OK |
+| Tests | 565 passed (28 suites) | - | OK |
 | Tests E2E | 19 passed (6 suites) | - | OK |
 | Couverture Stmts | 95.05% | >= 70% | OK |
 | Couverture Branch | 85.79% | >= 70% | OK |
@@ -254,6 +254,48 @@ Commit correctif : `0b17118`
 | `share-url.e2e.ts` test 2 | `waitForText('invalide')` timeout (Sonner toast) | Assert graceful degradation + URL cleanup |
 | `accessibility.e2e.ts` test 3 | Flaky color-contrast (Sonner richColors toast) | Wait for toasts to dismiss before axe |
 | `lighthouse.e2e.ts` | EPERM on `chrome.kill()` Windows | try/catch in afterAll |
+
+---
+
+## Session UX EventForm + polish (2026-03-09)
+
+### Audit UX
+
+Audit complet de l'experience utilisateur : 13 findings globaux (G-01 a G-13), 15 frictions EventForm (F-01 a F-15), 3 bugs (B-01 a B-03). Trois propositions evaluees (wizard, form ameliore, hybride), decision pour la proposition B (form ameliore in-place).
+
+Documents : `docs/plans/2026-03-08-ux-audit-design.md`, `docs/plans/2026-03-08-ux-improvements.md`
+
+### Implementation (8 commits, branche `feat/ux-improvements`)
+
+| Commit | Type | Description |
+|--------|------|-------------|
+| `46ce741` | fix(form) | Validation alignee avec validation.ts — isValidFFeUrl, min lengths (B-01, B-02, F-03, F-14) |
+| `3211166` | feat(form) | Textes d'aide contextuels et labels inclusifs (F-01, F-02, F-09, F-10) |
+| `648e646` | fix(storage) | try/catch saveEvent dans handleEventCreated (B-03) |
+| `cb86218` | fix(sync) | Message d'erreur club ameliore avec action corrective (F-06) |
+| `e385b3e` | fix(ui) | Empty state guide + sticky colonne nom joueur (G-01, G-05) |
+| `2d0a6e4` | fix(a11y) | Badge texte visible ViewToggle au lieu de couleur seule (G-02) |
+| `fe81ea2` | feat(form) | Validation inline blur, autoFocus, layout mobile, duplicate URL (F-04, F-05, F-07, F-08, F-12, F-13) |
+| *(review)* | fix(form) | Nettoyage fieldErrors a la suppression, aria-describedby, bg sticky (review findings) |
+
+### Corrections post-review
+
+| Finding | Severite | Description | Statut |
+|---------|----------|-------------|--------|
+| R-01 | CRITIQUE | fieldErrors orphelins lors suppression tournoi (index shift) | CORRIGE (cles basees sur tournament.id) |
+| R-02 | IMPORTANT | Pas de aria-describedby reliant erreurs inline aux inputs | CORRIGE (id sur FieldError + aria-describedby conditionnel) |
+| R-03 | IMPORTANT | bg-card sticky ne correspond pas aux bandes paires/impaires | CORRIGE (bg-muted/bg-card alterné sur PlayerRow) |
+| R-04 | MINEUR | Test redondant ViewToggle | CORRIGE (supprimé) |
+| R-05 | MINEUR | Pas de test toast incomplete rows | CORRIGE (mock sonner + assertion) |
+| R-06 | MINEUR | Pas de test empty state guidance | CORRIGE (assertion ajoutée) |
+| R-07 | DOC | SUIVI_DEV.md non mis a jour | CORRIGE |
+
+### Impact sur les metriques
+
+| Metrique | Avant | Apres | Delta |
+|----------|-------|-------|-------|
+| Tests | 534 (26 suites) | 565 (28 suites) | +31 (+2 suites) |
+| Fichiers modifies | - | 8 | EventForm, PlayerTable, ViewToggle, page, useTournamentSync + tests |
 
 ---
 

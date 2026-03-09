@@ -140,7 +140,7 @@ const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, play
     <TableRow
       className={playerIndex % 2 === 0 ? 'bg-foreground/10 hover:bg-foreground/10' : 'bg-primary/3 hover:bg-primary/3'}
     >
-      <TableCell className="font-medium sticky left-0 z-10 bg-card">{player.name}</TableCell>
+      <TableCell className={`font-medium sticky left-0 z-10 ${playerIndex % 2 === 0 ? 'bg-muted' : 'bg-card'}`}>{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
 
       {/* Round Results with Validation */}

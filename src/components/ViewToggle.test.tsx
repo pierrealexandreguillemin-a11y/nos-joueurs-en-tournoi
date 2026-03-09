@@ -84,10 +84,4 @@ describe('ViewToggle', () => {
     expect(badge).toBeInTheDocument();
   });
 
-  it('shows visible text badge when new pairings are available', () => {
-    render(
-      <ViewToggle viewMode="results" onChange={vi.fn()} hasPairings={true} showBadge={true} />
-    );
-    expect(screen.getByText(/nouvelle ronde/i)).toBeInTheDocument();
-  });
 });

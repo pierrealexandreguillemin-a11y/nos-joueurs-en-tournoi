@@ -3,8 +3,13 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render } from '@testing-library/react';
 import { screen, fireEvent, waitFor } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 import EventForm from './EventForm';
 import type { Event } from '@/types';
+
+vi.mock('sonner', () => ({
+  toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
+}));
 
 // Helper: set input value via fireEvent.change (instant, no per-keystroke re-renders)
 function fillInput(element: HTMLElement, value: string) {
@@ -569,6 +574,74 @@ describe('EventForm', () => {
     it('uses inclusive placeholder for tournament name', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
       expect(screen.getByPlaceholderText(/ex: U12, Open/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Incomplete row warning', () => {
+    it('shows toast when incomplete tournament rows are ignored', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
+
+      const nameInputs = screen.getAllByLabelText(/catégorie/i);
+      fillInput(nameInputs[0], 'U12');
+      const urlInputs = screen.getAllByPlaceholderText(/https:\/\/echecs\.asso\.fr/i);
+      fillInput(urlInputs[0], 'https://echecs.asso.fr/Resultats.aspx?Action=Ga');
+
+      // Second tournament: name only (incomplete)
+      fillInput(nameInputs[1], 'U14');
+
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      await waitFor(() => {
+        expect(mockOnEventCreated).toHaveBeenCalled();
+      });
+      expect(toast.info).toHaveBeenCalledWith('1 tournoi(s) incomplet(s) ignoré(s)');
+    });
+  });
+
+  describe('Field error cleanup on tournament removal', () => {
+    it('clears field errors when a tournament is removed', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
+
+      // Trigger inline error on second tournament name
+      const nameInputs = screen.getAllByLabelText(/catégorie/i);
+      await user.type(nameInputs[1], 'A');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByText(/2 caractères minimum/i)).toBeInTheDocument();
+      });
+
+      // Remove the second tournament (click the X button)
+      const removeButtons = screen.getAllByRole('button').filter(
+        (btn: HTMLElement) => btn.querySelector('.lucide-x')
+      );
+      fireEvent.click(removeButtons[removeButtons.length - 1]);
+
+      // Error should be gone
+      expect(screen.queryByText(/2 caractères minimum/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('links field errors to inputs via aria-describedby', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-describedby', 'error-eventName');
+      });
+      const errorEl = document.getElementById('error-eventName');
+      expect(errorEl).toHaveTextContent('3 caractères minimum');
     });
   });
 });

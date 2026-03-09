@@ -313,6 +313,7 @@ describe('PlayerTable', () => {
       render(<PlayerTable tournament={emptyTournament} />);
 
       expect(screen.getByText('Aucun joueur à afficher')).toBeInTheDocument();
+      expect(screen.getByText(/cliquez sur actualiser/i)).toBeInTheDocument();
     });
 
     it('handles player with 0 rounds gracefully', () => {

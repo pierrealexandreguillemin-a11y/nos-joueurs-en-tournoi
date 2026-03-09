@@ -21,9 +21,9 @@ interface EventFormProps {
   onCancel?: () => void;
 }
 
-function FieldError({ error }: { error?: string }) {
+function FieldError({ id, error }: { id?: string; error?: string }) {
   if (!error) return null;
-  return <p className="text-xs text-destructive">{error}</p>;
+  return <p id={id} className="text-xs text-destructive">{error}</p>;
 }
 
 interface TournamentRowProps {
@@ -37,6 +37,9 @@ interface TournamentRowProps {
 }
 
 function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove, fieldErrors, onFieldBlur }: TournamentRowProps) {
+  const nameKey = `name-${tournament.id}`;
+  const urlKey = `url-${tournament.id}`;
+
   return (
     <div className="flex flex-col sm:flex-row gap-2 sm:items-end p-4 border rounded-lg bg-background/50">
       <div className="flex-1 space-y-2">
@@ -48,10 +51,11 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove, fiel
           placeholder="Ex: U12, Open, Seniors"
           value={tournament.name}
           onChange={(e) => onUpdate(index, 'name', e.target.value)}
-          onBlur={() => onFieldBlur(`name-${index}`, tournament.name)}
-          aria-invalid={!!fieldErrors[`name-${index}`]}
+          onBlur={() => onFieldBlur(nameKey, tournament.name)}
+          aria-invalid={!!fieldErrors[nameKey]}
+          aria-describedby={fieldErrors[nameKey] ? `error-${nameKey}` : undefined}
         />
-        <FieldError error={fieldErrors[`name-${index}`]} />
+        <FieldError id={`error-${nameKey}`} error={fieldErrors[nameKey]} />
       </div>
 
       <div className="flex-[2] space-y-2">
@@ -64,10 +68,11 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove, fiel
           placeholder="https://echecs.asso.fr/Resultats.aspx?..."
           value={tournament.url}
           onChange={(e) => onUpdate(index, 'url', e.target.value)}
-          onBlur={() => onFieldBlur(`url-${index}`, tournament.url)}
-          aria-invalid={!!fieldErrors[`url-${index}`]}
+          onBlur={() => onFieldBlur(urlKey, tournament.url)}
+          aria-invalid={!!fieldErrors[urlKey]}
+          aria-describedby={fieldErrors[urlKey] ? `error-${urlKey}` : undefined}
         />
-        <FieldError error={fieldErrors[`url-${index}`]} />
+        <FieldError id={`error-${urlKey}`} error={fieldErrors[urlKey]} />
       </div>
 
       {showRemove && (
@@ -143,9 +148,10 @@ function EventFields({ eventName, clubName, onEventNameChange, onClubNameChange,
           onChange={(e) => onEventNameChange(e.target.value)}
           onBlur={() => onFieldBlur('eventName', eventName)}
           aria-invalid={!!fieldErrors.eventName}
+          aria-describedby={fieldErrors.eventName ? 'error-eventName' : undefined}
           autoFocus
         />
-        <FieldError error={fieldErrors.eventName} />
+        <FieldError id="error-eventName" error={fieldErrors.eventName} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="clubName">Nom du club (optionnel)</Label>
@@ -244,6 +250,28 @@ function buildEvent(eventName: string, clubName: string, tournaments: Tournament
   };
 }
 
+function applyFieldValidation(
+  setFieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  field: string,
+  value: string,
+) {
+  const err = getFieldError(field, value);
+  setFieldErrors(prev => {
+    const next = { ...prev };
+    if (err) { next[field] = err; } else { delete next[field]; }
+    return next;
+  });
+}
+
+function warnPartialRows(tournaments: TournamentInput[]) {
+  const partial = tournaments.filter(t =>
+    (t.name.trim() && !t.url.trim()) || (!t.name.trim() && t.url.trim())
+  );
+  if (partial.length > 0) {
+    toast.info(`${partial.length} tournoi(s) incomplet(s) ignoré(s)`);
+  }
+}
+
 export default function EventForm({ onEventCreated, onCancel }: EventFormProps) {
   const [eventName, setEventName] = useState('');
   const [clubName, setClubName] = useState('');
@@ -253,23 +281,18 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const validateField = (field: string, value: string) => {
-    setFieldErrors(prev => {
-      const next = { ...prev };
-      const error = getFieldError(field, value);
-      if (error) { next[field] = error; } else { delete next[field]; }
-      return next;
-    });
-  };
-
-  const addTournament = () => {
-    setTournaments([...tournaments, { id: crypto.randomUUID(), name: '', url: '' }]);
-  };
+  const validateField = (field: string, value: string) => applyFieldValidation(setFieldErrors, field, value);
 
   const removeTournament = (index: number) => {
-    if (tournaments.length > 1) {
-      setTournaments(tournaments.filter((_, i) => i !== index));
-    }
+    if (tournaments.length <= 1) return;
+    const removedId = tournaments[index].id;
+    setTournaments(tournaments.filter((_, i) => i !== index));
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      delete next[`name-${removedId}`];
+      delete next[`url-${removedId}`];
+      return next;
+    });
   };
 
   const updateTournament = (index: number, field: 'name' | 'url', value: string) => {
@@ -282,14 +305,7 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     e.preventDefault();
     if (!validateEventForm(eventName, tournaments, setError)) return;
     setError('');
-
-    const partialRows = tournaments.filter(t =>
-      (t.name.trim() && !t.url.trim()) || (!t.name.trim() && t.url.trim())
-    );
-    if (partialRows.length > 0) {
-      toast.info(`${partialRows.length} tournoi(s) incomplet(s) ignoré(s)`);
-    }
-
+    warnPartialRows(tournaments);
     onEventCreated(buildEvent(eventName, clubName, tournaments));
   };
 
@@ -311,23 +327,19 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
             fieldErrors={fieldErrors}
             onFieldBlur={validateField}
           />
-
           <TournamentsSection
             tournaments={tournaments}
-            onAdd={addTournament}
+            onAdd={() => setTournaments([...tournaments, { id: crypto.randomUUID(), name: '', url: '' }])}
             onUpdate={updateTournament}
             onRemove={removeTournament}
             fieldErrors={fieldErrors}
             onFieldBlur={validateField}
           />
-
-          {/* Error Message */}
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <FormActions onCancel={onCancel} />
         </form>
       </CardContent>
