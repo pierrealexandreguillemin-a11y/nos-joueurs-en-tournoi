@@ -50,7 +50,7 @@ interface ClubTotalsRowProps {
 const ClubTotalsRow = memo(function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
     <TableRow className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b-2 border-primary/30">
-      <TableHead className="font-bold text-secondary sticky left-0 z-10 bg-card" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
+      <TableHead className="font-bold text-foreground sticky left-0 z-10 bg-card" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold text-primary">

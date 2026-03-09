@@ -56,7 +56,7 @@ function QRCodeSection({ shareData, qrSize, qrCodeTooBig }: {
           includeMargin={true}
         />
       </div>
-      <p className="text-xs text-center text-secondary/60 px-2">
+      <p className="text-xs text-center text-muted-foreground px-2">
         Scannez ce QR code avec un autre appareil pour importer l&apos;événement
       </p>
     </div>
@@ -70,10 +70,10 @@ function ShareURLSection({ url, copied, onCopy }: {
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-secondary">Lien de partage</label>
+      <label className="text-sm font-medium text-foreground">Lien de partage</label>
       <div className="flex gap-2">
         <div className="flex-1 p-3 rounded-md glass-surface border border-primary/20 max-h-24 overflow-auto">
-          <code className="text-xs break-all text-secondary/80">
+          <code className="text-xs break-all text-muted-foreground">
             {url}
           </code>
         </div>
@@ -97,8 +97,8 @@ function ShareURLSection({ url, copied, onCopy }: {
 
 function ShareInstructions() {
   return (
-    <div className="text-sm text-secondary/70 space-y-2 p-4 rounded-lg glass-surface border border-primary/10">
-      <p className="font-semibold text-secondary">Comment utiliser :</p>
+    <div className="text-sm text-muted-foreground space-y-2 p-4 rounded-lg glass-surface border border-primary/10">
+      <p className="font-semibold text-foreground">Comment utiliser :</p>
       <ul className="list-disc list-inside space-y-1 ml-2">
         <li>Scannez le QR code avec votre téléphone</li>
         <li>Ou copiez et partagez le lien</li>
@@ -185,14 +185,14 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
           <DialogTitle className="text-2xl dialog-title-gradient">
             Partager l&apos;événement
           </DialogTitle>
-          <DialogDescription className="text-secondary/70">
+          <DialogDescription className="text-muted-foreground">
             {eventName}
           </DialogDescription>
         </DialogHeader>
 
         {!shareData ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-secondary/60">Génération du lien...</div>
+            <div className="text-muted-foreground">Génération du lien...</div>
           </div>
         ) : (
           <div className="space-y-4 pb-2">

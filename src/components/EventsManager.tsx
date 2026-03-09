@@ -447,7 +447,7 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="glass-surface border-primary/30 text-secondary hover:bg-primary/10">
+          <Button variant="outline" className="glass-surface border-primary/30 text-foreground hover:bg-primary/10">
             Gérer les événements
           </Button>
         </DialogTrigger>

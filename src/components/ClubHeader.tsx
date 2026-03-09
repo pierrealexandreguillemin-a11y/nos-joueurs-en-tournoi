@@ -65,10 +65,10 @@ export default function ClubHeader() {
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div ref={menuRef} role="menu" className="absolute right-0 top-full mt-2 z-50 rounded-lg py-1 min-w-[200px] menu-dropdown">
             <div className="px-3 py-2 border-b border-primary/20">
-              <div className="text-xs text-secondary/80">Identifiant</div>
-              <code className="text-sm text-secondary font-mono">{identity.clubSlug}</code>
+              <div className="text-xs text-muted-foreground">Identifiant</div>
+              <code className="text-sm text-foreground font-mono">{identity.clubSlug}</code>
             </div>
-            <Button variant="ghost" size="sm" role="menuitem" className="w-full justify-start rounded-none text-secondary hover:bg-primary/10" onClick={handleCopySlug}>
+            <Button variant="ghost" size="sm" role="menuitem" className="w-full justify-start rounded-none text-foreground hover:bg-primary/10" onClick={handleCopySlug}>
               <Copy className="w-3.5 h-3.5 mr-2" aria-hidden="true" />
               Copier l&apos;identifiant
             </Button>

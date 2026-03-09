@@ -24,7 +24,7 @@ function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
         <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
           🐛 Debug Panel
         </DialogTitle>
-        <DialogDescription className="text-secondary/70">
+        <DialogDescription className="text-muted-foreground">
           Informations techniques pour diagnostic
         </DialogDescription>
       </DialogHeader>
@@ -43,7 +43,7 @@ function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
           </Button>
         </div>
 
-        <div className="text-xs text-secondary/60 space-y-1">
+        <div className="text-xs text-muted-foreground space-y-1">
           <p>• Vérifiez la console (F12) pour les logs détaillés</p>
           <p>• &quot;Copier Toutes les Données&quot; = tout le localStorage</p>
           <p>• Envoyez ces infos pour diagnostic</p>

@@ -47,7 +47,7 @@ const PairingRow = memo(function PairingRow({ pairing, index }: PairingRowProps)
       className={index % 2 === 0 ? 'bg-foreground/10 hover:bg-foreground/10' : 'bg-primary/10 hover:bg-primary/10'}
     >
       <TableCell className="text-center">
-        <span className="text-xl font-bold text-secondary">{pairing.board}</span>
+        <span className="text-xl font-bold text-foreground">{pairing.board}</span>
       </TableCell>
       <TableCell className="font-medium">{pairing.clubPlayerName}</TableCell>
       <TableCell className="text-center">

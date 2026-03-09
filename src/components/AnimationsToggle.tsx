@@ -26,7 +26,7 @@ export default function AnimationsToggle() {
       variant="ghost"
       size="icon"
       onClick={handleToggle}
-      className="text-secondary hover:bg-primary/10"
+      className="text-foreground hover:bg-primary/10"
       title={animationsEnabled ? 'Désactiver les animations (économie batterie)' : 'Activer les animations'}
       aria-label={animationsEnabled ? 'Désactiver les animations' : 'Activer les animations'}
     >

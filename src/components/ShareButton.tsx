@@ -19,7 +19,7 @@ const APP_URL = 'https://nos-joueurs-en-tournoi.vercel.app';
 function QRCodeCard() {
   return (
     <Card className="p-6 glass-surface flex flex-col items-center gap-4">
-      <div className="bg-popover p-4 rounded-lg text-secondary">
+      <div className="bg-popover p-4 rounded-lg text-foreground">
         <QRCodeSVG
           value={APP_URL}
           size={200}
@@ -28,7 +28,7 @@ function QRCodeCard() {
           fgColor="currentColor"
         />
       </div>
-      <p className="text-sm text-secondary/70 text-center">
+      <p className="text-sm text-muted-foreground text-center">
         Scannez ce QR code pour accéder à l&apos;application
       </p>
     </Card>
@@ -39,7 +39,7 @@ function CopyUrlCard({ copied, onCopy }: { copied: boolean; onCopy: () => void }
   return (
     <Card className="p-4 glass-surface">
       <div className="flex items-center gap-2">
-        <code className="flex-1 text-sm text-secondary bg-popover/50 px-3 py-2 rounded">
+        <code className="flex-1 text-sm text-foreground bg-popover/50 px-3 py-2 rounded">
           {APP_URL}
         </code>
         <Button
@@ -92,7 +92,7 @@ export default function ShareButton() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-secondary hover:bg-primary/10"
+          className="text-foreground hover:bg-primary/10"
           title="Partager l'application"
           aria-label="Partager l'application"
         >
@@ -104,7 +104,7 @@ export default function ShareButton() {
           <DialogTitle className="text-2xl dialog-title-gradient">
             Partager l&apos;application
           </DialogTitle>
-          <DialogDescription className="text-secondary/70">
+          <DialogDescription className="text-muted-foreground">
             Partagez Nos Joueurs en Tournoi avec d&apos;autres clubs ou joueurs
           </DialogDescription>
         </DialogHeader>
