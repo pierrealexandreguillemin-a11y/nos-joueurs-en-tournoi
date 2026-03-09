@@ -82,6 +82,10 @@ Hover uses a slightly stronger version of the same approach (not a different col
 | **Miami dark** | `oklch(var(--primary) / 0.05)` | transparent | `oklch(var(--primary) / 0.10)` |
 | **Miami light** | `oklch(var(--primary) / 0.04)` | transparent | `oklch(var(--primary) / 0.08)` |
 
+### Sticky column
+
+No opaque background — uses `backdrop-filter: blur(8px)` to hide scrolling content without adding color. The row striping shows through uniformly.
+
 ### Total Club row
 
 Keeps its existing `bg-gradient-to-r from-primary/10 to-secondary/10` — it's a summary row, not a data row. Sticky cell mirrors the same gradient.
