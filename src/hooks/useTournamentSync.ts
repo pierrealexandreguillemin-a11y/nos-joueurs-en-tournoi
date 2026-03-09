@@ -205,7 +205,7 @@ function useFetchCallbacks(
       const updatedTournament = await fetchTournamentResults(tournament, event.clubName);
 
       if (updatedTournament.players.length === 0) {
-        throw new Error(`Aucun joueur ${event.clubName} trouvé. Le tournoi n'a peut-être pas encore commencé.`);
+        throw new Error(`Aucun joueur « ${event.clubName} » trouvé. Vérifiez le nom du club ou laissez-le vide pour utiliser la détection automatique.`);
       }
 
       commitEvent({

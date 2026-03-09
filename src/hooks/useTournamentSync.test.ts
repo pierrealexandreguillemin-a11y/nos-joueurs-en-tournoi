@@ -247,7 +247,7 @@ describe('useTournamentSync', () => {
       await result.current.handleRefresh(event.tournaments[0]);
     });
 
-    expect(result.current.error).toContain('Aucun joueur Hay Chess trouvé');
+    expect(result.current.error).toContain('Aucun joueur « Hay Chess » trouvé');
   });
 
   // F1 FIX: This test was renamed — handleRefresh without clubName dispatches
