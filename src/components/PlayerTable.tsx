@@ -73,7 +73,7 @@ interface ColumnHeadersRowProps {
 const ColumnHeadersRow = memo(function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
   return (
     <TableRow>
-      <TableHead className="font-bold sticky left-0 z-10 bg-card">Nom</TableHead>
+      <TableHead className="font-bold sticky left-0 z-10 table-sticky">Nom</TableHead>
       <TableHead className="font-bold text-center">Elo</TableHead>
       {Array.from({ length: maxRounds }, (_, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold">
@@ -140,7 +140,7 @@ const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, play
     <TableRow
       className={playerIndex % 2 === 0 ? 'table-row-even' : 'table-row-odd'}
     >
-      <TableCell className={`font-medium sticky left-0 z-10 ${playerIndex % 2 === 0 ? 'table-sticky-even' : 'table-sticky-odd'}`}>{player.name}</TableCell>
+      <TableCell className="font-medium sticky left-0 z-10 table-sticky">{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
 
       {/* Round Results with Validation */}
