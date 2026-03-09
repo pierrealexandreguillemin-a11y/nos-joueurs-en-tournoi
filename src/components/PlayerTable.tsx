@@ -50,7 +50,7 @@ interface ClubTotalsRowProps {
 const ClubTotalsRow = memo(function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
     <TableRow className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b-2 border-primary/30">
-      <TableHead className="font-bold text-secondary" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
+      <TableHead className="font-bold text-secondary sticky left-0 z-10 bg-card" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold text-primary">
@@ -73,7 +73,7 @@ interface ColumnHeadersRowProps {
 const ColumnHeadersRow = memo(function ColumnHeadersRow({ maxRounds }: ColumnHeadersRowProps) {
   return (
     <TableRow>
-      <TableHead className="font-bold">Nom</TableHead>
+      <TableHead className="font-bold sticky left-0 z-10 bg-card">Nom</TableHead>
       <TableHead className="font-bold text-center">Elo</TableHead>
       {Array.from({ length: maxRounds }, (_, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold">
@@ -140,7 +140,7 @@ const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, play
     <TableRow
       className={playerIndex % 2 === 0 ? 'bg-foreground/10 hover:bg-foreground/10' : 'bg-primary/3 hover:bg-primary/3'}
     >
-      <TableCell className="font-medium">{player.name}</TableCell>
+      <TableCell className="font-medium sticky left-0 z-10 bg-card">{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
 
       {/* Round Results with Validation */}
@@ -243,7 +243,8 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
 
       {tournament.players.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          Aucun joueur à afficher
+          <p>Aucun joueur à afficher</p>
+          <p className="text-xs mt-1">Cliquez sur Actualiser pour charger les résultats du tournoi.</p>
         </div>
       )}
     </Card>
