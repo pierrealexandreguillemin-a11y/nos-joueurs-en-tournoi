@@ -295,6 +295,57 @@
 
 }
 
+/* ================================================================
+   TABLE ROW STRIPING — theme-aware glass-integrated bands
+   Neutral: frosted opacity (white/black overlay)
+   Miami: primary hue whisper (neon undertone)
+   ================================================================ */
+
+/* Neutral dark: frosted white bands */
+[data-theme="neutral"][data-mode="dark"] .table-row-even {
+  background: oklch(1 0 0 / 0.03);
+}
+[data-theme="neutral"][data-mode="dark"] .table-row-even:hover,
+[data-theme="neutral"][data-mode="dark"] .table-row-odd:hover {
+  background: oklch(1 0 0 / 0.06);
+}
+/* Sticky cells — opaque equivalents (card base + tint) */
+[data-theme="neutral"][data-mode="dark"] td.table-sticky-even { background: oklch(0.25 0 0); }
+[data-theme="neutral"][data-mode="dark"] td.table-sticky-odd  { background: oklch(var(--card)); }
+
+/* Neutral light: frosted dark bands */
+[data-theme="neutral"][data-mode="light"] .table-row-even {
+  background: oklch(0 0 0 / 0.025);
+}
+[data-theme="neutral"][data-mode="light"] .table-row-even:hover,
+[data-theme="neutral"][data-mode="light"] .table-row-odd:hover {
+  background: oklch(0 0 0 / 0.05);
+}
+[data-theme="neutral"][data-mode="light"] td.table-sticky-even { background: oklch(0.935 0.005 260); }
+[data-theme="neutral"][data-mode="light"] td.table-sticky-odd  { background: oklch(var(--card)); }
+
+/* Miami dark: primary hue whisper */
+[data-theme="miami"][data-mode="dark"] .table-row-even {
+  background: oklch(var(--primary) / 0.05);
+}
+[data-theme="miami"][data-mode="dark"] .table-row-even:hover,
+[data-theme="miami"][data-mode="dark"] .table-row-odd:hover {
+  background: oklch(var(--primary) / 0.10);
+}
+[data-theme="miami"][data-mode="dark"] td.table-sticky-even { background: oklch(0.30 0.01 203); }
+[data-theme="miami"][data-mode="dark"] td.table-sticky-odd  { background: oklch(var(--card)); }
+
+/* Miami light: primary hue whisper (lighter) */
+[data-theme="miami"][data-mode="light"] .table-row-even {
+  background: oklch(var(--primary) / 0.04);
+}
+[data-theme="miami"][data-mode="light"] .table-row-even:hover,
+[data-theme="miami"][data-mode="light"] .table-row-odd:hover {
+  background: oklch(var(--primary) / 0.08);
+}
+[data-theme="miami"][data-mode="light"] td.table-sticky-even { background: oklch(0.95 0.005 203); }
+[data-theme="miami"][data-mode="light"] td.table-sticky-odd  { background: oklch(var(--card)); }
+
 /* Reduced motion support — WCAG 2.1 §2.3.3 */
 @media (prefers-reduced-motion: reduce) {
   *,

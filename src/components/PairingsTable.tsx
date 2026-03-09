@@ -44,7 +44,7 @@ interface PairingRowProps {
 const PairingRow = memo(function PairingRow({ pairing, index }: PairingRowProps) {
   return (
     <TableRow
-      className={index % 2 === 0 ? 'bg-muted hover:bg-muted' : 'bg-card hover:bg-card'}
+      className={index % 2 === 0 ? 'table-row-even' : 'table-row-odd'}
     >
       <TableCell className="text-center">
         <span className="text-xl font-bold text-foreground">{pairing.board}</span>

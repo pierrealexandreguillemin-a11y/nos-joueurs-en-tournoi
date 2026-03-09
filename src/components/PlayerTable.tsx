@@ -50,7 +50,7 @@ interface ClubTotalsRowProps {
 const ClubTotalsRow = memo(function ClubTotalsRow({ clubTotalsPerRound }: ClubTotalsRowProps) {
   return (
     <TableRow className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b-2 border-primary/30">
-      <TableHead className="font-bold text-foreground sticky left-0 z-10 bg-card" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
+      <TableHead className="font-bold text-foreground sticky left-0 z-10 bg-gradient-to-r from-primary/10 to-secondary/10" title="Score cumulé de tous les joueurs du club par ronde">Total Club</TableHead>
       <TableHead className="text-center">-</TableHead>
       {clubTotalsPerRound.map((total, i) => (
         <TableHead key={`round-${i}`} className="text-center font-bold text-primary">
@@ -138,9 +138,9 @@ interface PlayerRowProps {
 const PlayerRow = memo(function PlayerRow({ player, playerIndex, maxRounds, playerValidation, tournamentId, onValidationChange }: PlayerRowProps) {
   return (
     <TableRow
-      className={playerIndex % 2 === 0 ? 'bg-muted hover:bg-muted' : 'bg-card hover:bg-card'}
+      className={playerIndex % 2 === 0 ? 'table-row-even' : 'table-row-odd'}
     >
-      <TableCell className={`font-medium sticky left-0 z-10 ${playerIndex % 2 === 0 ? 'bg-muted' : 'bg-card'}`}>{player.name}</TableCell>
+      <TableCell className={`font-medium sticky left-0 z-10 ${playerIndex % 2 === 0 ? 'table-sticky-even' : 'table-sticky-odd'}`}>{player.name}</TableCell>
       <TableCell className="text-center">{player.elo}</TableCell>
 
       {/* Round Results with Validation */}
