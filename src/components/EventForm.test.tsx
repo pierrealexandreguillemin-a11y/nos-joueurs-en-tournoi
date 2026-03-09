@@ -456,6 +456,100 @@ describe('EventForm', () => {
     });
   });
 
+  describe('Inline validation', () => {
+    it('shows field-level error on event name after blur if too short', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByText(/3 caractères minimum/i)).toBeInTheDocument();
+      });
+    });
+
+    it('shows field-level error on URL after blur if invalid', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const urlInput = screen.getByPlaceholderText(/echecs\.asso\.fr/i);
+      await user.type(urlInput, 'https://google.com');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByText(/url doit provenir de echecs\.asso\.fr/i)).toBeInTheDocument();
+      });
+    });
+
+    it('clears field-level error when value becomes valid', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByText(/3 caractères minimum/i)).toBeInTheDocument();
+      });
+
+      await user.clear(input);
+      await user.type(input, 'ABC');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.queryByText(/3 caractères minimum/i)).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Duplicate URL detection', () => {
+    it('shows error when duplicate URLs are used', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fillInput(screen.getByPlaceholderText(/championnat départemental/i), 'Test Event');
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
+
+      const nameInputs = screen.getAllByLabelText(/catégorie/i);
+      expect(nameInputs).toHaveLength(2);
+      fillInput(nameInputs[0], 'U12');
+      fillInput(nameInputs[1], 'U14');
+
+      const sameUrl = 'https://echecs.asso.fr/Resultats.aspx?Action=Ga&Groupe=1';
+      const urlInputs = screen.getAllByLabelText(/url ffe tournoi/i);
+      expect(urlInputs).toHaveLength(2);
+      fillInput(urlInputs[0], sameUrl);
+      fillInput(urlInputs[1], sameUrl);
+
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/même url est utilisée plusieurs fois/i)).toBeInTheDocument();
+      });
+      expect(mockOnEventCreated).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Mobile and UX polish', () => {
+    it('auto-focuses event name input on mount', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('renders tournament rows with responsive layout classes', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const urlInput = screen.getByPlaceholderText(/echecs\.asso\.fr/i);
+      const tournamentRow = urlInput.closest('.rounded-lg');
+      expect(tournamentRow?.className).toContain('flex-col');
+      expect(tournamentRow?.className).toContain('sm:flex-row');
+    });
+  });
+
   describe('Contextual help', () => {
     it('displays explanatory text for what an event is', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);

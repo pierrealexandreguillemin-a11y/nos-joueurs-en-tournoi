@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { X, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { isValidFFeUrl, isValidEventName, isValidTournamentName } from '@/lib/validation';
 import type { Event } from '@/types';
 
@@ -20,17 +21,24 @@ interface EventFormProps {
   onCancel?: () => void;
 }
 
+function FieldError({ error }: { error?: string }) {
+  if (!error) return null;
+  return <p className="text-xs text-destructive">{error}</p>;
+}
+
 interface TournamentRowProps {
   tournament: TournamentInput;
   index: number;
   showRemove: boolean;
   onUpdate: (index: number, field: 'name' | 'url', value: string) => void;
   onRemove: (index: number) => void;
+  fieldErrors: Record<string, string>;
+  onFieldBlur: (field: string, value: string) => void;
 }
 
-function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove }: TournamentRowProps) {
+function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove, fieldErrors, onFieldBlur }: TournamentRowProps) {
   return (
-    <div className="flex gap-2 items-end p-4 border rounded-lg bg-background/50">
+    <div className="flex flex-col sm:flex-row gap-2 sm:items-end p-4 border rounded-lg bg-background/50">
       <div className="flex-1 space-y-2">
         <Label htmlFor={`tournament-name-${index}`}>
           Catégorie
@@ -40,7 +48,10 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove }: To
           placeholder="Ex: U12, Open, Seniors"
           value={tournament.name}
           onChange={(e) => onUpdate(index, 'name', e.target.value)}
+          onBlur={() => onFieldBlur(`name-${index}`, tournament.name)}
+          aria-invalid={!!fieldErrors[`name-${index}`]}
         />
+        <FieldError error={fieldErrors[`name-${index}`]} />
       </div>
 
       <div className="flex-[2] space-y-2">
@@ -53,7 +64,10 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove }: To
           placeholder="https://echecs.asso.fr/Resultats.aspx?..."
           value={tournament.url}
           onChange={(e) => onUpdate(index, 'url', e.target.value)}
+          onBlur={() => onFieldBlur(`url-${index}`, tournament.url)}
+          aria-invalid={!!fieldErrors[`url-${index}`]}
         />
+        <FieldError error={fieldErrors[`url-${index}`]} />
       </div>
 
       {showRemove && (
@@ -75,9 +89,11 @@ interface TournamentsSectionProps {
   onAdd: () => void;
   onUpdate: (index: number, field: 'name' | 'url', value: string) => void;
   onRemove: (index: number) => void;
+  fieldErrors: Record<string, string>;
+  onFieldBlur: (field: string, value: string) => void;
 }
 
-function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove }: TournamentsSectionProps) {
+function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove, fieldErrors, onFieldBlur }: TournamentsSectionProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -98,9 +114,52 @@ function TournamentsSection({ tournaments, onAdd, onUpdate, onRemove }: Tourname
           showRemove={tournaments.length > 1}
           onUpdate={onUpdate}
           onRemove={onRemove}
+          fieldErrors={fieldErrors}
+          onFieldBlur={onFieldBlur}
         />
       ))}
     </div>
+  );
+}
+
+interface EventFieldsProps {
+  eventName: string;
+  clubName: string;
+  onEventNameChange: (v: string) => void;
+  onClubNameChange: (v: string) => void;
+  fieldErrors: Record<string, string>;
+  onFieldBlur: (field: string, value: string) => void;
+}
+
+function EventFields({ eventName, clubName, onEventNameChange, onClubNameChange, fieldErrors, onFieldBlur }: EventFieldsProps) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="eventName">Nom de l&apos;événement *</Label>
+        <Input
+          id="eventName"
+          placeholder="Ex: Championnat départemental 13 - Oct 2025"
+          value={eventName}
+          onChange={(e) => onEventNameChange(e.target.value)}
+          onBlur={() => onFieldBlur('eventName', eventName)}
+          aria-invalid={!!fieldErrors.eventName}
+          autoFocus
+        />
+        <FieldError error={fieldErrors.eventName} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="clubName">Nom du club (optionnel)</Label>
+        <Input
+          id="clubName"
+          placeholder="Sera détecté automatiquement au premier Actualiser"
+          value={clubName}
+          onChange={(e) => onClubNameChange(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Si vide, le nom du club sera détecté automatiquement depuis la page FFE.
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -151,7 +210,21 @@ function validateEventForm(
     }
   }
 
+  const urls = validTournaments.map(t => t.url.trim());
+  if (new Set(urls).size < urls.length) {
+    setError('Une même URL est utilisée plusieurs fois');
+    return false;
+  }
+
   return true;
+}
+
+function getFieldError(field: string, value: string): string | null {
+  if (!value.trim()) return null;
+  if (field === 'eventName' && !isValidEventName(value)) return '3 caractères minimum';
+  if (field.startsWith('url-') && !isValidFFeUrl(value)) return 'L\'URL doit provenir de echecs.asso.fr';
+  if (field.startsWith('name-') && !isValidTournamentName(value)) return '2 caractères minimum';
+  return null;
 }
 
 function buildEvent(eventName: string, clubName: string, tournaments: TournamentInput[]): Event {
@@ -178,6 +251,16 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     { id: crypto.randomUUID(), name: '', url: '' },
   ]);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: string) => {
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      const error = getFieldError(field, value);
+      if (error) { next[field] = error; } else { delete next[field]; }
+      return next;
+    });
+  };
 
   const addTournament = () => {
     setTournaments([...tournaments, { id: crypto.randomUUID(), name: '', url: '' }]);
@@ -199,6 +282,14 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
     e.preventDefault();
     if (!validateEventForm(eventName, tournaments, setError)) return;
     setError('');
+
+    const partialRows = tournaments.filter(t =>
+      (t.name.trim() && !t.url.trim()) || (!t.name.trim() && t.url.trim())
+    );
+    if (partialRows.length > 0) {
+      toast.info(`${partialRows.length} tournoi(s) incomplet(s) ignoré(s)`);
+    }
+
     onEventCreated(buildEvent(eventName, clubName, tournaments));
   };
 
@@ -212,36 +303,22 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Event Name */}
-          <div className="space-y-2">
-            <Label htmlFor="eventName">Nom de l&apos;événement *</Label>
-            <Input
-              id="eventName"
-              placeholder="Ex: Championnat départemental 13 - Oct 2025"
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
-            />
-          </div>
-
-          {/* Club Name (optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="clubName">Nom du club (optionnel)</Label>
-            <Input
-              id="clubName"
-              placeholder="Sera détecté automatiquement au premier Actualiser"
-              value={clubName}
-              onChange={(e) => setClubName(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Si vide, le nom du club sera détecté automatiquement depuis la page FFE.
-            </p>
-          </div>
+          <EventFields
+            eventName={eventName}
+            clubName={clubName}
+            onEventNameChange={setEventName}
+            onClubNameChange={setClubName}
+            fieldErrors={fieldErrors}
+            onFieldBlur={validateField}
+          />
 
           <TournamentsSection
             tournaments={tournaments}
             onAdd={addTournament}
             onUpdate={updateTournament}
             onRemove={removeTournament}
+            fieldErrors={fieldErrors}
+            onFieldBlur={validateField}
           />
 
           {/* Error Message */}
