@@ -23,7 +23,7 @@ interface EventFormProps {
 
 function FieldError({ id, error }: { id?: string; error?: string }) {
   if (!error) return null;
-  return <p id={id} className="text-xs text-destructive">{error}</p>;
+  return <p id={id} className="text-xs text-destructive animate-in fade-in-0 duration-200">{error}</p>;
 }
 
 interface TournamentRowProps {
@@ -44,7 +44,7 @@ function TournamentRow({ tournament, index, showRemove, onUpdate, onRemove, fiel
     <div className="flex flex-col sm:flex-row gap-2 sm:items-end p-4 border rounded-lg bg-background/50">
       <div className="flex-1 space-y-2">
         <Label htmlFor={`tournament-name-${index}`}>
-          Catégorie
+          {showRemove ? `Catégorie (tournoi ${index + 1})` : 'Catégorie'}
         </Label>
         <Input
           id={`tournament-name-${index}`}
@@ -169,7 +169,7 @@ function EventFields({ eventName, clubName, onEventNameChange, onClubNameChange,
   );
 }
 
-function FormActions({ onCancel }: { onCancel?: () => void }) {
+function FormActions({ onCancel, hasErrors }: { onCancel?: () => void; hasErrors?: boolean }) {
   return (
     <div className="flex gap-2 justify-end">
       {onCancel && (
@@ -177,7 +177,7 @@ function FormActions({ onCancel }: { onCancel?: () => void }) {
           Annuler
         </Button>
       )}
-      <Button type="submit" variant="gradient">
+      <Button type="submit" variant="gradient" disabled={hasErrors}>
         Créer l&apos;événement
       </Button>
     </div>
@@ -303,7 +303,14 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateEventForm(eventName, tournaments, setError)) return;
+    if (!validateEventForm(eventName, tournaments, setError)) {
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.focus();
+      });
+      return;
+    }
     setError('');
     warnPartialRows(tournaments);
     onEventCreated(buildEvent(eventName, clubName, tournaments));
@@ -340,7 +347,7 @@ export default function EventForm({ onEventCreated, onCancel }: EventFormProps) 
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <FormActions onCancel={onCancel} />
+          <FormActions onCancel={onCancel} hasErrors={Object.keys(fieldErrors).length > 0} />
         </form>
       </CardContent>
     </Card>

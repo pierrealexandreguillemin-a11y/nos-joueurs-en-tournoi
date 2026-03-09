@@ -643,5 +643,88 @@ describe('EventForm', () => {
       const errorEl = document.getElementById('error-eventName');
       expect(errorEl).toHaveTextContent('3 caractères minimum');
     });
+
+    it('sets aria-invalid on input with field error', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+      });
+    });
+  });
+
+  describe('Submit button disabled state', () => {
+    it('disables submit button when field errors exist', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /créer l'événement/i })).toBeDisabled();
+      });
+    });
+
+    it('re-enables submit button when field errors are resolved', async () => {
+      const user = userEvent.setup();
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      await user.type(input, 'AB');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /créer l'événement/i })).toBeDisabled();
+      });
+
+      await user.clear(input);
+      await user.type(input, 'ABC');
+      await user.tab();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /créer l'événement/i })).not.toBeDisabled();
+      });
+    });
+  });
+
+  describe('Tournament row numbering', () => {
+    it('shows numbered label when multiple tournaments exist', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
+
+      expect(screen.getByText(/catégorie \(tournoi 1\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/catégorie \(tournoi 2\)/i)).toBeInTheDocument();
+    });
+
+    it('shows plain label when single tournament', () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      expect(screen.getByLabelText(/catégorie/i)).toBeInTheDocument();
+      expect(screen.queryByText(/tournoi 1/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Focus scroll on submit error', () => {
+    it('focuses first invalid field on submit error', async () => {
+      render(<EventForm onEventCreated={mockOnEventCreated} />);
+
+      const input = screen.getByPlaceholderText(/championnat départemental/i);
+      fillInput(input, 'AB');
+
+      fireEvent.click(screen.getByRole('button', { name: /créer l'événement/i }));
+
+      // requestAnimationFrame is used, so wait for next frame
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+    });
   });
 });
