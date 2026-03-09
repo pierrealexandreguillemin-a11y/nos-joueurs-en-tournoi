@@ -49,10 +49,11 @@ const ViewToggle = memo(function ViewToggle({
         Appariements
         {showBadge && hasPairings && (
           <span
-            className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent"
+            className="ml-1.5 text-[10px] font-semibold text-accent"
             role="status"
-            aria-label="Nouveaux appariements disponibles"
-          />
+          >
+            Nouvelle ronde
+          </span>
         )}
       </button>
     </div>

@@ -37,16 +37,16 @@ describe('ViewToggle', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('shows orange badge when showBadge is true and hasPairings', () => {
+  it('shows text badge when showBadge is true and hasPairings', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings showBadge />);
 
-    expect(screen.getByLabelText(/Nouveaux appariements disponibles/i)).toBeInTheDocument();
+    expect(screen.getByText(/nouvelle ronde/i)).toBeInTheDocument();
   });
 
   it('does not show badge when showBadge is false', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings showBadge={false} />);
 
-    expect(screen.queryByLabelText(/Nouveaux appariements disponibles/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nouvelle ronde/i)).not.toBeInTheDocument();
   });
 
   it('calls onChange with results when clicking Résultats from pairings mode', () => {
@@ -80,7 +80,14 @@ describe('ViewToggle', () => {
   it('badge has role=status for screen reader announcement', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings showBadge />);
 
-    const badge = screen.getByLabelText(/Nouveaux appariements disponibles/i);
-    expect(badge).toHaveAttribute('role', 'status');
+    const badge = screen.getByRole('status');
+    expect(badge).toBeInTheDocument();
+  });
+
+  it('shows visible text badge when new pairings are available', () => {
+    render(
+      <ViewToggle viewMode="results" onChange={vi.fn()} hasPairings={true} showBadge={true} />
+    );
+    expect(screen.getByText(/nouvelle ronde/i)).toBeInTheDocument();
   });
 });
