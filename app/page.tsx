@@ -196,7 +196,12 @@ function useHomePage() {
   const handleEventCreated = (event: Event) => {
     const storage = getStorage();
     if (!storage) return;
-    storage.saveEvent(event);
+    try {
+      storage.saveEvent(event);
+    } catch {
+      toast.error('Impossible de sauvegarder. Le stockage est peut-être plein.');
+      return;
+    }
     setCurrentEvent(event);
     setShowEventForm(false);
     toast.success(`Événement "${event.name}" créé`);
