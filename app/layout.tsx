@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { AnimationsProvider } from '@/contexts/AnimationsContext';
 import { ClubProvider } from '@/contexts/ClubContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ConsoleBanner } from '@/components/effects/console-banner';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -109,6 +110,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ConsoleBanner />
         <ClubProvider>
           <ThemeProvider>
             <AnimationsProvider>
