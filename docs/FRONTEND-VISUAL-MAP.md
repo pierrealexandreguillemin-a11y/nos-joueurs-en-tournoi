@@ -1,6 +1,6 @@
 # Cartographie Frontend — Theme, Effets et Animations
 
-> Derniere mise a jour : 2026-03-07
+> Derniere mise a jour : 2026-04-10
 > Inventaire complet du systeme visuel de l'application.
 
 ---
@@ -45,10 +45,10 @@ MIAMI_GRADIENT = linear-gradient(135deg, #008E97 0%, #013369 25%, #013369 75%, #
 
 | Police | Source | Variable CSS | Usage |
 |--------|--------|-------------|-------|
-| **Audiowide** | Google Fonts | `--font-audiowide` | Titres cyberpunk, `.cyberpunk-title`, `font-audiowide` |
-| **Inter** | Google Fonts | `--font-inter` | Body, UI, texte courant |
+| **Exo 2** | Google Fonts (`next/font/google`) | `--font-exo2` | Titres cyberpunk, `.cyberpunk-title` |
+| **Satoshi** | Local (`src/fonts/satoshi-*.woff2`) | `--font-satoshi` | Body, UI, texte courant |
 
-Chargement : `next/font/google` avec `display: swap`, `preload: true`.
+Chargement : `next/font/google` (Exo 2) + `localFont` (Satoshi 400/500/700), `display: swap`, `preload: true`.
 
 ---
 
@@ -59,8 +59,8 @@ z-index 1   | HalftoneWaves     — WebGL 2.0, GLSL shaders, 60fps
 z-index 1   | BackgroundPaths   — SVG + Framer Motion, 36x2 paths
 z-index 1/8 | FloatingParticles — CSS keyframes, 2 couches (back/front)
 ────────────|──────────────────────────────────────────────────────
-z-index 10  | MiamiGlass        — Glassmorphism statique (backdrop-blur)
-z-index 10  | ShimmerEffect     — CSS gradient sweep overlay, 8s
+z-index 10  | glass-surface/card — Glassmorphism statique (backdrop-blur, OKLCH)
+z-index 10  | animate-shimmer   — CSS gradient sweep (Tailwind utility, 3s)
 ────────────|──────────────────────────────────────────────────────
 surface     | UI Components     — Buttons, cards, tabs, dialogs, toasts
 surface     | .cyberpunk-title  — Gradient text + glow animation
@@ -126,56 +126,47 @@ Toutes les couches de fond sont **lazy-loaded** (`next/dynamic`, `ssr: false`) e
 100% : translateY(-5vh)  scale(0),   opacity 0
 ```
 
-### 3.4 ShimmerEffect (CSS Gradient Overlay)
+### 3.4 ShimmerEffect (CSS via Tailwind)
 
-| Propriete | Valeur |
-|-----------|--------|
-| **Fichier** | `src/components/common/ShimmerEffect.tsx` (40 lignes) |
-| **Gradient** | `-30deg, transparent 40% -> rgba(255,255,255,0.02) 50% -> transparent 60%` |
-| **Animation** | `shimmer 8s ease-in-out infinite` (bg-position -1000px -> +1000px) |
-| **Props** | `disabled` toggle |
-
-**Effet visuel :** Reflet lumineux subtil qui balaie le contenu, comme un eclat de soleil sur du verre.
+> **Note :** Le composant `ShimmerEffect.tsx` a ete supprime. L'effet shimmer est desormais un utilitaire CSS defini dans `tailwind.config.js` (`animate-shimmer`, 3s linear infinite).
 
 ---
 
-## 4. Glassmorphism — 3 variantes
+## 4. Glassmorphism — 2 classes utilitaires + inline
 
-### 4.1 `.miami-card` (carte principale)
+> **Note :** Les classes `.miami-card` et `.glass-surface` ont ete renommees. Le composant `MiamiGlass.tsx` a ete supprime. Le glassmorphism est desormais entierement via CSS variables OKLCH dans `globals.css`.
+
+### 4.1 `.glass-card` (carte principale)
 
 ```css
-background: rgba(255, 255, 255, 0.12);
-backdrop-filter: blur(15px) saturate(130%);
--webkit-backdrop-filter: blur(15px) saturate(130%);
-border: 1px solid rgba(255, 255, 255, 0.18);
-box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.15);
-border-radius: var(--radius);
-padding: 1.5rem;
+.glass-card {
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: oklch(var(--glass-tint) / var(--glass-bg-opacity-card));
+  border: 1px solid oklch(1 0 0 / var(--glass-border-opacity-card));
+  box-shadow: 0 1px 2px oklch(0 0 0 / var(--glass-shadow-opacity)),
+              0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+              inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity-card));
+}
 ```
 
 **Usage :** Cards tournois, stats, PairingsTable.
 
-### 4.2 `.miami-glass-foreground` (surface interactive)
+### 4.2 `.glass-surface` (surface interactive)
 
 ```css
-background: rgba(255, 255, 255, 0.05);
-backdrop-filter: blur(15px) saturate(130%);
-border: 1px solid rgba(255, 255, 255, 0.12);
-box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.08);
+.glass-surface {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: oklch(var(--glass-tint) / var(--glass-bg-opacity));
+  border: 1px solid oklch(1 0 0 / var(--glass-border-opacity));
+  box-shadow: 0 1px 2px oklch(0 0 0 / var(--glass-shadow-opacity)),
+              0 4px 16px oklch(0 0 0 / var(--glass-shadow-opacity-card)),
+              inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity));
+}
 ```
 
 **Usage :** TabsList, event cards inactifs, DuplicateEventDialog.
-
-### 4.3 `MiamiGlass variant="background"` (fond subtil)
-
-```css
-background: rgba(255, 255, 255, 0.01);
-backdrop-filter: blur(15px);
-border: 1px solid rgba(255, 255, 255, 0.06);
-box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.03);
-```
-
-**Usage :** Arriere-plan tres subtil, wrapper avec shimmer optionnel.
 
 ### 4.4 Glassmorphism inline (composants specifiques)
 
@@ -226,7 +217,7 @@ Definies dans `src/styles/globals.css` et `tailwind.config.js`.
 
 ```css
 .cyberpunk-title {
-  font-family: var(--font-audiowide);
+  font-family: var(--font-exo2);
   font-weight: 400;
   letter-spacing: 0.05em;
   background: linear-gradient(90deg, #00A8CC, #E04500, #00A8CC, #E04500, #00A8CC);
@@ -266,7 +257,7 @@ Definies dans `src/styles/globals.css` et `tailwind.config.js`.
 
 | Variant | Style de base | Hover | Focus |
 |---------|---------------|-------|-------|
-| `miami` | `bg-gradient-to-r from-miami-aqua to-miami-navy text-white shadow-lg` | `opacity-90` | `ring-2 ring-ring ring-offset-2` |
+| `gradient` | `bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg` | `opacity-90` | `ring-2 ring-ring ring-offset-2` |
 | `default` | `bg-primary text-primary-foreground` | `bg-primary/90` | idem |
 | `destructive` | `bg-destructive text-destructive-foreground` | `bg-destructive/90` | idem |
 | `outline` | `border border-input bg-background` | `bg-accent text-accent-foreground` | idem |
@@ -280,7 +271,7 @@ Definies dans `src/styles/globals.css` et `tailwind.config.js`.
 
 ### 8.2 Onglets (Tabs customises miami)
 
-- **Container :** `.miami-glass-foreground border border-miami-aqua/20`
+- **Container :** `.glass-surface border border-miami-aqua/20`
 - **Inactif :** `text-muted-foreground`, hover `text-miami-aqua`
 - **Actif :** `bg-gradient-to-r from-miami-aqua to-miami-navy text-white shadow-lg`
 - **Focus :** `focus-visible:ring-2 ring-miami-aqua ring-offset-2`
@@ -313,7 +304,7 @@ Definies dans `src/styles/globals.css` et `tailwind.config.js`.
 ### 8.6 EventsManager cards
 
 - **Event actif :** `bg-gradient-to-r from-miami-aqua/20 to-miami-navy/10 border-miami-aqua/50 shadow-lg` + badge `CheckCircle2`
-- **Event inactif :** `miami-glass-foreground hover:border-miami-aqua/30 hover:shadow-md`
+- **Event inactif :** `glass-surface hover:border-miami-aqua/30 hover:shadow-md`
 - **Transition :** `transition-all`, cursor pointer
 
 ### 8.7 ViewToggle (Resultats / Appariements)
@@ -332,7 +323,7 @@ Definies dans `src/styles/globals.css` et `tailwind.config.js`.
 
 - **Dialog titre :** gradient text clip aqua->navy
 - **Bouton copier :** icone Copy -> Check (green-600) apres copie, reset apres 2000ms
-- **QR Code :** container `miami-glass-foreground` avec fond blanc pour le QR
+- **QR Code :** container `glass-surface` avec fond blanc pour le QR
 
 ---
 
@@ -411,8 +402,8 @@ Base commune : `rounded-full border px-2.5 py-0.5 text-xs font-semibold transiti
 | `src/components/HalftoneWaves.tsx` | WebGL 2.0 + GLSL | 287 |
 | `src/components/BackgroundPaths.tsx` | SVG + Framer Motion | 68 |
 | `src/components/common/FloatingParticles.tsx` | CSS Keyframes | 125 |
-| `src/components/common/ShimmerEffect.tsx` | CSS Gradient Animation | 40 |
-| `src/components/common/MiamiGlass.tsx` | Backdrop Filter + Shimmer | 67 |
+| ~~`src/components/common/ShimmerEffect.tsx`~~ | Supprime — remplace par `animate-shimmer` (Tailwind utility) | — |
+| ~~`src/components/common/MiamiGlass.tsx`~~ | Supprime — remplace par `.glass-surface` / `.glass-card` CSS | — |
 
 ### Controle des animations
 
