@@ -39,7 +39,10 @@ export default function ClubOnboarding() {
         <h1 className="text-2xl font-bold text-center mb-2 cyberpunk-title">
           NOS JOUEURS EN TOURNOI
         </h1>
-        <p className="text-center text-foreground/80 mb-6">
+        <p className="text-center text-foreground/80 mb-1">
+          Suivez les resultats de vos joueurs pendant les tournois FFE
+        </p>
+        <p className="text-center text-foreground/60 text-sm mb-6">
           Identifiez votre club pour commencer
         </p>
 
@@ -67,7 +70,7 @@ export default function ClubOnboarding() {
 
           {slug && (
             <div className="text-sm text-foreground/70">
-              Identifiant : <code className="bg-foreground/20 px-2 py-0.5 rounded text-foreground">{slug}</code>
+              Votre espace : <code className="bg-foreground/20 px-2 py-0.5 rounded text-foreground">{slug}</code>
             </div>
           )}
 

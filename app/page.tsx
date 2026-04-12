@@ -79,7 +79,7 @@ function PageHeader({ currentEvent, onEventChange, onNewEventClick }: PageHeader
               priority
               quality={90}
             />
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground cyberpunk-title">
+            <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground cyberpunk-title">
               NOS JOUEURS EN TOURNOI
             </h1>
           </div>

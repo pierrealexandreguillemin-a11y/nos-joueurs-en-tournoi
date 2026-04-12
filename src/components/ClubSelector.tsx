@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Users } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ClubInfo } from '@/types';
 
 interface ClubSelectorProps {
@@ -16,6 +17,7 @@ export default function ClubSelector({ clubs, onSelect }: ClubSelectorProps) {
   const handleConfirm = () => {
     if (selected) {
       onSelect(selected);
+      toast.success(`Club ${selected} sélectionné`);
     }
   };
 

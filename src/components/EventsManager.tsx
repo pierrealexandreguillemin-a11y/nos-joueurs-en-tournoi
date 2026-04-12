@@ -469,8 +469,11 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
           />
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {events.length === 0 ? (
-              <div className="text-center py-8 text-primary font-semibold">
-                Aucun événement créé
+              <div className="text-center py-8">
+                <p className="text-primary font-semibold mb-4">Aucun événement créé</p>
+                <Button variant="gradient" onClick={() => { setOpen(false); onNewEventClick(); }}>
+                  Créer un événement
+                </Button>
               </div>
             ) : (
               events.map((event: Event) => (

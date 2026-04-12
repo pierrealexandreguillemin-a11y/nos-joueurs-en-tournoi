@@ -105,7 +105,8 @@ export default function ShareButton() {
             Partager l&apos;application
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Partagez Nos Joueurs en Tournoi avec d&apos;autres clubs ou joueurs
+            Partagez Nos Joueurs en Tournoi avec d&apos;autres clubs ou joueurs.
+            Le destinataire pourra creer son propre espace club.
           </DialogDescription>
         </DialogHeader>
 

@@ -218,8 +218,10 @@ export default function PlayerTable({ tournament }: PlayerTableProps) {
   }), [maxRounds, tournament.players]);
 
   return (
-    <Card className="glass-card overflow-hidden">
+    <Card className="glass-card overflow-hidden relative">
       <div className="overflow-x-auto">
+        {/* T-2: scroll hint gradient on right edge */}
+        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background/40 to-transparent pointer-events-none z-10 md:hidden" />
         <Table aria-label={`Résultats des joueurs — ${tournament.name}`}>
           <TableHeader>
             <ClubTotalsRow clubTotalsPerRound={clubTotalsPerRound} />

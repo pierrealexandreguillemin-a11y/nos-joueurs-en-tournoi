@@ -154,10 +154,10 @@ function EventFields({ eventName, clubName, onEventNameChange, onClubNameChange,
         <FieldError id="error-eventName" error={fieldErrors.eventName} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="clubName">Nom du club (optionnel)</Label>
+        <Label htmlFor="clubName">Nom d&apos;affichage du club (optionnel)</Label>
         <Input
           id="clubName"
-          placeholder="Sera détecté automatiquement au premier Actualiser"
+          placeholder="Auto-détecté au premier Actualiser si vide"
           value={clubName}
           onChange={(e) => onClubNameChange(e.target.value)}
         />

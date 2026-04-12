@@ -167,9 +167,20 @@ function TournamentContent({
     );
   }
 
+  if (loading === tournament.id) {
+    return (
+      <Card className="glass-card text-center py-8">
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
+          <p role="status">Chargement des résultats depuis la FFE...</p>
+        </div>
+      </Card>
+    );
+  }
+
   if (hasPlayers) return <PlayerTable tournament={tournament} />;
 
-  if (!loading && !needsClubSelection) {
+  if (!needsClubSelection) {
     return (
       <Card className="glass-card text-center py-8">
         <p className="text-muted-foreground">
@@ -177,12 +188,6 @@ function TournamentContent({
             ? `Aucun joueur ${event.clubName} trouvé dans ce tournoi`
             : 'Cliquez sur Actualiser pour détecter les clubs du tournoi'}
         </p>
-        {!event.clubName && (
-          <Button variant="gradient" size="sm" className="mt-4" onClick={() => handleRefresh(tournament)}>
-            <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
-            Actualiser
-          </Button>
-        )}
       </Card>
     );
   }
@@ -225,7 +230,7 @@ function TournamentPanel({
   return (
     <>
       {needsClubSelection && (
-        <Card className="glass-card">
+        <Card className="glass-card fade-up">
           <ClubSelector clubs={event.availableClubs!} onSelect={handleClubSelect} />
         </Card>
       )}

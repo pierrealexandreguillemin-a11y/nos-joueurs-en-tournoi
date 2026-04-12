@@ -44,7 +44,7 @@ const ViewToggle = memo(function ViewToggle({
         disabled={!hasPairings}
         className={`${baseClass} ${viewMode === 'pairings' ? activeClass : inactiveClass} ${!hasPairings ? disabledClass : ''}`}
         onClick={() => onChange('pairings')}
-        title={!hasPairings ? 'Les appariements ne sont pas encore publiés' : undefined}
+        title={!hasPairings ? 'Disponible quand les appariements de la prochaine ronde sont publiés' : undefined}
       >
         Appariements
         {showBadge && hasPairings && (

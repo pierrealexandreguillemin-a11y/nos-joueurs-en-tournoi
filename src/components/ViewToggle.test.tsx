@@ -74,7 +74,7 @@ describe('ViewToggle', () => {
     render(<ViewToggle viewMode="results" onChange={vi.fn()} hasPairings={false} />);
 
     const btn = screen.getByRole('button', { name: /Appariements/i });
-    expect(btn).toHaveAttribute('title', expect.stringContaining('pas encore publiés'));
+    expect(btn).toHaveAttribute('title', expect.stringContaining('appariements'));
   });
 
   it('badge has role=status for screen reader announcement', () => {
