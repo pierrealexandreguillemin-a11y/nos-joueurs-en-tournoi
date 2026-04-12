@@ -1,8 +1,8 @@
 # Suivi de developpement - Nos Joueurs en Tournoi
 
-> Derniere mise a jour : 2026-03-07
+> Derniere mise a jour : 2026-04-12
 > Branche : `master`
-> Dernier commit : `3c91ac9`
+> Dernier commit : `c9acd1f`
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Indicateur | Valeur | Seuil | Statut |
 |------------|--------|-------|--------|
-| Tests | 565 passed (28 suites) | - | OK |
+| Tests | 571 passed (28 suites) | - | OK |
 | Tests E2E | 19 passed (6 suites) | - | OK |
 | Couverture Stmts | 95.05% | >= 70% | OK |
 | Couverture Branch | 85.79% | >= 70% | OK |
@@ -299,6 +299,87 @@ Documents : `docs/plans/2026-03-08-ux-audit-design.md`, `docs/plans/2026-03-08-u
 
 ---
 
+## Session design system + UX audit + ISO (2026-04-12)
+
+### Design system
+
+Document complet du design system : `docs/DESIGN-SYSTEM.md` (746 lignes, 12 sections).
+Couvre : tokens OKLCH, couleurs, typographie, espacement, glassmorphism, composants, animations, accessibilite, responsive, guide d'utilisation (dev + designers + stakeholders).
+
+### Fix modal EventsManager
+
+Cause racine : la regle CSS `[data-theme="neutral"] .glass-card { position: relative }` override `position: fixed` du dialog (specificite CSS superieure). Le dialog etait pousse hors ecran en theme Neutral.
+
+| Commit | Description |
+|--------|-------------|
+| `a7ddcfb` | Fix dialog positioning, glass conflicts, design system doc |
+
+Corrections :
+- `:not(.fixed)` sur les regles glass refraction (globals.css)
+- `max-h-[85vh] overflow-y-auto` sur Dialog et AlertDialog
+- `onInteractOutside` pour empecher la fermeture au clic exterieur
+- Header responsive du modal (`flex-col sm:flex-row`)
+- Opacite renforcee pour les dialogs glass (`background: oklch(var(--background) / 0.96)`)
+
+### Audit user journey (5 parcours, 16 findings)
+
+Audit Playwright sur les 5 parcours utilisateur (onboarding, creation, gestion, partage, personnalisation). Desktop 1366x768 et mobile 375x812, themes Miami dark + Neutral dark/light.
+
+| Commit | Description |
+|--------|-------------|
+| `7961585` | Rapport d'audit : `docs/USER-JOURNEY-AUDIT.md` |
+| `197dd6e` | 15 corrections UX implementees |
+
+Corrections UX :
+- Tagline explicative sur l'onboarding ("Suivez les resultats de vos joueurs...")
+- "Votre espace" au lieu de "Identifiant" pour le slug
+- Spinner pendant le chargement FFE (card avec icone animate-spin)
+- Suppression du 2e bouton Actualiser standalone
+- Animation fade-up sur le selecteur de club
+- Tooltip ameliore sur le bouton Appariements desactive
+- Label et placeholder clarifies pour "Nom du club"
+- Toast confirmation apres selection du club
+- CTA "Creer un evenement" dans le modal vide
+- Note dans le dialog partage (portee de l'URL)
+- Titre h1 compact sur mobile (`text-lg` au lieu de `text-2xl`)
+- Gradient scroll-hint sur le tableau (mobile only)
+
+### Audit ISO (23 findings, 4 axes)
+
+Audit statique par 4 agents paralleles : Maintainability, Reliability, Security, Accessibility.
+
+| Commit | Description |
+|--------|-------------|
+| `48f2c4b` | Rapport : `docs/ISO-AUDIT-2026-04-12.md` |
+| `2ca7151` | 6 quick wins ISO (SSRF protocol, aria-labels, silent catch) |
+| `c9acd1f` | 4 fixes court terme (Zod scrape, useReducedMotion, focus menu, import validation) |
+
+Corrections securite :
+- SEC-1 : Check `protocol !== 'https:'` dans `/api/scrape` (SSRF)
+- SEC-3 : Schema Zod `scrapeBodySchema` sur la route scrape
+- SEC-4 : Bornes `.max()` sur tous les arrays/strings dans schemas.ts
+- SEC-4 : Schema `exportedEventSchema` pour validation des imports JSON
+
+Corrections accessibilite :
+- A11Y-1/2 : `aria-label` + `aria-hidden` sur boutons icones ShareEventModal
+- A11Y-3 : `useReducedMotion()` Framer Motion dans BackgroundPaths
+- A11Y-4 : Focus management + navigation fleches dans ClubHeader menu
+- A11Y-5 : `aria-hidden="true"` sur canvas HalftoneWaves
+- A11Y-6 : Retrait `aria-label` redondant sur select ClubSelector
+
+Corrections fiabilite :
+- REL-1 : `console.error` dans le catch de fetchPairingsForRound
+- REL-2 : Validation Zod des imports JSON au lieu de `as ExportedEvent`
+
+### Impact sur les metriques
+
+| Metrique | Avant | Apres | Delta |
+|----------|-------|-------|-------|
+| Tests | 565 (28 suites) | 571 (28 suites) | +6 |
+| Score ISO estime | 4.5/5 | 4.0/5 (revise) → 4.3/5 (apres fixes) | +0.3 apres corrections |
+
+---
+
 ## TODO - Prochaine session
 
 ### Priorite 1 — Fiabilite et couverture
@@ -311,8 +392,9 @@ Documents : `docs/plans/2026-03-08-ux-audit-design.md`, `docs/plans/2026-03-08-u
 ### Priorite 2 — Securite (OWASP)
 
 - [x] **A-05 : Normaliser la gestion d'erreur API** — `apiError(label, error)` dans `src/lib/api-error.ts`. Log complet serveur, message generique client. Les 3 routes (`fetch`, `sync`, `scrape`) migrees. DONE.
-- [ ] **Rate limiting API** — Ajouter un rate limiter sur `/api/scrape` pour eviter l'abus du proxy CORS vers FFE. Options : Upstash Ratelimit ou middleware Vercel.
-- [ ] **CSP headers** — Verifier/renforcer les Content-Security-Policy dans `vercel.json`.
+- [x] **Rate limiting API** — Implemented (Upstash sliding window, 30 req/min scrape, 10 req/min events). DONE.
+- [x] **Zod validation scrape** — `scrapeBodySchema` avec bornes `.max()` sur toutes les routes. DONE.
+- [ ] **CSP headers** — Migrer vers CSP nonce-based (Next.js middleware) pour retirer `unsafe-inline`/`unsafe-eval`.
 
 ### Priorite 3 — CI/CD
 

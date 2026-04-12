@@ -10,13 +10,13 @@ Toutes vos donnees sont stockees dans votre navigateur. Rien n'est envoye sur in
 
 ## 1. Premier lancement : identifier votre club
 
-Au premier demarrage, l'application vous demande le nom de votre club.
+Au premier demarrage, l'application vous accueille avec le message "Suivez les resultats de vos joueurs pendant les tournois FFE" et vous demande le nom de votre club.
 
 - Tapez le nom de votre club (ex : "Hay Chess", "Marseille-Echecs")
-- Un identifiant est genere automatiquement (ex : `hay-chess`)
+- Votre espace est cree automatiquement (ex : `hay-chess`)
 - Cliquez sur **Commencer**
 
-Cet identifiant sert a organiser vos donnees localement. Vous pourrez le changer plus tard si besoin.
+Cet espace sert a organiser vos donnees localement. Vous pourrez le changer plus tard si besoin.
 
 ---
 
@@ -32,7 +32,7 @@ Un evenement regroupe un ou plusieurs tournois. Par exemple : "Championnat depar
 4. Cliquez sur **Ajouter un tournoi** pour en ajouter d'autres
 5. Validez avec **Creer l'evenement**
 
-Le champ "Nom du club" est optionnel : si vous le laissez vide, les clubs seront detectes automatiquement.
+Le champ "Nom d'affichage du club" est optionnel : si vous le laissez vide, le nom sera detecte automatiquement au premier Actualiser.
 
 ---
 
@@ -42,11 +42,12 @@ Une fois l'evenement cree, vous voyez un onglet par tournoi.
 
 ### Premiere utilisation : choisir votre club
 
-1. Cliquez sur **Actualiser** (icone de rafraichissement)
-2. L'application detecte tous les clubs presents dans le tournoi
-3. Choisissez votre club dans la liste deroulante
-4. Cliquez sur **Valider le choix du club**
-5. Les resultats de tous vos tournois se chargent automatiquement
+1. Cliquez sur **Actualiser** (icone de rafraichissement en haut a droite de la carte stats)
+2. Un indicateur de chargement s'affiche pendant la recuperation des donnees FFE
+3. L'application detecte tous les clubs presents dans le tournoi
+4. Choisissez votre club dans la liste deroulante (le selecteur apparait avec une animation)
+5. Cliquez sur **Valider le choix du club** — un message de confirmation s'affiche
+6. Les resultats de tous vos tournois se chargent automatiquement
 
 ### Les fois suivantes : mettre a jour
 
@@ -101,7 +102,7 @@ Quand les appariements d'une ronde sont publies sur le site FFE, un toggle **Res
 - L'application cherche d'abord les appariements de la **ronde suivante** (N+1)
 - Si la ronde suivante n'est pas encore publiee, elle affiche ceux de la **ronde en cours** (N)
 - Un **point orange** sur le bouton Appariements signale des appariements non encore consultes
-- Le bouton Appariements est grise tant que les appariements ne sont pas publies
+- Le bouton Appariements est grise tant que les appariements ne sont pas publies (un tooltip explique pourquoi)
 
 Pour revenir aux resultats, cliquez sur **Resultats**.
 
@@ -172,7 +173,7 @@ Le bouton eclair dans la barre du haut permet de desactiver les animations d'arr
 
 ### Partager l'application
 
-Le bouton de partage dans la barre du haut (a ne pas confondre avec le partage d'evenement) genere un QR code vers l'application elle-meme, pour la faire decouvrir a d'autres clubs.
+Le bouton de partage dans la barre du haut (a ne pas confondre avec le partage d'evenement) genere un QR code vers l'application elle-meme, pour la faire decouvrir a d'autres clubs. Le destinataire pourra creer son propre espace club.
 
 ### Installer sur telephone
 
