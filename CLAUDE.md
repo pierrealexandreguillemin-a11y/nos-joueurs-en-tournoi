@@ -183,8 +183,13 @@ test(scope): description     # Ajout/modification tests
 ### Validation API (`src/lib/schemas.ts`)
 
 - Zod schemas strictes (pas de `.passthrough()`)
+- Bornes `.max()` sur tous les arrays et strings (players 500, events 50, strings 200, URLs 2048)
 - Body size limit 1 MB sur sync route
-- SSRF prevention sur scrape route (whitelist hostname)
+- SSRF prevention sur scrape route : whitelist hostname + `protocol === 'https:'`
+- `scrapeBodySchema` : validation Zod du body de la route scrape
+- `exportedEventSchema` : validation Zod des imports JSON
+- Validation content-type `text/html` + cap 5 MB sur la reponse FFE
+- Handlers `OPTIONS()` sur les 3 routes API (CORS preflight)
 
 ## Architecture cles
 
@@ -260,8 +265,9 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 |---------|---------|
 | `docs/DESIGN-SYSTEM.md` | Design system complet (tokens, couleurs, typographie, composants, glass, animations) |
 | `docs/USER-JOURNEY-AUDIT.md` | Audit UX des 5 parcours utilisateur avec 16 findings priorises |
+| `docs/ISO-AUDIT-2026-04-12.md` | Audit ISO (23 findings, 16 corriges, 7 restants) — **lire a la reprise** |
+| `docs/ISO-COMPLIANCE.md` | Matrice de conformite qualite (scores a mettre a jour) |
 | `docs/FRONTEND-VISUAL-MAP.md` | Inventaire detaille des effets visuels |
-| `docs/ISO-COMPLIANCE.md` | Matrice de conformite qualite |
 
 ## Deploiement
 

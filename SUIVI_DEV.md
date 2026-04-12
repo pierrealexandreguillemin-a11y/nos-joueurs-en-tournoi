@@ -353,30 +353,44 @@ Audit statique par 4 agents paralleles : Maintainability, Reliability, Security,
 | `48f2c4b` | Rapport : `docs/ISO-AUDIT-2026-04-12.md` |
 | `2ca7151` | 6 quick wins ISO (SSRF protocol, aria-labels, silent catch) |
 | `c9acd1f` | 4 fixes court terme (Zod scrape, useReducedMotion, focus menu, import validation) |
+| `b614d80` | 5 fixes effort faible (content-type FFE, OPTIONS handlers, SSR guard, cast, debug a11y) |
 
-Corrections securite :
+Corrections securite (7/7 traites, 1 en backlog) :
 - SEC-1 : Check `protocol !== 'https:'` dans `/api/scrape` (SSRF)
 - SEC-3 : Schema Zod `scrapeBodySchema` sur la route scrape
-- SEC-4 : Bornes `.max()` sur tous les arrays/strings dans schemas.ts
-- SEC-4 : Schema `exportedEventSchema` pour validation des imports JSON
+- SEC-4 : Bornes `.max()` sur tous les arrays/strings dans schemas.ts + `exportedEventSchema`
+- SEC-5 : Validation content-type `text/html` + cap 5 MB sur reponse FFE
+- SEC-6 : Handler `OPTIONS()` sur les 3 routes API (CORS preflight)
+- SEC-2 : CSP nonce-based → **backlog** (effort eleve, Next.js middleware)
+- SEC-7 : HMAC cle publique → **documente** (choix d'architecture)
 
-Corrections accessibilite :
+Corrections accessibilite (8/8 traites) :
 - A11Y-1/2 : `aria-label` + `aria-hidden` sur boutons icones ShareEventModal
 - A11Y-3 : `useReducedMotion()` Framer Motion dans BackgroundPaths
-- A11Y-4 : Focus management + navigation fleches dans ClubHeader menu
+- A11Y-4 : Focus management + navigation fleches dans ClubHeader menu (`useMenuKeyboard` hook)
 - A11Y-5 : `aria-hidden="true"` sur canvas HalftoneWaves
 - A11Y-6 : Retrait `aria-label` redondant sur select ClubSelector
+- A11Y-7 : gradient-clip → risque quasi-nul (navigateurs modernes, Radix `aria-labelledby`)
+- A11Y-8 : `aria-label` + `aria-hidden` sur DebugPanel trigger (dev-only)
 
-Corrections fiabilite :
+Corrections fiabilite (4/4 traites) :
 - REL-1 : `console.error` dans le catch de fetchPairingsForRound
 - REL-2 : Validation Zod des imports JSON au lieu de `as ExportedEvent`
+- REL-3 : Guard `typeof window` dans `generateShareURLFrom` (SSR safety)
+- REL-4 : Remplacement `as ValidationState` par annotation directe (type-safe)
+
+Backlog maintenabilite (non bloquant, pre-push passe) :
+- MAINT-1 : Fonctions imbriquees parser.ts (sonarjs tolere callbacks chaines)
+- MAINT-2/4 : Strings dupliquees EventsManager/TournamentTabs (extraction constantes possible)
+- MAINT-3 : EventsManager a 79/80 lignes (extraction sous-composants au prochain ajout)
 
 ### Impact sur les metriques
 
 | Metrique | Avant | Apres | Delta |
 |----------|-------|-------|-------|
 | Tests | 565 (28 suites) | 571 (28 suites) | +6 |
-| Score ISO estime | 4.5/5 | 4.0/5 (revise) → 4.3/5 (apres fixes) | +0.3 apres corrections |
+| Score ISO | 4.5/5 (declare) → 4.0/5 (audit) | 4.4/5 (16/23 corriges) | +0.4 |
+| Findings restants | 23 | 7 (1 backlog securite, 2 documentes, 4 maintenabilite non bloquants) | -16 |
 
 ---
 
