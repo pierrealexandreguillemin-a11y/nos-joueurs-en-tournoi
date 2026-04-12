@@ -16,7 +16,7 @@ describe('ClubSelector', () => {
     const onSelect = vi.fn();
     render(<ClubSelector clubs={clubs} onSelect={onSelect} />);
 
-    await userEvent.selectOptions(screen.getByLabelText('Sélectionner un club'), 'Hay Chess');
+    await userEvent.selectOptions(screen.getByLabelText('Choisissez votre club'), 'Hay Chess');
     await userEvent.click(screen.getByRole('button', { name: /valider/i }));
 
     expect(onSelect).toHaveBeenCalledWith('Hay Chess');

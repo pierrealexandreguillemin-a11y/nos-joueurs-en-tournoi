@@ -86,9 +86,10 @@ function ShareURLSection({ url, copied, onCopy }: {
               ? 'bg-green-100 border-green-500 text-green-700'
               : 'glass-surface border-primary/30 hover:bg-primary/10'
           }`}
-          title="Copier le lien"
+          title={copied ? 'Lien copié' : 'Copier le lien'}
+          aria-label={copied ? 'Lien copié' : 'Copier le lien'}
         >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
         </Button>
       </div>
     </div>
@@ -175,8 +176,8 @@ export default function ShareEventModal({ eventId, eventName, trigger }: ShareEv
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" size="icon" className="glass-surface border-primary/30">
-            <Share2 className="w-4 h-4" />
+          <Button variant="outline" size="icon" className="glass-surface border-primary/30" aria-label="Partager l'événement" title="Partager l'événement">
+            <Share2 className="w-4 h-4" aria-hidden="true" />
           </Button>
         )}
       </DialogTrigger>

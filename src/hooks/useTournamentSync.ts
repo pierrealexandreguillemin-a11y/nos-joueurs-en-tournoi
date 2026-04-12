@@ -24,7 +24,8 @@ async function fetchPairingsForRound(
     const roundUrl = getRoundUrl(tournamentUrl, roundNumber);
     const html = await scrapeFFE(roundUrl, `de la ronde ${roundNumber}`);
     return parsePairings(html);
-  } catch {
+  } catch (error) {
+    console.error('Error fetching pairings:', error);
     return [];
   }
 }

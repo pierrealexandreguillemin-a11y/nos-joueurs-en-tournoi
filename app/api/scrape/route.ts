@@ -29,6 +29,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (parsedUrl.protocol !== 'https:') {
+      return NextResponse.json(
+        { error: 'Only HTTPS URLs are allowed' },
+        { status: 400 }
+      );
+    }
+
     const hostname = parsedUrl.hostname.toLowerCase();
     if (hostname !== 'echecs.asso.fr' && hostname !== 'www.echecs.asso.fr') {
       return NextResponse.json(

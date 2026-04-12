@@ -37,7 +37,6 @@ export default function ClubSelector({ clubs, onSelect }: ClubSelectorProps) {
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
         className="w-full rounded-md border border-foreground/20 bg-foreground/10 backdrop-blur-sm px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-        aria-label="Sélectionner un club"
       >
         <option value="" disabled>
           -- Sélectionnez un club --
