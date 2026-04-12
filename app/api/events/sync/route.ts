@@ -3,6 +3,10 @@ import { apiError } from '@/lib/api-error';
 import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
 import { syncBodySchema } from '@/lib/schemas';
+
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204 });
+}
 import type { ValidationState } from '@/types';
 
 /**
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { clubSlug, events, currentEventId } = parsed.data;
-    const validations = parsed.data.validations as ValidationState;
+    const validations: ValidationState = parsed.data.validations;
 
     // Verify HMAC token
     const token = req.headers.get('X-Sync-Token');

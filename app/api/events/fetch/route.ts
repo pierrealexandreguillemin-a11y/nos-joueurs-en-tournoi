@@ -4,6 +4,10 @@ import { getStorageData } from '@/lib/kv';
 import { verifySyncToken } from '@/lib/hmac';
 import { clubSlugSchema } from '@/lib/schemas';
 
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204 });
+}
+
 /**
  * GET /api/events/fetch?clubSlug=xxx
  * Fetch all events from Vercel KV for a specific club

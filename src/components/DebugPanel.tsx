@@ -109,9 +109,10 @@ export default function DebugPanel() {
           size="icon"
           className="fixed bottom-4 right-4 glass-surface border-amber-500/50 z-50"
           title="Debug Panel"
+          aria-label="Debug Panel"
           onClick={handleDebug}
         >
-          <Bug className="w-4 h-4 text-amber-600" />
+          <Bug className="w-4 h-4 text-amber-600" aria-hidden="true" />
         </Button>
       </DialogTrigger>
       <DebugDialogContent debugInfo={debugInfo} onRefresh={handleDebug} onCopyAll={handleCopyAll} />

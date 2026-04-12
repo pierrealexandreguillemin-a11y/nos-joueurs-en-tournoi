@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
 import { scrapeBodySchema } from '@/lib/schemas';
 
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204 });
+}
+
 /**
  * POST /api/scrape
  * Scrape a web page and return its HTML content
@@ -55,7 +59,17 @@ export async function POST(req: NextRequest) {
       throw new Error(`FFE server returned ${response.status}`);
     }
 
+    // Validate response content-type and size
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('text/html')) {
+      throw new Error('FFE returned non-HTML content');
+    }
+
     const html = await response.text();
+
+    if (html.length > 5_000_000) {
+      throw new Error('FFE response too large (> 5 MB)');
+    }
 
     // Check if HTML is empty or invalid
     if (!html || html.length < 100) {
@@ -63,11 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      {
-        success: true,
-        html,
-        url,
-      },
+      { success: true, html },
       { status: 200 }
     );
   } catch (error) {

@@ -55,6 +55,7 @@ describe('POST /api/scrape — URL validation (SSRF prevention)', () => {
   it('200 avec hostname echecs.asso.fr', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
       text: () => Promise.resolve('<html>' + 'x'.repeat(200) + '</html>'),
     });
 
@@ -66,6 +67,7 @@ describe('POST /api/scrape — URL validation (SSRF prevention)', () => {
   it('200 avec hostname www.echecs.asso.fr', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
       text: () => Promise.resolve('<html>' + 'x'.repeat(200) + '</html>'),
     });
 

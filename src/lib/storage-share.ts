@@ -98,6 +98,7 @@ export function generateShareURLFrom(
 ): { url: string; size: number } | null {
   const encoded = encodeEventFrom(get, eventId);
   if (!encoded) return null;
+  if (typeof window === 'undefined') return null;
   const url = `${window.location.origin + window.location.pathname}?share=${encoded}`;
   return { url, size: url.length };
 }
