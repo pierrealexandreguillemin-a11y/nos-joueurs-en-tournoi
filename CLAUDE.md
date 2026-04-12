@@ -151,7 +151,7 @@ test(scope): description     # Ajout/modification tests
 3. `next build` (production)
 4. `jscpd --threshold 5` (duplication)
 5. `npm audit` (0 critical)
-6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (534+ tests, dot reporter pour eviter stdout overflow Windows)
+6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (571+ tests, dot reporter pour eviter stdout overflow Windows)
 
 **Tout push qui echoue un gate est bloque.**
 
@@ -239,6 +239,7 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 - **Ambient orbs** : 3 orbes floues derriere le contenu (body = bg opaque, page-background = transparent)
 - **Orbs dark** : L=0.45-0.50, opacite 15-22% ; **light** : L=0.82-0.85, opacite 12-18%
 - **`text-secondary`** : differencie du background (L=0.35 dark) — ne jamais egaliser avec `--background`
+- **Glass refraction** : `:not(.fixed)` exclut les elements `position: fixed` (dialogs) de `position: relative`
 
 ### Miami theme
 
@@ -246,6 +247,21 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 - `.cyberpunk-title` : gradient anime + glow (scope `[data-theme="miami"]` uniquement)
 - `.chess-logo` : pulse + glow anime (Miami only)
 - Background : HalftoneWaves + BackgroundPaths + FloatingParticles (Miami only, toggle via AnimationsToggle)
+
+## Dialog pattern
+
+- **Max height** : `max-h-[85vh] overflow-y-auto` sur `DialogContent` et `AlertDialogContent`
+- **Glass opacity** : `[role="dialog"].glass-card` a `background: oklch(var(--background) / 0.96)` pour lisibilite
+- **Fermeture** : `onInteractOutside={e => e.preventDefault()}` sur les dialogs de gestion (EventsManager)
+
+## Documentation
+
+| Fichier | Contenu |
+|---------|---------|
+| `docs/DESIGN-SYSTEM.md` | Design system complet (tokens, couleurs, typographie, composants, glass, animations) |
+| `docs/USER-JOURNEY-AUDIT.md` | Audit UX des 5 parcours utilisateur avec 16 findings priorises |
+| `docs/FRONTEND-VISUAL-MAP.md` | Inventaire detaille des effets visuels |
+| `docs/ISO-COMPLIANCE.md` | Matrice de conformite qualite |
 
 ## Deploiement
 
@@ -266,6 +282,6 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `vitest.config.ts` | Tests unitaires (jsdom, coverage v8) |
 | `vitest.config.e2e.ts` | Tests E2E (30s timeout, 120s hook timeout) |
 | `vitest.setup.ts` | localStorage polyfill + jest-dom |
-| `tailwind.config.ts` | Theme Miami Vice + Neutral |
+| `tailwind.config.js` | Theme Miami Vice + Neutral |
 | `.husky/pre-commit` | lint-staged |
 | `.husky/pre-push` | 6 quality gates |
