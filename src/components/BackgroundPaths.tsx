@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { secureRandom } from "@/lib/random";
 
 interface FloatingPathsProps {
@@ -8,6 +8,8 @@ interface FloatingPathsProps {
 }
 
 function FloatingPaths({ position }: FloatingPathsProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   // Memoize paths — secureRandom() is a stable module import, not a reactive dependency
   const paths = useMemo(() => {
     return Array.from({ length: 36 }, (_, i) => ({
@@ -40,16 +42,14 @@ function FloatingPaths({ position }: FloatingPathsProps) {
             strokeWidth={path.width}
             strokeOpacity={0.1 + path.id * 0.03}
             initial={{ pathLength: 0.3, opacity: 0.6 }}
-            animate={{
-              pathLength: 1,
-              opacity: [0.3, 0.6, 0.3],
-              pathOffset: [0, 1, 0],
-            }}
-            transition={{
-              duration: path.duration,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            animate={shouldReduceMotion
+              ? { pathLength: 1, opacity: 0.3, pathOffset: 0 }
+              : { pathLength: 1, opacity: [0.3, 0.6, 0.3], pathOffset: [0, 1, 0] }
+            }
+            transition={shouldReduceMotion
+              ? { duration: 0 }
+              : { duration: path.duration, repeat: Infinity, ease: "linear" }
+            }
           />
         ))}
       </svg>

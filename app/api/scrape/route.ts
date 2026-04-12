@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
+import { scrapeBodySchema } from '@/lib/schemas';
 
 /**
  * POST /api/scrape
@@ -9,25 +10,20 @@ import { apiError } from '@/lib/api-error';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { url } = body;
 
-    if (!url || typeof url !== 'string') {
+    // Validate body with Zod schema
+    const parsed = scrapeBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid URL provided' },
+        { error: 'Invalid request: URL must be a valid URL (max 2048 chars)' },
         { status: 400 }
       );
     }
 
-    // Validate that the URL is from FFE (strict hostname check to prevent SSRF)
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid URL format' },
-        { status: 400 }
-      );
-    }
+    const { url } = parsed.data;
+
+    // Validate protocol (SSRF prevention)
+    const parsedUrl = new URL(url);
 
     if (parsedUrl.protocol !== 'https:') {
       return NextResponse.json(
@@ -36,6 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate hostname (SSRF prevention — strict whitelist)
     const hostname = parsedUrl.hostname.toLowerCase();
     if (hostname !== 'echecs.asso.fr' && hostname !== 'www.echecs.asso.fr') {
       return NextResponse.json(

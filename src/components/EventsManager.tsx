@@ -28,6 +28,7 @@ import {
   type ExportedEvent,
 } from '@/lib/storage';
 import { syncToUpstash, fetchFromUpstash } from '@/lib/sync';
+import { exportedEventSchema } from '@/lib/schemas';
 import dynamic from 'next/dynamic';
 const ShareEventModal = dynamic(() => import('@/components/ShareEventModal'), { ssr: false });
 const DuplicateEventDialog = dynamic(() => import('@/components/DuplicateEventDialog'), { ssr: false });
@@ -365,11 +366,12 @@ function useImportHandlers(
     if (!file) return;
     try {
       const text = await file.text();
-      const exportedData = JSON.parse(text) as ExportedEvent;
-      if (!exportedData.version || !exportedData.event) {
+      const parsed = exportedEventSchema.safeParse(JSON.parse(text));
+      if (!parsed.success) {
         toast.error('Format de fichier invalide');
         return;
       }
+      const exportedData = parsed.data as ExportedEvent;
       const isDuplicate = storage?.checkEventExists(exportedData.event.id) ?? false;
       if (isDuplicate) {
         setPendingImport(exportedData);

@@ -6,14 +6,14 @@ export const clubSlugSchema = z.string().regex(SLUG_REGEX);
 export const resultSchema = z.object({
   round: z.number().int(),
   score: z.union([z.literal(0), z.literal(0.5), z.literal(1)]),
-  opponent: z.string().optional(),
+  opponent: z.string().max(200).optional(),
 });
 
 export const playerSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   elo: z.number().int().nonnegative(),
-  club: z.string(),
-  results: z.array(resultSchema),
+  club: z.string().max(200),
+  results: z.array(resultSchema).max(30),
   currentPoints: z.number().nonnegative(),
   tiebreak: z.number().optional(),
   buchholz: z.number().optional(),
@@ -35,12 +35,12 @@ export const pairingSchema = z.object({
 });
 
 export const tournamentSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  url: z.string().url(),
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  url: z.string().url().max(2048),
   lastUpdate: z.string(),
-  players: z.array(playerSchema),
-  pairings: z.array(pairingSchema).optional(),
+  players: z.array(playerSchema).max(500),
+  pairings: z.array(pairingSchema).max(500).optional(),
   pairingsRound: z.number().int().positive().optional(),
 });
 
@@ -53,9 +53,20 @@ export const eventSchema = z.object({
   tournaments: z.array(tournamentSchema),
 });
 
+export const exportedEventSchema = z.object({
+  version: z.literal('1.0'),
+  exportDate: z.string(),
+  event: eventSchema,
+  validations: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.boolean()))),
+});
+
+export const scrapeBodySchema = z.object({
+  url: z.string().url().max(2048),
+});
+
 export const syncBodySchema = z.object({
   clubSlug: clubSlugSchema,
-  events: z.array(eventSchema),
+  events: z.array(eventSchema).max(50),
   validations: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.boolean()))),
   currentEventId: z.string().optional(),
 });

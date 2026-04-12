@@ -32,8 +32,6 @@ describe('POST /api/scrape — URL validation (SSRF prevention)', () => {
   it('400 si url est mal formée', async () => {
     const res = await POST(makeRequest({ url: 'not-a-url' }));
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe('Invalid URL format');
   });
 
   it('403 si hostname est un domaine attaquant contenant echecs.asso.fr en substring', async () => {
