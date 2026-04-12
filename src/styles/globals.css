@@ -393,6 +393,12 @@ body,
     inset 0 1px 0 oklch(1 0 0 / var(--glass-inset-opacity-card));
 }
 
+/* Dialog glass — higher opacity for readability over overlay */
+[role="dialog"].glass-card,
+[role="alertdialog"].glass-card {
+  background: oklch(var(--background) / 0.96);
+}
+
 /* ================================================================
    MIAMI GLASS HOVER — neon glow effect
    ================================================================ */
@@ -410,8 +416,8 @@ body,
    NEUTRAL GLASS REFRACTION — ::before gradient highlight
    Matches playground .glass::before refraction overlay
    ================================================================ */
-[data-theme="neutral"] .glass-surface,
-[data-theme="neutral"] .glass-card {
+[data-theme="neutral"] .glass-surface:not(.fixed),
+[data-theme="neutral"] .glass-card:not(.fixed) {
   position: relative;
 }
 
@@ -428,8 +434,8 @@ body,
   transition: opacity 0.3s;
 }
 
-[data-theme="neutral"] .glass-surface > *,
-[data-theme="neutral"] .glass-card > * {
+[data-theme="neutral"] .glass-surface:not(.fixed) > *,
+[data-theme="neutral"] .glass-card:not(.fixed) > * {
   position: relative;
   z-index: 1;
 }

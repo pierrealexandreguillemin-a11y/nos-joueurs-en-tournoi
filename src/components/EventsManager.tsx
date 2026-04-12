@@ -167,7 +167,7 @@ interface DialogHeaderBarProps {
 function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogHeaderBarProps) {
   return (
     <DialogHeader>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
           <DialogTitle className="text-2xl dialog-title-gradient">
             Événements
@@ -176,7 +176,7 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
             Sélectionnez un événement ou supprimez ceux que vous ne souhaitez plus suivre.
           </DialogDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="icon"
@@ -451,7 +451,10 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
             Gérer les événements
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[600px] glass-card border-primary/30">
+        <DialogContent
+          className="sm:max-w-[600px] glass-card border-primary/30"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeaderBar
             onImportClick={() => fileInputRef.current?.click()}
             onCloudDownload={handleCloudDownload}
