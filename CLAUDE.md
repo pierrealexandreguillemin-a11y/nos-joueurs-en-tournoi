@@ -291,3 +291,8 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `tailwind.config.js` | Theme Miami Vice + Neutral |
 | `.husky/pre-commit` | lint-staged |
 | `.husky/pre-push` | 6 quality gates |
+
+
+## Wiki
+
+Syntheses wiki : `C:\Dev\wiki\topics\chess-tech\` et `C:\Dev\wiki\entities\nos-joueurs-en-tournoi.md`
