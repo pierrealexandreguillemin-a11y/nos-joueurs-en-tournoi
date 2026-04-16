@@ -296,3 +296,4 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 ## Wiki
 
 Syntheses wiki : `C:\Dev\wiki\topics\chess-tech\` et `C:\Dev\wiki\entities\nos-joueurs-en-tournoi.md`
+Guide et outils de recherche : `C:\Dev\wiki\wiki-guide.md`
