@@ -73,7 +73,6 @@
     "@vitest/ui": "^4.0.5",
     "autoprefixer": "^10.4.20",
     "axe-core": "^4.11.0",
-    "baseline-browser-mapping": "^2.9.19",
     "chrome-launcher": "^1.2.1",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.3",
