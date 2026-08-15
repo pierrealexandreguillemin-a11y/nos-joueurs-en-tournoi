@@ -49,7 +49,7 @@ function CopyUrlCard({ copied, onCopy }: { copied: boolean; onCopy: () => void }
           className="border-primary/30"
         >
           {copied ? (
-            <Check className="w-4 h-4 text-green-600" />
+            <Check className="w-4 h-4 text-success-strong" />
           ) : (
             <Copy className="w-4 h-4" />
           )}

@@ -83,7 +83,7 @@ function ShareURLSection({ url, copied, onCopy }: {
           onClick={onCopy}
           className={`flex-shrink-0 transition-colors ${
             copied
-              ? 'bg-green-100 border-green-500 text-green-700'
+              ? 'bg-success border-success text-success-foreground'
               : 'glass-surface border-primary/30 hover:bg-primary/10'
           }`}
           title={copied ? 'Lien copié' : 'Copier le lien'}
@@ -111,9 +111,9 @@ function ShareInstructions() {
 
 function ValidationWarning() {
   return (
-    <Alert className="border-amber-500/50 bg-amber-50">
-      <AlertCircle className="h-4 w-4 text-amber-600" />
-      <AlertDescription className="text-amber-800 text-sm">
+    <Alert variant="warning">
+      <AlertCircle className="h-4 w-4 text-warning-strong" />
+      <AlertDescription className="text-sm">
         <strong>&#x26A0;&#xFE0F; Attention :</strong> Les validations (cases cochées) ne sont pas incluses dans le partage QR code. Le destinataire devra les recocher manuellement. Pour partager avec les validations, utilisez le bouton Export (téléchargement JSON).
       </AlertDescription>
     </Alert>

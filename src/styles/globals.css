@@ -16,7 +16,6 @@
   --secondary-c: 0.1066; --secondary-h: 255.1;    /* navy */
   --accent-c: 0.2193;    --accent-h: 37.7;        /* orange */
   --destructive-c: 0.2082; --destructive-h: 25.4;
-  --warning-c: 0.1600;   --warning-h: 65.0;       /* amber */
   --muted-c: 0.0364;     --muted-h: 259.7;        /* near-achromatic navy tint */
   --muted-fg-c: 0.0348;  --muted-fg-h: 256.8;
   /* Neon palette — WCAG AA reduced brightness */
@@ -68,26 +67,28 @@
      Secondary L=0.35 differentiated from background for text-secondary contrast. */
   --background: 0.27 0 0;
   --foreground: 0.92 0 0;
-  --primary: 0.65 0.2 260;
+  /* L lowered from 0.65: white foreground reached only 3.37:1 (WCAG AA needs 4.5). */
+  --primary: 0.575 0.2 260;
   --primary-foreground: 1 0 0;
   --secondary: 0.35 0 0;
   --secondary-foreground: 0.92 0 0;
-  --accent: 0.7 0.17 145;
+  /* L lowered from 0.70: white foreground reached only 2.51:1. */
+  --accent: 0.55 0.17 145;
   --accent-foreground: 1 0 0;
   --accent-hover: 0.6 0.2 262;
-  --destructive: 0.65 0.2 27;
+  /* L lowered from 0.65: white foreground reached only 3.55:1. */
+  --destructive: 0.59 0.2 27;
   --destructive-foreground: 1 0 0;
-  --warning: 0.72 0.16 65;
-  --warning-foreground: 1 0 0;
   --muted: 0.22 0 0;
-  --muted-foreground: 0.6 0 0;
+  /* L raised from 0.60: 4.39:1 on --muted, just under AA. */
+  --muted-foreground: 0.61 0 0;
   --card: 0.23 0 0;
   --card-foreground: 0.92 0 0;
   --popover: 0.92 0 0;
   --popover-foreground: 0.27 0 0;
   --border: 0.55 0 0;
   --input: 0.55 0 0;
-  --ring: 0.65 0.2 260;
+  --ring: 0.575 0.2 260;
   /* Glass material — cold blue-tinted dark glass */
   --glass-tint: 0.25 0.015 250;
   --glass-bg-opacity: 0.38;
@@ -118,15 +119,16 @@
   --foreground: 0.22 0.03 260;
   --primary: 0.546 0.195 263;
   --primary-foreground: 1 0 0;
-  --secondary: 0.975 0.005 260;
+  /* Secondary sits below the background (0.975) and clear of muted (0.93)
+     and card (0.96). Equal to the background it was an invisible surface. */
+  --secondary: 0.89 0.005 260;
   --secondary-foreground: 0.22 0.03 260;
-  --accent: 0.627 0.161 145;
+  /* L lowered from 0.627: white foreground reached only 3.32:1. */
+  --accent: 0.55 0.161 145;
   --accent-foreground: 1 0 0;
   --accent-hover: 0.488 0.195 264;
   --destructive: 0.577 0.215 27;
   --destructive-foreground: 1 0 0;
-  --warning: 0.666 0.163 65;
-  --warning-foreground: 1 0 0;
   --muted: 0.93 0.005 260;
   --muted-foreground: 0.5 0.03 260;
   --card: 0.96 0.005 260;
@@ -161,13 +163,18 @@
 [data-mode="dark"] {
   --bg-l: 0.3261;
   --fg-l: 1.0000;
-  --primary-l: 0.5890;
+  /* L lowered from 0.5890: white foreground reached only 3.95:1 (WCAG AA needs 4.5). */
+  --primary-l: 0.5500;
   --primary-fg-l: 1.0000;
-  --secondary-l: 0.3261;
+  /* Secondary sits above the background in dark mode (bg-l 0.3261).
+     Equal values made the secondary button and badge invisible on the page. */
+  --secondary-l: 0.4200;
   --secondary-fg-l: 1.0000;
-  --accent-l: 0.6647;
+  /* L lowered from 0.6647: white foreground reached only 3.36:1. */
+  --accent-l: 0.5850;
   --accent-fg-l: 1.0000;
-  --destructive-l: 0.6356;
+  /* L lowered from 0.6356: white foreground reached only 3.78:1. */
+  --destructive-l: 0.5850;
   --destructive-fg-l: 1.0000;
   --muted-l: 0.2753;
   --muted-fg-l: 0.7100;
@@ -177,9 +184,8 @@
   --popover-fg-l: 0.3261;
   --border-l: 0.7100;
   --input-l: 0.7100;
-  --ring-l: 0.5890;
-  --warning-l: 0.7200;
-  --warning-fg-l: 1.0000;
+  --ring-l: 0.5500;
+  --status-strong-l: 0.7800;
 }
 
 /* Mode: Light — inverted lightness values */
@@ -203,8 +209,7 @@
   --border-l: 0.8000;
   --input-l: 0.8000;
   --ring-l: 0.4500;
-  --warning-l: 0.5500;
-  --warning-fg-l: 1.0000;
+  --status-strong-l: 0.4500;
   /* Light mode glass — higher opacity for frosted white on light backgrounds */
   --glass-bg-opacity: 0.55;
   --glass-bg-opacity-card: 0.65;
@@ -226,8 +231,24 @@
     --accent: var(--accent-l) var(--accent-c) var(--accent-h);
     --destructive: var(--destructive-l) var(--destructive-c) var(--destructive-h);
     --ring: var(--ring-l) var(--primary-c) var(--primary-h);
-    --warning: var(--warning-l) var(--warning-c) var(--warning-h);
     --accent-hover: calc(var(--accent-l) - 0.08) var(--accent-c) var(--accent-h);
+    /* Status colours are theme- and mode-invariant: a light chip carrying dark
+       text. Semantics do not belong to a brand identity, so neither theme nor
+       mode overrides them — declared once here instead of four times. */
+    --status-l: 0.7200;
+    --status-fg-l: 0.2200;
+    --warning: var(--status-l) 0.1600 65.0;
+    --success: var(--status-l) 0.1500 150.0;
+    --info: var(--status-l) 0.1200 230.0;
+    --warning-foreground: var(--status-fg-l) 0 0;
+    --success-foreground: var(--status-fg-l) 0 0;
+    --info-foreground: var(--status-fg-l) 0 0;
+    /* Same hues drawn directly on the page background — icons and standalone
+       text. Lightness has to follow the mode here (--status-strong-l), which the
+       chip variants above do not: a chip carries its own surface. */
+    --warning-strong: var(--status-strong-l) 0.1600 65.0;
+    --success-strong: var(--status-strong-l) 0.1500 150.0;
+    --info-strong: var(--status-strong-l) 0.1200 230.0;
     /* Near-achromatic: L from mode, C+H from theme neutral */
     --background: var(--bg-l) var(--secondary-c) var(--secondary-h);
     --muted: var(--muted-l) var(--muted-c) var(--muted-h);
@@ -242,7 +263,6 @@
     --secondary-foreground: var(--secondary-fg-l) 0 0;
     --accent-foreground: var(--accent-fg-l) 0 0;
     --destructive-foreground: var(--destructive-fg-l) 0 0;
-    --warning-foreground: var(--warning-fg-l) 0 0;
     --card-foreground: var(--card-fg-l) 0 0;
     --popover: var(--popover-l) 0 0;
     /* Glass tint: white by default, dark-tinted for neutral dark */
@@ -336,7 +356,6 @@
 /* Sticky column — frosted glass effect to hide scrolling content */
 td.table-sticky {
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Reduced motion support — WCAG 2.1 §2.3.3 */
@@ -370,7 +389,6 @@ body,
 /* Glassmorphism Utilities — always uses white tints (glass reflects light) */
 .glass-surface {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   background: oklch(var(--glass-tint) / var(--glass-bg-opacity));
   border: 1px solid oklch(1 0 0 / var(--glass-border-opacity));
   box-shadow:
@@ -384,7 +402,6 @@ body,
   border-radius: var(--radius);
   padding: 1.5rem;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   background: oklch(var(--glass-tint) / var(--glass-bg-opacity-card));
   border: 1px solid oklch(1 0 0 / var(--glass-border-opacity-card));
   box-shadow:
@@ -459,7 +476,6 @@ body,
 .menu-dropdown {
   background: oklch(var(--popover) / 0.95);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid oklch(var(--primary) / 0.3);
   box-shadow: 0 4px 16px oklch(0 0 0 / 0.15);
 }

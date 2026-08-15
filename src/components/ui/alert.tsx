@@ -4,15 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  // No [&>svg]:text-foreground here: that descendant selector outranks any
+  // colour class the caller puts on the icon itself, which silently killed them.
+  // The icon inherits the variant's text colour unless the caller overrides it.
+  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
   {
     variants: {
       variant: {
+        // One rule for the three semantic variants: the tint and the border
+        // carry the meaning, the text stays on --foreground. Colouring the text
+        // with the status token itself measured 2.68:1 (destructive, miami dark)
+        // and 1.84:1 (status foreground on a 15% tint) — both below WCAG AA.
         default: "bg-background text-foreground",
-        destructive:
-          "border-destructive/50 text-destructive [&>svg]:text-destructive",
-        success: "bg-green-50 border-green-200 text-green-800",
-        warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+        destructive: "bg-destructive/15 border-destructive/50 text-foreground",
+        success: "bg-success/15 border-success/40 text-foreground",
+        warning: "bg-warning/15 border-warning/40 text-foreground",
       },
     },
     defaultVariants: {

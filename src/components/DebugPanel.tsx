@@ -21,7 +21,7 @@ function DebugDialogContent({ debugInfo, onRefresh, onCopyAll }: {
   return (
     <DialogContent className="sm:max-w-[600px] glass-card border-primary/30 max-h-[80vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-warning-strong to-accent bg-clip-text text-transparent">
           🐛 Debug Panel
         </DialogTitle>
         <DialogDescription className="text-muted-foreground">
@@ -107,12 +107,12 @@ export default function DebugPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="fixed bottom-4 right-4 glass-surface border-amber-500/50 z-50"
+          className="fixed bottom-4 right-4 glass-surface border-warning/50 z-50"
           title="Debug Panel"
           aria-label="Debug Panel"
           onClick={handleDebug}
         >
-          <Bug className="w-4 h-4 text-amber-600" aria-hidden="true" />
+          <Bug className="w-4 h-4 text-warning-strong" aria-hidden="true" />
         </Button>
       </DialogTrigger>
       <DebugDialogContent debugInfo={debugInfo} onRefresh={handleDebug} onCopyAll={handleCopyAll} />
