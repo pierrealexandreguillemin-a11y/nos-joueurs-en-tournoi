@@ -1,0 +1,56 @@
+/* Calibration fixture — faulty state.
+   check-design-tokens.mjs must exit 1 on this tree and report one finding of
+   each class. Identical to ../../clean except for the two overrides at the
+   bottom and the frozen palette in Broken.tsx. */
+@layer base {
+  :root {
+    --background: 0.27 0 0;
+    --foreground: 0.92 0 0;
+    --primary: 0.52 0.1 200;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.42 0.1 255;
+    --secondary-foreground: 1 0 0;
+    --accent: 0.53 0.17 145;
+    --accent-foreground: 1 0 0;
+    --destructive: 0.55 0.2 27;
+    --destructive-foreground: 1 0 0;
+    --warning: 0.72 0.16 65;
+    --warning-foreground: 0.22 0 0;
+    --success: 0.72 0.15 150;
+    --success-foreground: 0.22 0 0;
+    --info: 0.72 0.12 230;
+    --info-foreground: 0.22 0 0;
+    --card: 0.23 0 0;
+    --card-foreground: 0.92 0 0;
+    --popover: 0.92 0 0;
+    --popover-foreground: 0.27 0 0;
+    --muted: 0.22 0 0;
+    --muted-foreground: 0.62 0 0;
+    --warning-strong: 0.78 0.16 65;
+    --success-strong: 0.78 0.15 150;
+    --info-strong: 0.78 0.12 230;
+  }
+}
+
+/* Fault 1 — --secondary made identical to --background: the secondary button
+   and badge become invisible on the page. */
+[data-theme="miami"][data-mode="dark"] {
+  --secondary: 0.27 0 0;
+}
+
+/* Fault 2 — white text on a light amber chip: 2.57:1, well under AA. */
+[data-theme="neutral"][data-mode="light"] {
+  --warning-foreground: 1 0 0;
+}
+
+/* Fault 4 — a gradient stop too light to carry --foreground (0.92). */
+.page-background {
+  background: linear-gradient(135deg, oklch(var(--primary)) 0%, oklch(0.88 0.05 200) 100%);
+}
+
+/* Fault 5 — hand-written vendor prefix: the pipeline then drops the standard
+   property, and Chrome 151 no longer honours the -webkit- alias. */
+.glass-card {
+  backdrop-filter: blur(15px) saturate(130%);
+  -webkit-backdrop-filter: blur(15px) saturate(130%);
+}

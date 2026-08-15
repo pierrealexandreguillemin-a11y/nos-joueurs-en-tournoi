@@ -1,0 +1,45 @@
+/* Calibration fixture — conforming state.
+   check-design-tokens.mjs must exit 0 on this tree. Every token the gate
+   inspects is declared once in :root; no theme or mode block overrides it, so
+   the four combos all resolve to these values. */
+@layer base {
+  :root {
+    --background: 0.27 0 0;
+    --foreground: 0.92 0 0;
+    --primary: 0.52 0.1 200;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.42 0.1 255;
+    --secondary-foreground: 1 0 0;
+    --accent: 0.53 0.17 145;
+    --accent-foreground: 1 0 0;
+    --destructive: 0.55 0.2 27;
+    --destructive-foreground: 1 0 0;
+    --warning: 0.72 0.16 65;
+    --warning-foreground: 0.22 0 0;
+    --success: 0.72 0.15 150;
+    --success-foreground: 0.22 0 0;
+    --info: 0.72 0.12 230;
+    --info-foreground: 0.22 0 0;
+    --card: 0.23 0 0;
+    --card-foreground: 0.92 0 0;
+    --popover: 0.92 0 0;
+    --popover-foreground: 0.27 0 0;
+    --muted: 0.22 0 0;
+    --muted-foreground: 0.62 0 0;
+    --warning-strong: 0.78 0.16 65;
+    --success-strong: 0.78 0.15 150;
+    --info-strong: 0.78 0.12 230;
+  }
+}
+
+/* The real backdrop the reader sees. Both stops carry --foreground (0.92)
+   above AA — note this is a stricter bound than the button pair, which only
+   has to carry --primary-foreground (pure white). */
+.page-background {
+  background: linear-gradient(135deg, oklch(var(--secondary)) 0%, oklch(var(--card)) 100%);
+}
+
+/* No hand-written -webkit- prefix: the pipeline emits what the targets need. */
+.glass-card {
+  backdrop-filter: blur(15px) saturate(130%);
+}

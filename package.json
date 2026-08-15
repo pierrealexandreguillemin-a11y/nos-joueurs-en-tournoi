@@ -14,6 +14,8 @@
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "typecheck": "tsc --noEmit",
     "duplication": "jscpd src app --min-tokens 50 --min-lines 5 --threshold 5 --ignore \"**/*.test.*,**/__tests__/**\" --reporters console",
+    "check:tokens": "node scripts/check-design-tokens.mjs",
+    "check:tokens:calibrate": "node scripts/calibrate-design-tokens.mjs",
     "analyze": "cross-env ANALYZE=true next build",
     "prepare": "husky"
   },
