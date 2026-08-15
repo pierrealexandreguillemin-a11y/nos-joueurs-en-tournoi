@@ -2,8 +2,8 @@
 /**
  * Design token conformance gate.
  *
- * Three failure modes, all three found in the real tree on 2026-08-15 while
- * rendering the design system previews:
+ * Six failure modes, every one of them found in the real tree on 2026-08-15
+ * while rendering the design system previews:
  *
  *   1. COLLISION — a semantic surface token resolving to the exact same OKLCH
  *      triple as --background, which makes any component filled with it
@@ -11,6 +11,12 @@
  *   2. FIGÉ — a component hardcoding a fixed Tailwind palette colour instead of
  *      a semantic token, which makes it blind to theme and mode.
  *   3. CONTRASTE — a `X` / `X-foreground` pair below WCAG 2.1 AA (4.5:1).
+ *   4. FOND — text measured against --background rather than the layer the
+ *      reader actually sees: the .page-background gradient and the orbs.
+ *   5. PRÉFIXÉ — a hand-written vendor prefix, which makes the build pipeline
+ *      drop the standard property.
+ *   6. HORS GAMUT — a token whose declared OKLCH is unreachable in sRGB by
+ *      enough that the browser paints a visibly different colour.
  *
  * Token values are resolved from globals.css itself — the CSS cascade is
  * replayed rather than restated, so the gate cannot drift from the stylesheet.
@@ -335,12 +341,65 @@ if (prefixed.length === 0) {
   console.log('             le pipeline supprime alors la propriété standard');
 }
 
+/* ============================== finding 6: tokens outside the sRGB gamut */
+
+// A saturated token clipped by a hair still paints the colour it names — that is
+// how OKLCH is meant to be used. The defect is when clipping paints something
+// *else*: oklch(0.975 0.1066 255.1) declared an off-white and rendered cyan,
+// because that chroma is unreachable at that lightness (max 0.0138).
+// The line is drawn on the measured distribution, not on taste: the deliberate
+// Miami neon tops out at 0.0251 in OKLab, the three genuinely wrong tokens sat
+// between 0.0579 and 0.0884. 0.05 leaves a clear margin on both sides.
+const MAX_PAINT_DRIFT = 0.05;
+
+const linearToOklab = ([r, g, b]) => {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+};
+
+const oklchToOklab = ([L, C, H]) => {
+  const h = (H * Math.PI) / 180;
+  return [L, C * Math.cos(h), C * Math.sin(h)];
+};
+
+// What a display actually paints: encode, clamp each channel, decode back.
+const paintedOklab = triple =>
+  linearToOklab(oklchToLinearRgb(...triple).map(u => gammaDecode(clamp01(gammaEncode(u)))));
+
+const GAMUT_TOKENS = [...new Set([...SURFACE_TOKENS, 'background', 'foreground', 'warning', 'success', 'info',
+  'warning-strong', 'success-strong', 'info-strong', 'destructive', 'popover-foreground', 'muted-foreground',
+  'card-foreground', 'border', 'input'])];
+
+const outsideGamut = [];
+console.log(`\n6. écart entre couleur déclarée et couleur peinte (seuil OKLab ${MAX_PAINT_DRIFT})\n`);
+for (const { name, env } of COMBOS) {
+  for (const token of GAMUT_TOKENS) {
+    const triple = tokenOf(env, token);
+    if (!triple || triple.length !== 3 || triple.some(Number.isNaN)) continue;
+    const declared = oklchToOklab(triple);
+    const shown = paintedOklab(triple);
+    const drift = Math.hypot(declared[0] - shown[0], declared[1] - shown[1], declared[2] - shown[2]);
+    if (drift <= MAX_PAINT_DRIFT) continue;
+    outsideGamut.push({ combo: name, token, drift });
+    console.log(`  HORS GAMUT ${name.padEnd(14)} dE=${drift.toFixed(4)}  --${token} = ${triple.join(' ')}`);
+  }
+}
+if (outsideGamut.length === 0) {
+  console.log(`  ok         ${COMBOS.length * GAMUT_TOKENS.length} tokens peints à moins de ${MAX_PAINT_DRIFT} de leur déclaration`);
+}
+
 /* ==================================================================== verdict */
 
-const total = collisions.length + frozen.length + belowAa.length + backdropFindings.length + prefixed.length;
+const total = collisions.length + frozen.length + belowAa.length + backdropFindings.length + prefixed.length + outsideGamut.length;
 console.log(
   `\n${collisions.length} collision(s), ${frozen.length} fichier(s) à palette figée, ` +
     `${belowAa.length} paire(s) sous AA, ${backdropFindings.length} point(s) de fond sous AA, ` +
-    `${prefixed.length} préfixe(s) manuel(s).`
+    `${prefixed.length} préfixe(s) manuel(s), ${outsideGamut.length} token(s) hors gamut.`
 );
 process.exit(total > 0 ? 1 : 0);

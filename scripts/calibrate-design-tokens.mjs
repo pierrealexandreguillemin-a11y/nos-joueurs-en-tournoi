@@ -28,13 +28,13 @@ const CASES = [
     fixture: 'clean',
     expectedCode: 0,
     expectedMarkers: [],
-    forbiddenMarkers: ['COLLISION', 'FIGÉ', 'SOUS AA', 'ABSENT', 'PRÉFIXÉ', 'MUET'],
+    forbiddenMarkers: ['COLLISION', 'FIGÉ', 'SOUS AA', 'ABSENT', 'PRÉFIXÉ', 'MUET', 'HORS GAMUT'],
   },
   {
     fixture: 'broken',
     expectedCode: 1,
     // One marker per finding class, so a check that stops firing is caught.
-    expectedMarkers: ['COLLISION', 'FIGÉ', 'SOUS AA', 'PRÉFIXÉ'],
+    expectedMarkers: ['COLLISION', 'FIGÉ', 'SOUS AA', 'PRÉFIXÉ', 'HORS GAMUT'],
     forbiddenMarkers: ['MUET'],
   },
 ];

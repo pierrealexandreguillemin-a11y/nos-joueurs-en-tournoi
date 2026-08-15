@@ -54,3 +54,9 @@
   backdrop-filter: blur(15px) saturate(130%);
   -webkit-backdrop-filter: blur(15px) saturate(130%);
 }
+
+/* Fault 6 — chroma unreachable at that lightness: declared as an off-white,
+   painted as cyan because the sRGB blue channel clips at 1.249. */
+[data-theme="miami"][data-mode="light"] {
+  --card: 0.975 0.1066 255.1;
+}
