@@ -144,16 +144,35 @@ test(scope): description     # Ajout/modification tests
 
 `lint-staged` : ESLint 0 warnings sur les fichiers modifies (`.ts`, `.tsx`).
 
-### Pre-push hook (6 quality gates)
+### Pre-push hook (7 quality gates)
 
 1. `tsc --noEmit` (TypeScript)
 2. `eslint src app --max-warnings 0`
 3. `next build` (production)
 4. `jscpd --threshold 5` (duplication)
-5. `npm audit` (0 critical)
-6. `vitest run --reporter=dot --coverage --coverage.reporter=json` (571+ tests, dot reporter pour eviter stdout overflow Windows)
+5. `check:tokens:calibrate` puis `check:tokens` (design tokens — voir ci-dessous)
+6. `npm audit` (0 critical)
+7. `vitest run --reporter=dot --coverage --coverage.reporter=json` (571+ tests, dot reporter pour eviter stdout overflow Windows)
 
 **Tout push qui echoue un gate est bloque.**
+
+### Gate design tokens (`npm run check:tokens`)
+
+`scripts/check-design-tokens.mjs` rejoue la cascade de `globals.css` (il ne redit pas les regles, il
+les lit) et verifie 5 choses sur les 4 combinaisons theme x mode :
+
+1. aucune surface semantique strictement egale a `--background` (surface invisible) ;
+2. aucune couleur Tailwind figee dans `src/components/**` / `app/**` (tests exclus) ;
+3. 56 paires `X` / `X-foreground` >= 4.5:1 (WCAG AA, conversion OKLCH -> sRGB auto-testee a 21:1) ;
+4. le texte sur le **vrai** calque de fond — degrade `.page-background` et orbes composes — pas sur
+   `--background`, qui n'est pas ce que le lecteur voit en theme miami ;
+5. aucun prefixe vendeur ecrit a la main (le pipeline supprime alors la propriete standard).
+
+`npm run check:tokens:calibrate` prouve le gate **dans les deux sens** sur `scripts/__fixtures__/`
+(`clean` doit sortir 0, `broken` doit sortir 1 avec un marqueur par classe). Un gate jamais vu
+echouer ne prouve rien : le controle 4 a affiche « ok » en ne mesurant rien avant d'etre calibre.
+
+Contexte et mesures : `docs/DESIGN-TOKENS-AUDIT-2026-08-15.md`.
 
 ## Securite
 
@@ -266,6 +285,7 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `docs/DESIGN-SYSTEM.md` | Design system complet (tokens, couleurs, typographie, composants, glass, animations) |
 | `docs/USER-JOURNEY-AUDIT.md` | Audit UX des 5 parcours utilisateur avec 16 findings priorises |
 | `docs/ISO-AUDIT-2026-04-12.md` | Audit ISO (23 findings, 16 corriges, 7 restants) — **lire a la reprise** |
+| `docs/DESIGN-TOKENS-AUDIT-2026-08-15.md` | Audit design tokens (7 findings, tous corriges et sous gate) — collisions, palette figee, `<alpha-value>`, contraste AA, calque de fond, `backdrop-filter` mort |
 | `docs/ISO-COMPLIANCE.md` | Matrice de conformite qualite (scores a mettre a jour) |
 | `docs/FRONTEND-VISUAL-MAP.md` | Inventaire detaille des effets visuels |
 
@@ -290,7 +310,7 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 | `vitest.setup.ts` | localStorage polyfill + jest-dom |
 | `tailwind.config.js` | Theme Miami Vice + Neutral |
 | `.husky/pre-commit` | lint-staged |
-| `.husky/pre-push` | 6 quality gates |
+| `.husky/pre-push` | 7 quality gates |
 
 
 ## Wiki

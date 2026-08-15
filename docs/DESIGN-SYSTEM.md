@@ -134,7 +134,10 @@ Chaque token chromatique possede un `-foreground` associe (texte sur cette coule
 | `secondary` | 0.1066 | 255.1 | Navy profond |
 | `accent` | 0.2193 | 37.7 | Orange vif |
 | `destructive` | 0.2082 | 25.4 | Rouge-orange |
-| `warning` | 0.1600 | 65.0 | Ambre |
+
+> `warning`, `success` et `info` ne figurent plus ici : ce sont des **couleurs de statut**,
+> invariantes par theme et par mode, declarees une seule fois dans la composition `:root`
+> (voir 3.5). Les rattacher a un theme dupliquait les memes valeurs trois fois.
 
 **Palette neon** (usage restraint, WCAG AA) :
 - `--neon-aqua: 0.65 0.10 202.7` — glows, titres, bordures actives
@@ -155,18 +158,40 @@ Chaque token chromatique possede un `-foreground` associe (texte sur cette coule
 |-------|----------|-----------|
 | `background` | 0.3261 | 0.9750 |
 | `foreground` | 1.0000 | 0.2200 |
-| `primary` | 0.5890 | 0.4500 |
-| `secondary` | 0.3261 | 0.4000 |
-| `accent` | 0.6647 | 0.5500 |
-| `destructive` | 0.6356 | 0.5000 |
+| `primary` | 0.5500 | 0.4500 |
+| `secondary` | 0.4200 | 0.4000 |
+| `accent` | 0.5850 | 0.5500 |
+| `destructive` | 0.5850 | 0.5000 |
 | `muted` | 0.2753 | 0.9300 |
 | `muted-foreground` | 0.7100 | 0.5000 |
 | `card` | 0.2753 | 0.9600 |
 | `border` | 0.7100 | 0.8000 |
+| `status-strong` | 0.7800 | 0.4500 |
 
-### 3.5 Couleurs non-token (a eviter)
+> Les luminosites `dark` de `primary`, `secondary`, `accent` et `destructive` ont ete corrigees le
+> 2026-08-15 : elles etaient sous WCAG AA (3.36 a 3.95:1), et `secondary` etait strictement egal a
+> `background`, donc invisible. Deltas et mesures : `docs/DESIGN-TOKENS-AUDIT-2026-08-15.md`.
 
-Les badges `success`, `warning`, `info` utilisent des couleurs Tailwind en dur (`bg-green-100`, `bg-yellow-100`, `bg-blue-100`). Celles-ci ne s'adaptent pas aux themes. Usage tolere uniquement dans les badges semantiques.
+### 3.5 Couleurs de statut
+
+`success`, `warning` et `info` sont des **pastilles claires portant un texte sombre**, identiques
+dans les 4 combinaisons theme x mode — la semantique n'appartient pas a une identite de marque.
+Declarees une seule fois dans la composition `:root` :
+
+```css
+--status-l: 0.7200;      /* surface de la pastille */
+--status-fg-l: 0.2200;   /* texte dessus */
+--warning: var(--status-l) 0.1600 65.0;   /* ambre */
+--success: var(--status-l) 0.1500 150.0;  /* vert  */
+--info:    var(--status-l) 0.1200 230.0;  /* bleu  */
+```
+
+**Variante `*-strong`** — meme teinte, dessinee **directement sur le fond de page** (icones, texte
+isole). Sa luminosite suit le mode (`--status-strong-l` : 0.78 sombre / 0.45 clair) parce qu'elle n'a
+pas de surface a elle. Classes : `text-success-strong`, `text-warning-strong`, `text-info-strong`.
+
+**Regle** : jamais de couleur Tailwind en dur (`bg-green-100`, `text-amber-600`…) dans un composant.
+Le gate `npm run check:tokens` (§2) rejette `src/components/**` et `app/**`.
 
 ---
 
@@ -367,6 +392,7 @@ Les dialogs et alert-dialogs utilisent une opacite de fond elevee pour garantir 
 | Utiliser `.glass-card` pour les conteneurs principaux | Imbriquer des `.glass-card` dans des `.glass-card` |
 | Utiliser `.glass-surface` pour les elements interactifs | Appliquer `.glass-card` sur des elements `position: fixed` sans `.fixed` |
 | Laisser le backdrop-filter creer la profondeur | Ajouter des `background` opaques en dur sur des surfaces glass |
+| Ecrire `backdrop-filter` seul, sans prefixe | Ecrire `-webkit-backdrop-filter` a la main — le pipeline supprime alors la propriete standard, et Chrome 151 n'honore plus l'alias : le flou disparait (gate §5) |
 
 ---
 
@@ -413,9 +439,9 @@ Les dialogs et alert-dialogs utilisent une opacite de fond elevee pour garantir 
 | `secondary` | `secondary` | `secondary-foreground` | Information neutre |
 | `destructive` | `destructive` | `destructive-foreground` | Erreur |
 | `outline` | Transparent + bordure | `foreground` | Label discret |
-| `success` | `green-100` | `green-800` | Succes |
-| `warning` | `yellow-100` | `yellow-800` | Avertissement |
-| `info` | `blue-100` | `blue-800` | Information |
+| `success` | `success` | `success-foreground` | Succes |
+| `warning` | `warning` | `warning-foreground` | Avertissement |
+| `info` | `info` | `info-foreground` | Information |
 
 Forme : `rounded-full`, taille : `px-2.5 py-0.5 text-xs font-semibold`.
 

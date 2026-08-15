@@ -228,9 +228,9 @@ git push
 |---------------------------|-------|---------------|
 | Functional Suitability | 5/5 | Toutes les fonctionnalites couvertes par tests |
 | Performance Efficiency | 4/5 | Lazy loading, memo, monitoring CWV. Pas de cache serveur (par design). |
-| Compatibility | 4/5 | browserslist, crypto guard. Pas de tests cross-browser automatises. |
-| Usability | 4/5 | Responsive, skip link, aria. Pas d'audit WCAG complet. |
-| Reliability | 5/5 | 531 tests, fail-open, error handling, persistence |
+| Compatibility | 4/5 | browserslist, crypto guard. Pas de tests cross-browser automatises. `caniuse-lite` a 10 mois. |
+| Usability | 4/5 | Responsive, skip link, aria. Contraste AA des tokens verifie par gate depuis 2026-08-15 (56 paires + 16 points de fond, mesure OKLCH -> sRGB auto-testee). Pas d'audit WCAG complet. |
+| Reliability | 5/5 | 571 tests, fail-open, error handling, persistence |
 | Security | 5/5 | HMAC, CORS, CSP, HSTS, rate limit, Zod, SSRF, body limit |
 | Maintainability | 5/5 | ESLint ISO 5055, duplication < 5%, strict TS, 70%+ coverage |
 | Portability | 4/5 | Vercel deploy, npm install. Pas de containerisation. |
