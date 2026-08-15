@@ -56,6 +56,19 @@ four combinations — a light chip carrying dark text — declared once in the `
 **`*-strong` variants** — same hue drawn directly on the page background (icons, standalone text),
 where there is no chip surface to lean on. Lightness follows the mode: `--status-strong-l` is 0.78 in
 dark, 0.45 in light. Classes: `text-success-strong`, `text-warning-strong`, `text-info-strong`.
+Their chroma (`0.1000` / `0.1200` / `0.0900`) is capped by what fits the sRGB gamut at the tighter of
+the two lightnesses.
+
+### Chroma is not free at every lightness
+
+`--background` used to borrow its chroma from `--secondary-c` (0.1066). At **L 0.9750** that chroma
+is unreachable — the sRGB blue channel lands at 1.249 and clips, painting cyan where the token names
+an off-white. Maximum chroma there is **0.0138**. `--bg-c` isolates it: `--secondary-c` by default,
+`0.0130` in light mode.
+
+Clipping is not automatically wrong — deliberate neon clips toward its own hue. What matters is how
+far the painted colour lands from the declared one. Measured in OKLab, the intentional Miami neon
+tops out at 0.0251; anything past **0.05** is painting a different colour and the gate rejects it.
 
 > Every lightness on this page is measured, not chosen by eye. Replay with
 > `npm run check:tokens` — 56 token pairs and 16 backdrop points, all at or above WCAG AA 4.5:1.

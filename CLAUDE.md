@@ -159,14 +159,16 @@ test(scope): description     # Ajout/modification tests
 ### Gate design tokens (`npm run check:tokens`)
 
 `scripts/check-design-tokens.mjs` rejoue la cascade de `globals.css` (il ne redit pas les regles, il
-les lit) et verifie 5 choses sur les 4 combinaisons theme x mode :
+les lit) et verifie 6 choses sur les 4 combinaisons theme x mode :
 
 1. aucune surface semantique strictement egale a `--background` (surface invisible) ;
 2. aucune couleur Tailwind figee dans `src/components/**` / `app/**` (tests exclus) ;
 3. 56 paires `X` / `X-foreground` >= 4.5:1 (WCAG AA, conversion OKLCH -> sRGB auto-testee a 21:1) ;
 4. le texte sur le **vrai** calque de fond — degrade `.page-background` et orbes composes — pas sur
    `--background`, qui n'est pas ce que le lecteur voit en theme miami ;
-5. aucun prefixe vendeur ecrit a la main (le pipeline supprime alors la propriete standard).
+5. aucun prefixe vendeur ecrit a la main (le pipeline supprime alors la propriete standard) ;
+6. aucun token dont la couleur peinte s'ecarte de plus de 0.05 (OKLab) de sa declaration — l'ecretage
+   de gamut doit rester dans la teinte voulue, pas peindre autre chose.
 
 `npm run check:tokens:calibrate` prouve le gate **dans les deux sens** sur `scripts/__fixtures__/`
 (`clean` doit sortir 0, `broken` doit sortir 1 avec un marqueur par classe). Un gate jamais vu
@@ -317,3 +319,13 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 
 Syntheses wiki : `C:\Dev\wiki\topics\chess-tech\` et `C:\Dev\wiki\entities\nos-joueurs-en-tournoi.md`
 Guide et outils de recherche : `C:\Dev\wiki\wiki-guide.md`
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

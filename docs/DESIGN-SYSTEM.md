@@ -190,6 +190,23 @@ Declarees une seule fois dans la composition `:root` :
 isole). Sa luminosite suit le mode (`--status-strong-l` : 0.78 sombre / 0.45 clair) parce qu'elle n'a
 pas de surface a elle. Classes : `text-success-strong`, `text-warning-strong`, `text-info-strong`.
 
+Leur chroma (0.1000 / 0.1200 / 0.0900) est plafonnee par ce qui tient dans le gamut sRGB a **L 0.45**,
+la plus contrainte des deux lightness. Declarer plus ferait peindre au navigateur une autre couleur
+que celle que le token nomme.
+
+### 3.6 Gamut sRGB — `--bg-c`
+
+Une chroma n'est pas atteignable a toutes les lightness. `--background` composait la sienne depuis
+`--secondary-c` (0.1066) ; a **L 0.9750** le canal bleu sRGB monte a 1.249 et s'ecrete, peignant un
+cyan la ou le token annonce un blanc casse. La chroma maximale y est de **0.0138**.
+
+`--bg-c` isole cette valeur : elle vaut `--secondary-c` par defaut et **0.0130** en mode clair. La
+surface `secondary` n'est pas touchee.
+
+**Regle** : le gate `npm run check:tokens` (§6) rejette tout token dont la couleur peinte s'ecarte de
+plus de **0.05** (distance OKLab) de sa declaration. Le neon Miami volontairement sature plafonne a
+0.0251 et passe ; un token qui change de teinte a l'ecretage est bloque.
+
 **Regle** : jamais de couleur Tailwind en dur (`bg-green-100`, `text-amber-600`…) dans un composant.
 Le gate `npm run check:tokens` (§2) rejette `src/components/**` et `app/**`.
 

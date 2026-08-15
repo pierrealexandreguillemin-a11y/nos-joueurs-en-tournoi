@@ -1,7 +1,7 @@
 # Audit design tokens — 2026-08-15
 
 > Déclenché en rendant les aperçus du design system pour la synchro `claude.ai/design`.
-> **7 findings, tous corrigés et sous gate.** Chaque chiffre de ce document est produit par une
+> **11 findings, tous corrigés.** Chaque chiffre de ce document est produit par une
 > commande rejouable ; aucun n'est repris d'une source secondaire.
 
 ## Comment rejouer l'audit entier
@@ -10,7 +10,7 @@
 npm run check:tokens:calibrate   # prouve que le gate échoue sur l'état fautif et passe sur l'état corrigé
 npm run check:tokens             # attendu : exit 0, "0 collision(s), 0 fichier(s) à palette figée,
                                  #            0 paire(s) sous AA, 0 point(s) de fond sous AA,
-                                 #            0 préfixe(s) manuel(s)."
+                                 #            0 préfixe(s) manuel(s), 0 token(s) hors gamut."
 ```
 
 Le gate est branché en **étape 5/7 du pre-push** (`.husky/pre-push`). Un push qui le rougit est bloqué.
@@ -223,19 +223,133 @@ pipeline émettre ce que les cibles browserslist demandent.
 ## F7 — le verdict du gate n'additionnait pas les findings de fond
 
 Le code de sortie ignorait `backdropFindings` : le contrôle §4 pouvait rapporter des échecs sans
-faire échouer le gate. Corrigé ; la calibration couvre désormais les 5 classes.
+faire échouer le gate. Corrigé ; la calibration couvre désormais les 6 classes.
+
+---
+
+## F8 — 19 tokens hors gamut sRGB, dont 3 peints d'une autre couleur
+
+Repéré en vérifiant le rendu du bundle : le panneau *miami · light* ressortait **cyan** là où la
+doc annonce un blanc cassé.
+
+`--background` composait sa chroma depuis `--secondary-c` (0.1066). À L 0.9750 cette chroma est
+**inatteignable** : le canal bleu sRGB monte à 1.249 et se fait écrêter. La chroma maximale à cette
+lightness et cette teinte est **0.0138** — soit 7,7 fois moins que ce qui était déclaré.
+
+**« Hors gamut » n'est pas automatiquement un défaut.** Un néon volontairement saturé s'écrête vers
+sa propre teinte : c'est l'usage normal d'OKLCH. Le défaut, c'est quand l'écrêtage peint *autre
+chose*. La mesure discriminante est donc l'écart OKLab entre la couleur **déclarée** et la couleur
+**réellement peinte**, pas le simple dépassement de gamut.
+
+Les 19 tokens hors gamut se séparaient nettement :
+
+| Écart OKLab | Tokens | Verdict |
+|---|---|---|
+| 0.0884 | `miami/light --background` | déclaré blanc cassé, peint cyan |
+| 0.0579 | `--warning-strong` (les 2 thèmes, light) | teinte décalée |
+| 0.0261 | `--info-strong` (light) | limite |
+| 0.0175 à 0.0251 | `--accent`, `--primary`, `--ring`, `--card`, `--destructive`… | néon Miami délibéré |
+
+**Corrections.**
+
+- `--bg-c` introduit dans la composition, valant `--secondary-c` par défaut et **0.0130** en mode
+  clair. Le fond retrouve son blanc cassé sans toucher à la surface `secondary`.
+  Écart : **0.0884 → 0.0010**.
+- Chroma des variantes `*-strong` ramenée sous le maximum atteignable à L 0.45 (la plus contrainte
+  des deux lightness) : **0.1000 / 0.1200 / 0.0900** pour ambre / vert / bleu, contre 0.16 / 0.15 /
+  0.12. Ces trois tokens avaient été introduits le jour même avec une chroma que rien ne pouvait
+  peindre.
+- Le néon Miami pré-existant (`--accent`, `--primary`, `--ring`) est **laissé tel quel** : écart
+  maximal 0.0251, l'écrêtage y reste dans la teinte voulue. Le désaturer changerait l'identité.
+
+**Contrôle : §6** — seuil OKLab **0.05**, posé sur la distribution mesurée et non au jugé : le néon
+délibéré plafonne à 0.0251, les trois tokens réellement faux se tenaient entre 0.0579 et 0.0884.
+Le seuil laisse une marge nette des deux côtés.
+
+## F9 — `--accent-hover` déclaré trois fois, utilisé nulle part
+
+Trouvé en enquêtant sur F8 : `--accent-hover` était déclaré dans les deux blocs neutral et dans la
+composition, et n'était référencé ni dans `src/`, ni dans `app/`, ni dans `tailwind.config.js`, ni
+ailleurs dans `globals.css`. Token mort, supprimé — avec son écart de gamut de 0.0400.
+
+```bash
+grep -rn "accent-hover" src app tailwind.config.js src/styles/globals.css
+```
+
+---
+
+## F10 — le pool de tests échouait au démarrage sous charge
+
+`npx vitest run` n'avait lancé que **18 fichiers / 385 tests** sur 28 / 571, avec 10 ×
+`Timeout starting forks runner`.
+
+**Cause racine**, lue dans la source et non devinée : `WORKER_START_TIMEOUT = 5e3` dans
+`vitest/dist/chunks/cli-api.*.js` — 5 secondes en dur pour démarrer un worker, **sans option de
+configuration**. Sur Windows, un processus Node froid sous contention CPU ne tient pas ce délai.
+
+Le flake dépend de la charge : machine au repos, 3 runs sur 3 étaient propres. Il a donc fallu un
+harnais qui sature les 12 cœurs avant de lancer la suite — `scripts/bench-vitest-pool.mjs`.
+
+Mesures sur 12 cœurs saturés, 2 runs par configuration, **vitest 4.0.8** :
+
+| Configuration | timeouts | résultat |
+|---|---|---|
+| forks parallèle (défaut) | 9 et 10 | exit 1 — un run n'a collecté que **19/28 fichiers** |
+| forks `maxForks=3` | 10 et 10 | exit 1 — **réduire le nombre de workers ne change rien** |
+| threads parallèle | 0 et 3 | pas immunisé |
+| `fileParallelism: false` | 0 et 0 | exit 0, 4 runs sur 4 |
+
+L'hypothèse « trop de workers simultanés » est **falsifiée par la mesure** : le problème est le boot
+d'un worker isolé sous CPU affamé, pas leur nombre.
+
+**Résolution.** Le correctif n'est finalement pas une option de config : `npm audit fix` a fait
+passer vitest de 4.0.8 à **4.1.10**, où la même constante vaut `9e4` — **90 secondes**. L'upstream a
+corrigé la cause. Re-mesuré sur 12 cœurs saturés en 4.1.10 :
+
+| Configuration | timeouts | fichiers | durée |
+|---|---|---|---|
+| forks parallèle (défaut) | 0 et 0 | 28/28, 571/571 | 52 s / 44 s |
+| `fileParallelism: false` | 0 et 0 | 28/28, 571/571 | 102 s / 112 s |
+
+`fileParallelism: false` a donc été **retiré** : il aurait coûté le double du temps pour un problème
+qui n'existe plus. `vitest.config.ts` garde un commentaire pointant vers le harnais.
+
+```bash
+node scripts/bench-vitest-pool.mjs 2   # sature les coeurs et compare les configurations
+```
+
+## F11 — `caniuse-lite` périmé de 10 mois, et une CVE critique dans vitest
+
+`caniuse-lite` était en `1.0.30001751` ; chaque build affichait l'avertissement browserslist.
+Mis à jour en **`1.0.30001809`**. Les cibles passent de `chrome 140/141` à `chrome 150/151`,
+`safari 18.5` à `safari 26.3/26.4`.
+
+Effet direct sur F6 : avec ces cibles, Lightning CSS n'émet plus **que** la propriété non préfixée.
+Vérifié dans le CSS de production — `backdrop-filter` × 6, `-webkit-backdrop-filter` × 0.
+
+**Effet de bord signalé** : `update-browserslist-db` fait un `npm install` puis un `npm uninstall`,
+ce qui a retiré `baseline-browser-mapping` des devDependencies directes. Vérifié avant d'accepter :
+aucun import dans le code, et le paquet reste fourni transitivement par `browserslist` et `next`.
+La dépendance directe était redondante.
+
+**Trouvé au passage** : `npm audit` remontait **1 vulnérabilité critique** — GHSA-5xrq-8626-4rwp,
+CVSS 9.8, lecture et exécution de fichier arbitraire quand le serveur `vitest --ui` écoute. Le gate
+6/7 du pre-push bloque sur `critical > 0`. `npm audit fix` l'a résolue en montant vitest à 4.1.10,
+dans la plage `^4.0.5` déjà déclarée.
+
+Restaient **4 vulnérabilités `high`**, toutes de la même racine : `extract-zip` (traversée de chemin
+par lien symbolique, GHSA-jmr9-qjv8-65gv) via `@puppeteer/browsers` → `puppeteer` / `puppeteer-core`.
+Leur correction demandait une montée majeure `puppeteer 24.43.1 → 25.7.0`. Appliquée, puis
+**vérifiée** plutôt que supposée : toute la surface API que `e2e/` utilise a été rejouée contre un
+serveur de dev réel — `launch`, `newPage`, `setViewport`, `setRequestInterception`, `on('request')`,
+`goto`, `waitForSelector`, `click`, `type`, `waitForFunction`, `evaluate`, `reload`, `close`.
+
+`npm audit` : **0 critical, 0 high, 0 moderate, 0 low**.
 
 ---
 
 ## Ce qui reste ouvert
 
-- **Le pool `forks` de Vitest échoue au démarrage sur cette machine Windows.**
-  `npx vitest run --reporter=dot` n'a lancé que **18 fichiers / 385 tests** sur 28 / 571, avec
-  10 × `Timeout starting forks runner`. Avec `--pool=threads`, **28 fichiers / 571 tests passent**.
-  L'étape 7/7 du pre-push utilise le pool par défaut : elle est exposée au même flake.
-  Non corrigé — ce n'est pas un défaut du design system et le changer touche la config de test.
-- **`caniuse-lite` a 10 mois** (`1.0.30001751`) ; chaque build affiche l'avertissement browserslist.
-  Sans lien avec F6 une fois les préfixes manuels retirés, mais à rafraîchir.
 - **Teintes d'alerte peu différenciées en thème miami.** Le fond de page miami est un navy saturé
   (C 0.1066) : une teinte de statut à 15 % ne décale pas assez la couleur, les trois variantes
   d'alerte se ressemblent. En thème neutral (fond achromatique) elles se distinguent nettement.
