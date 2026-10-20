@@ -14,6 +14,7 @@ npm run lint            # ESLint
 npm run typecheck       # tsc --noEmit
 npm run duplication     # jscpd seuil 5%
 npm run analyze         # Bundle analyzer
+npm run test:ffe        # Canary: parser contre les pages FFE live (avant une saison de tournois)
 ```
 
 ## Principes
@@ -93,6 +94,7 @@ Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 - **Config** : `vitest.config.e2e.ts`, run via `npx vitest run --config vitest.config.e2e.ts`
 - **Target** : deployed app (`E2E_BASE_URL` ou `https://nos-joueurs-en-tournoi.vercel.app`)
 - **Helpers** : `e2e/helpers.ts` (`launchBrowser`, `freshVisit`, `typeInto`, `waitForText`)
+- **Canary FFE** : `ffe-parser-live.e2e.ts` lit les vraies pages du tournoi 68994 (termine, donc chiffres figes) ; s'il echoue, la FFE a change son HTML — enregistrer les nouvelles pages dans `src/lib/__fixtures__/ffe/` et corriger le parser contre elles
 - **Mock FFE** : `refresh-results.e2e.ts` utilise `page.setRequestInterception(true)` pour mocker `/api/scrape`
 - **Lighthouse** : `lighthouse.e2e.ts` utilise `chrome-launcher` + `lighthouse` (seuils : perf 40, a11y 80, bp 80, seo 85)
 - **Accessibilite** : `accessibility.e2e.ts` utilise `@axe-core/puppeteer` (WCAG 2.1 AA)
