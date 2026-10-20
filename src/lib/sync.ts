@@ -7,9 +7,9 @@ import type { StorageData } from '@/types';
 const API_BASE = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
 /**
- * Sync local storage to Vercel KV (Upstash Redis)
+ * Sync local storage to the server store (/api/events/sync)
  */
-export async function syncToUpstash(clubSlug: string): Promise<boolean> {
+export async function syncToCloud(clubSlug: string): Promise<boolean> {
   try {
     const storage = createClubStorage(clubSlug);
     const data = storage.getStorageData();
@@ -25,22 +25,22 @@ export async function syncToUpstash(clubSlug: string): Promise<boolean> {
     });
 
     if (!response.ok) {
-      console.error('[Upstash Sync] Upload failed:', response.statusText, response.status);
+      console.error('[Cloud Sync] Upload failed:', response.statusText, response.status);
       return false;
     }
 
     await response.json();
     return true;
   } catch (error) {
-    console.error('[Upstash Sync] Upload error:', error);
+    console.error('[Cloud Sync] Upload error:', error);
     return false;
   }
 }
 
 /**
- * Fetch data from Upstash KV and merge with local storage
+ * Fetch data from the server store (/api/events/fetch) and merge with local storage
  */
-export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
+export async function fetchFromCloud(clubSlug: string): Promise<boolean> {
   try {
     const token = await generateSyncToken(clubSlug);
     const response = await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`, {
@@ -48,7 +48,7 @@ export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
     });
 
     if (!response.ok) {
-      console.error('[Upstash Sync] Download failed:', response.statusText, response.status);
+      console.error('[Cloud Sync] Download failed:', response.statusText, response.status);
       return false;
     }
 
@@ -91,7 +91,7 @@ export async function fetchFromUpstash(clubSlug: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error('[Upstash Sync] Download error:', error);
+    console.error('[Cloud Sync] Download error:', error);
     return false;
   }
 }

@@ -27,7 +27,7 @@ import {
   createClubStorage,
   type ExportedEvent,
 } from '@/lib/storage';
-import { syncToUpstash, fetchFromUpstash } from '@/lib/sync';
+import { syncToCloud, fetchFromCloud } from '@/lib/sync';
 import { exportedEventSchema } from '@/lib/schemas';
 import dynamic from 'next/dynamic';
 const ShareEventModal = dynamic(() => import('@/components/ShareEventModal'), { ssr: false });
@@ -254,7 +254,7 @@ function downloadJsonFile(data: ExportedEvent) {
 async function cloudDownload(clubSlug: string, onEventChange: () => void) {
   try {
     toast.info('Téléchargement depuis le cloud...');
-    const success = await fetchFromUpstash(clubSlug);
+    const success = await fetchFromCloud(clubSlug);
     if (success) {
       toast.success('Événements téléchargés depuis le cloud avec succès !');
       onEventChange();
@@ -270,7 +270,7 @@ async function cloudDownload(clubSlug: string, onEventChange: () => void) {
 async function cloudUpload(clubSlug: string) {
   try {
     toast.info('Envoi vers le cloud...');
-    const success = await syncToUpstash(clubSlug);
+    const success = await syncToCloud(clubSlug);
     if (success) {
       toast.success('Événements envoyés vers le cloud avec succès !');
     } else {

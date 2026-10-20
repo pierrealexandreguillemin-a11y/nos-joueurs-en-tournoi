@@ -1,18 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateSyncToken } from '@/lib/hmac';
 
-// Mock kv module
-vi.mock('@/lib/kv', () => ({
+// Mock db module
+vi.mock('@/lib/db', () => ({
   saveEvents: vi.fn(async () => {}),
-  getEvents: vi.fn(async () => []),
   saveValidations: vi.fn(async () => {}),
-  getValidations: vi.fn(async () => ({})),
   saveCurrentEventId: vi.fn(async () => {}),
-  getCurrentEventId: vi.fn(async () => ''),
   getStorageData: vi.fn(async () => ({ events: [], validations: {}, currentEventId: '' })),
-  eventsKey: vi.fn((slug: string) => `nos-joueurs:${slug}:events`),
-  validationsKey: vi.fn((slug: string) => `nos-joueurs:${slug}:validations`),
-  settingsKey: vi.fn((slug: string) => `nos-joueurs:${slug}:settings`),
 }));
 
 import { POST } from '../sync/route';

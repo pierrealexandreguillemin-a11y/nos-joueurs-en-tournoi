@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
-import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/kv';
+import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/db';
 import { verifySyncToken } from '@/lib/hmac';
 import { syncBodySchema } from '@/lib/schemas';
 
@@ -11,7 +11,7 @@ import type { ValidationState } from '@/types';
 
 /**
  * POST /api/events/sync
- * Sync events from client to Vercel KV
+ * Sync events from client to the Postgres store
  */
 const MAX_BODY_SIZE = 1_048_576; // 1 MB
 
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Save all data to Upstash KV in parallel
+    // Save all data to the Postgres store in parallel
     await Promise.all([
       saveEvents(events, clubSlug),
       validations && Object.keys(validations).length > 0

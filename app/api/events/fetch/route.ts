@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
-import { getStorageData } from '@/lib/kv';
+import { getStorageData } from '@/lib/db';
 import { verifySyncToken } from '@/lib/hmac';
 import { clubSlugSchema } from '@/lib/schemas';
 
@@ -10,7 +10,7 @@ export function OPTIONS() {
 
 /**
  * GET /api/events/fetch?clubSlug=xxx
- * Fetch all events from Vercel KV for a specific club
+ * Fetch all events from the Postgres store for a specific club
  */
 export async function GET(req: NextRequest) {
   try {
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all data from Upstash KV
+    // Fetch all data from the Postgres store
     const data = await getStorageData(clubSlug);
 
     return NextResponse.json(

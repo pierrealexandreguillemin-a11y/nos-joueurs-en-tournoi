@@ -21,7 +21,7 @@ npm run analyze         # Bundle analyzer
 ### DRY (Don't Repeat Yourself)
 
 - `SLUG_REGEX` : defini dans `src/lib/validation.ts`, reutilise dans `schemas.ts`
-- Redis : `src/lib/kv.ts` centralise l'acces, `proxy.ts` reutilise les memes env vars
+- Postgres : `src/lib/db.ts` centralise l'acces (Neon, `DATABASE_URL`), schema dans `db/schema.sql`
 - Storage : `storage.ts` re-exporte `storage-core.ts` + `storage-share.ts`
 - Types : `src/types/index.ts` est la source unique des interfaces
 
@@ -36,7 +36,6 @@ npm run analyze         # Bundle analyzer
 
 - Reutiliser les schemas Zod de `schemas.ts` (pas re-valider manuellement)
 - Reutiliser `createClubStorage(slug)` pour tout acces localStorage
-- Reutiliser `getClientIP()` dans `proxy.ts` (pas dupliquer l'extraction IP)
 
 ## Convention de fichiers
 
@@ -103,7 +102,7 @@ Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 
 - **Co-localisation** : le test est a cote du fichier teste
 - **Pas de snapshots** : assertions explicites uniquement
-- **Mocks** : `vi.mock()` pour dependances externes (fetch, Redis, etc.)
+- **Mocks** : `vi.mock()` pour dependances externes (fetch, Neon, etc.)
 - **Timers** : `vi.useFakeTimers()` + `vi.setSystemTime()` (jamais `advanceTimersByTime` negatif)
 - **DOM** : Testing Library (`render`, `screen`, `userEvent`)
 - **IP en tests** : utiliser `10.0.0.x` avec `eslint-disable sonarjs/no-hardcoded-ip`
@@ -113,8 +112,8 @@ Config dans `eslint.config.mjs` (flat config ESLint 9). Regles ISO 5055 :
 
 ```typescript
 // Mocker les dependances avant l'import
-vi.mock('@upstash/redis', () => ({ Redis: MockRedis }));
-process.env.KV_REST_API_URL = 'https://fake.upstash.io';
+vi.mock('@neondatabase/serverless', () => ({ neon: () => fakeSql }));
+process.env.DATABASE_URL = 'postgresql://user:pass@fake.neon.tech/db';
 
 // Import dynamique apres setup env
 const { handler } = await import('./route');
@@ -193,13 +192,13 @@ Contexte et mesures : `docs/DESIGN-TOKENS-AUDIT-2026-08-15.md`.
 - `NEXT_PUBLIC_SYNC_SECRET` : expose dans le bundle client par design (defense-in-depth, pas auth forte)
 - Guard `crypto.subtle` : verifie `importKey` + `sign` avant utilisation
 
-### Rate limiting (`proxy.ts`)
+### Rate limiting (Vercel WAF, hors du code)
 
-- Upstash Redis sliding window
-- `/api/scrape` : 30 req/60s
-- `/api/events/*` : 10 req/60s
-- Fail-open : si Redis indisponible, laisse passer (try/catch)
-- IP : `x-forwarded-for` > `x-real-ip` > `'unknown'`
+- Regle firewall du projet : `/api/*`, 30 req / 60 s par IP, fenetre fixe, reponse 429
+- Hobby = 1 regle de rate limit par projet (une seule limite pour toute l'API)
+- Configuree dans le dashboard Vercel (Firewall > Rules) — rien dans le repo ne la recree
+- Historique : l'ancien limiteur Upstash de `proxy.ts` laissait tout passer quand Redis tombait
+  (fail-open) ; voir `docs/CHECKUP-2026-10-20.md`
 
 ### Validation API (`src/lib/schemas.ts`)
 
@@ -220,16 +219,17 @@ Toutes les donnees sont isolees par slug de club :
 
 ```
 localStorage key: "nos-joueurs:{clubSlug}:events"
-Redis key:        "nos-joueurs:{clubSlug}:events"
+Postgres:         club_events (club_slug, event_id) + club_state (club_slug)
 ```
 
 `createClubStorage(slug)` retourne un objet avec toutes les operations CRUD scopees.
 
 ### Sync strategy
 
-- **Push** : `syncToUpstash(clubSlug)` envoie le localStorage vers Redis
-- **Pull** : `fetchFromUpstash(clubSlug)` recupere et merge
-- **Merge** : union des events par ID, version locale prioritaire si conflit
+- **Push** : `syncToCloud(clubSlug)` envoie le localStorage vers `/api/events/sync` (manuel, bouton)
+- **Pull** : `fetchFromCloud(clubSlug)` recupere `/api/events/fetch` et merge
+- **Merge** (pull) : union des events par ID, version **distante** prioritaire si conflit
+  (`fetchFromCloud` part du distant et n'ajoute que les events locaux absents du serveur)
 
 ### Lazy loading
 
@@ -296,7 +296,7 @@ Les composants de fond (HalftoneWaves, BackgroundPaths, FloatingParticles) sont 
 - **Plateforme** : Vercel (auto-deploy on push to `master`)
 - **Branch production** : `master`
 - **Build** : Next.js 16 + Turbopack
-- **Storage** : Upstash Redis (provisionne via Vercel Marketplace)
+- **Storage** : Neon Postgres, offre gratuite (`nos-joueurs-en-tournoi-db`, fra1, via Vercel Marketplace)
 - **Pas de GitHub Actions** : CI via pre-push hooks + Vercel auto-deploy
 
 ## Fichiers de configuration

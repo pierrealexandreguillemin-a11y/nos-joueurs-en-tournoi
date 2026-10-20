@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-import { syncToUpstash, fetchFromUpstash } from './sync';
+import { syncToCloud, fetchFromCloud } from './sync';
 
 describe('sync.ts — QG-6: scope du sync', () => {
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
     mockFetch.mockReset();
   });
 
-  describe('syncToUpstash(clubSlug)', () => {
+  describe('syncToCloud(clubSlug)', () => {
     it('envoie clubSlug dans le body du POST', async () => {
       // Set up localStorage with namespaced data
       const storageData = JSON.stringify({
@@ -27,7 +27,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         json: async () => ({ success: true, synced: 1 }),
       });
 
-      await syncToUpstash('hay-chess');
+      await syncToCloud('hay-chess');
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [, options] = mockFetch.mock.calls[0];
@@ -55,7 +55,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         json: async () => ({ success: true, synced: 1 }),
       });
 
-      await syncToUpstash('hay-chess');
+      await syncToCloud('hay-chess');
 
       const [, options] = mockFetch.mock.calls[0];
       const body = JSON.parse(options.body);
@@ -65,7 +65,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
     });
   });
 
-  describe('fetchFromUpstash(clubSlug)', () => {
+  describe('fetchFromCloud(clubSlug)', () => {
     it('passe clubSlug dans le query string du GET', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', JSON.stringify({
         currentEventId: '',
@@ -81,7 +81,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('hay-chess');
+      await fetchFromCloud('hay-chess');
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url] = mockFetch.mock.calls[0];
@@ -107,7 +107,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('hay-chess');
+      await fetchFromCloud('hay-chess');
 
       // Namespaced key should have data
       const namespacedData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:hay-chess')!);
@@ -148,7 +148,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('club-a');
+      await fetchFromCloud('club-a');
 
       // Club B data should be untouched
       const clubBData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:club-b')!);
@@ -158,48 +158,48 @@ describe('sync.ts — QG-6: scope du sync', () => {
   });
 
   describe('error paths', () => {
-    it('syncToUpstash retourne false si fetch throw', async () => {
+    it('syncToCloud retourne false si fetch throw', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await syncToUpstash('test-club');
+      const result = await syncToCloud('test-club');
       expect(result).toBe(false);
     });
 
-    it('syncToUpstash retourne false si response 500', async () => {
+    it('syncToCloud retourne false si response 500', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
 
-      const result = await syncToUpstash('test-club');
+      const result = await syncToCloud('test-club');
       expect(result).toBe(false);
     });
 
-    it('fetchFromUpstash retourne false si fetch throw', async () => {
+    it('fetchFromCloud retourne false si fetch throw', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await fetchFromUpstash('test-club');
+      const result = await fetchFromCloud('test-club');
       expect(result).toBe(false);
     });
 
-    it('fetchFromUpstash retourne false si response 500', async () => {
+    it('fetchFromCloud retourne false si response 500', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
       }));
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
 
-      const result = await fetchFromUpstash('test-club');
+      const result = await fetchFromCloud('test-club');
       expect(result).toBe(false);
     });
   });
 
-  describe('fetchFromUpstash — decision table: merge', () => {
+  describe('fetchFromCloud — decision table: merge', () => {
     it('remote [A], local [] → merged = [A]', async () => {
       localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
         currentEventId: '', events: [], validations: {},
@@ -217,7 +217,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('test-club');
+      await fetchFromCloud('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);
@@ -243,7 +243,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('test-club');
+      await fetchFromCloud('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);
@@ -269,7 +269,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('test-club');
+      await fetchFromCloud('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(2);
@@ -295,7 +295,7 @@ describe('sync.ts — QG-6: scope du sync', () => {
         }),
       });
 
-      await fetchFromUpstash('test-club');
+      await fetchFromCloud('test-club');
 
       const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
       expect(data.events).toHaveLength(1);

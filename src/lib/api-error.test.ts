@@ -18,7 +18,7 @@ describe('apiError', () => {
 
   it('logs the full error server-side with label', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const err = new Error('Upstash timeout');
+    const err = new Error('Database timeout');
 
     apiError('/sync', err);
 

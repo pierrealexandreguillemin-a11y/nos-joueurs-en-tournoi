@@ -11,7 +11,7 @@ Choisissez votre club, suivez vos joueurs, validez les resultats ronde par ronde
 - **Scraping automatique** des resultats FFE (parsing HTML optimise via Cheerio)
 - **Appariements en direct** : numero de table, couleur (Blancs/Noirs), adversaire, elo adversaire
 - **Affichage filtre** des joueurs du club selectionne
-- **Synchronisation multi-appareils** via Upstash Redis KV
+- **Synchronisation multi-appareils** via Neon Postgres
 - **Multi-evenements** : gerer plusieurs tournois simultanement
 - **Partage QR Code** : partage d'evenements par scan ou lien URL
 - **Export/Import JSON** : sauvegarde et partage offline
@@ -29,8 +29,8 @@ Choisissez votre club, suivez vos joueurs, validez les resultats ronde par ronde
 | Langage | TypeScript 5 (strict mode) |
 | Validation | Zod 4 |
 | Storage client | localStorage (namespace par club) |
-| Storage serveur | Upstash Redis (`@upstash/redis`) |
-| Rate limiting | `@upstash/ratelimit` (sliding window, persistant) |
+| Storage serveur | Neon Postgres (`@neondatabase/serverless`), schema `db/schema.sql` |
+| Rate limiting | Vercel WAF (regle firewall du projet, hors du code) |
 | Auth API | HMAC-SHA256 avec anti-replay (5 min) |
 | Analytics | Vercel Analytics (Core Web Vitals) |
 | Tests | Vitest 4, Testing Library, jsdom |
@@ -61,8 +61,7 @@ Copier `.env.example` vers `.env.local` et remplir :
 
 | Variable | Requis | Description |
 |----------|--------|-------------|
-| `KV_REST_API_URL` | Production | URL Upstash Redis |
-| `KV_REST_API_TOKEN` | Production | Token Upstash Redis |
+| `DATABASE_URL` | Production, Preview | Connection string Neon (injectee par l'integration) |
 | `NEXT_PUBLIC_SYNC_SECRET` | Production | Secret HMAC (expose cote client par design, voir `src/lib/hmac.ts`) |
 
 En dev local, l'app fonctionne sans variables (fallback localStorage, pas de rate limiting).
@@ -93,8 +92,8 @@ app/
   api/
     scrape/route.ts       # Proxy FFE scraping (SSRF-protected)
     events/
-      sync/route.ts       # POST sync events vers Redis (HMAC + Zod + 1MB limit)
-      fetch/route.ts      # GET fetch events depuis Redis (Zod slug validation)
+      sync/route.ts       # POST sync events vers Postgres (HMAC + Zod + 1MB limit)
+      fetch/route.ts      # GET fetch events depuis Postgres (Zod slug validation)
 
 src/
   components/
@@ -125,8 +124,8 @@ src/
     hmac.ts               # HMAC-SHA256 token (anti-replay, clock-skew tolerance)
     schemas.ts            # Schemas Zod (validation API routes)
     validation.ts         # Regles metier (SLUG_REGEX, URLs FFE, noms)
-    kv.ts                 # Client Redis namespace par club
-    sync.ts               # Sync localStorage <-> Upstash (merge strategy)
+    db.ts                 # Client Postgres (Neon) namespace par club
+    sync.ts               # Sync localStorage <-> API serveur (merge strategy)
     storage.ts            # Facade storage (re-exports core + share)
     storage-core.ts       # CRUD localStorage namespace par club
     storage-share.ts      # Encode/decode events pour partage URL (lz-string)
@@ -140,7 +139,6 @@ src/
   types/
     index.ts              # Interfaces TypeScript (Event, Player, Tournament, Pairing, etc.)
 
-proxy.ts                  # Rate limiting middleware (Next.js 16 convention)
 vercel.json               # Headers securite (CSP, HSTS, CORS)
 vitest.config.ts          # Config tests unitaires
 vitest.config.e2e.ts      # Config tests E2E
@@ -183,7 +181,7 @@ npm run test:coverage     # Avec couverture
 | `calculations.test.ts` | 34 | Points, performance, Buchholz, tri, moyenne elo, stats resultats |
 | `formatters.test.ts` | 28 | Formatage noms, elo, scores, pourcentages, dates, club, ronde |
 | `parser.test.ts` | 46 | Parser HTML FFE (Stats, Ls, Ga, Rondes), clubs, resultats, appariements, filterClubPairings |
-| `sync.test.ts` | 13 | Sync Upstash POST/GET, merge strategy, error paths |
+| `sync.test.ts` | 13 | Sync cloud POST/GET, merge strategy, error paths |
 | `scraper.test.ts` | 8 | Scraping FFE, erreurs contextuelles |
 | `utils.test.ts` | 11 | Merge class names, gestion Tailwind conflicts |
 | `random.test.ts` | 7 | Distribution, unicite, plage [0,1) |
@@ -223,7 +221,6 @@ npm run test:coverage     # Avec couverture
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
-| `proxy.test.ts` | 6 | Rate limiting 429, pass-through, fail-open Redis, extraction IP (x-forwarded-for, x-real-ip) |
 
 ### Conventions de test
 
@@ -243,13 +240,12 @@ npm run test:coverage     # Avec couverture
 | CSP | `default-src 'self'`, `frame-ancestors 'none'`, connect-src whitelist | `vercel.json` |
 | HSTS | `max-age=63072000; includeSubDomains; preload` | `vercel.json` |
 | CORS | Origin unique sur `/api/*` | `vercel.json` |
-| Rate limiting | Upstash sliding window (30/min scrape, 10/min events) | `proxy.ts` |
+| Rate limiting | WAF fixed window, 30/min par IP sur `/api/*` | Vercel Firewall |
 | HMAC | SHA-256 + timestamp anti-replay (5 min, tolerance 10s) | `src/lib/hmac.ts` |
 | SSRF | Whitelist `echecs.asso.fr` sur `/api/scrape` | `app/api/scrape/route.ts` |
 | Body limit | 1 MB max sur POST `/api/events/sync` | `app/api/events/sync/route.ts` |
 | Validation | Zod schemas strictes sur toutes les API routes | `src/lib/schemas.ts` |
 | Headers | X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy | `vercel.json` |
-| Fail-open | Rate limiter laisse passer si Redis indisponible | `proxy.ts` |
 
 ## Quality gates (pre-push)
 
@@ -268,7 +264,7 @@ Chaque `git push` execute automatiquement 6 controles (`.husky/pre-push`) :
 
 ### 1. Premier lancement
 
-L'ecran d'onboarding demande le nom du club. Ce nom est slugifie (`"Hay Chess"` -> `"hay-chess"`) et sert de namespace pour isoler les donnees localStorage et Redis.
+L'ecran d'onboarding demande le nom du club. Ce nom est slugifie (`"Hay Chess"` -> `"hay-chess"`) et sert de namespace pour isoler les donnees localStorage et Postgres.
 
 ### 2. Creer un evenement
 
@@ -328,8 +324,9 @@ Messages d'erreur contextuels :
 
 ### Sync ne fonctionne pas
 
-- Verifier `KV_REST_API_URL` et `KV_REST_API_TOKEN` dans Vercel Dashboard > Settings > Environment Variables
-- Verifier les logs console `[Upstash Sync]`
+- Verifier `DATABASE_URL` dans Vercel Dashboard > Settings > Environment Variables (injectee par l'integration Neon)
+- Verifier que la base Neon `nos-joueurs-en-tournoi-db` existe et contient les tables de `db/schema.sql`
+- Verifier les logs console `[Cloud Sync]`
 
 ### Build errors
 
