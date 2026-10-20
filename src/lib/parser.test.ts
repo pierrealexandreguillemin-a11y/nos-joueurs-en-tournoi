@@ -397,10 +397,12 @@ describe('parser.ts', () => {
   });
 
   describe('parsePairings', () => {
+    // Real FFE markup: stripe class on the row, papi_r/c/l on cells
+    // (see __fixtures__/ffe/68994-round09.html, covered in parser.ffe-fixtures.test.ts)
     function makePairingHTML(rows: string[][]): string {
-      const trs = rows.map(cells => {
-        const tds = cells.map(c => `<td class="papi_liste_c">${c}</td>`).join('');
-        return `<tr>${tds}</tr>`;
+      const trs = rows.map((cells, i) => {
+        const tds = cells.map(c => `<td class="papi_l">${c}</td>`).join('');
+        return `<tr class="${i % 2 ? 'papi_liste_c' : 'papi_liste_f'}">${tds}</tr>`;
       }).join('');
       return `<table>${trs}</table>`;
     }
@@ -461,35 +463,37 @@ describe('parser.ts', () => {
       expect(pairings[0].result).toBe('');
     });
 
-    it('handles mixed papi_liste_f and papi_liste_c classes', () => {
-      const html = `<table><tr>
-        <td class="papi_liste_f">1</td>
-        <td class="papi_liste_c">0</td>
-        <td class="papi_liste_f">PLAYER A</td>
-        <td class="papi_liste_c">1500</td>
-        <td class="papi_liste_f"></td>
-        <td class="papi_liste_c">PLAYER B</td>
-        <td class="papi_liste_f">1600</td>
-        <td class="papi_liste_c">0</td>
-      </tr></table>`;
+    it('reads both papi_liste_f and papi_liste_c rows', () => {
+      const html = makePairingHTML([
+        ['1', '0', 'PLAYER A', '1500', '', 'PLAYER B', '1600', '0'],
+        ['2', '0', 'PLAYER C', '1400', '', 'PLAYER D', '1300', '0'],
+      ]);
 
       const pairings = parsePairings(html);
-      expect(pairings).toHaveLength(1);
-      expect(pairings[0].whitePlayer).toBe('PLAYER A');
+      expect(pairings.map(p => p.whitePlayer)).toEqual(['PLAYER A', 'PLAYER C']);
+    });
+
+    it('ignores rows without a stripe class (headers, layout)', () => {
+      const html = `<table>
+        <tr class="papi_liste_t"><td class="papi_r">Ech.</td><td>Pts</td><td>Blancs</td><td></td><td>Res.</td><td>Noirs</td><td></td><td>Pts</td></tr>
+        <tr><td>1</td><td>0</td><td>PLAYER A</td><td>1500</td><td></td><td>PLAYER B</td><td>1600</td><td>0</td></tr>
+      </table>`;
+
+      expect(parsePairings(html)).toEqual([]);
     });
 
     it('skips rows with fewer than 8 cells', () => {
       const html = `<table>
-        <tr><td class="papi_liste_c">Header</td></tr>
-        <tr>
-          <td class="papi_liste_c">1</td>
-          <td class="papi_liste_c">0</td>
-          <td class="papi_liste_c">PLAYER A</td>
-          <td class="papi_liste_c">1500</td>
-          <td class="papi_liste_c"></td>
-          <td class="papi_liste_c">PLAYER B</td>
-          <td class="papi_liste_c">1600</td>
-          <td class="papi_liste_c">0</td>
+        <tr class="papi_liste_f"><td class="papi_c">Header</td></tr>
+        <tr class="papi_liste_c">
+          <td class="papi_r">1</td>
+          <td class="papi_c">0</td>
+          <td class="papi_l">PLAYER A</td>
+          <td class="papi_r">1500</td>
+          <td class="papi_c"></td>
+          <td class="papi_l">PLAYER B</td>
+          <td class="papi_r">1600</td>
+          <td class="papi_c">0</td>
         </tr>
       </table>`;
 
@@ -508,30 +512,30 @@ describe('parser.ts', () => {
     });
 
     it('parses realistic FFE HTML with nested tags, &nbsp;, font, b elements', () => {
-      // Simulates real FFE output with <b>, <font>, &nbsp; and mixed classes
+      // FFE output with <b>, <font>, &nbsp; inside cells
       const html = `<table>
         <tr class="papi_liste_t">
-          <td class="papi_liste_c" colspan="8"><b>Ronde 3</b></td>
+          <td class="papi_c" colspan="8"><b>Ronde 3</b></td>
         </tr>
-        <tr>
-          <td class="papi_liste_f"><b>1</b></td>
-          <td class="papi_liste_c">&nbsp;2½&nbsp;</td>
-          <td class="papi_liste_f"><font color="#000000"><b>DUPONT&nbsp;&nbsp;Jean</b></font></td>
-          <td class="papi_liste_c"><font color="#808080">1541 F</font></td>
-          <td class="papi_liste_f"><b>1 - 0</b></td>
-          <td class="papi_liste_c"><font color="#000000">MARTIN&nbsp;Paul</font></td>
-          <td class="papi_liste_f"><font color="#808080">1450</font></td>
-          <td class="papi_liste_c">&nbsp;1½</td>
+        <tr class="papi_liste_f">
+          <td class="papi_r"><b>1</b></td>
+          <td class="papi_c">&nbsp;2½&nbsp;</td>
+          <td class="papi_l"><font color="#000000"><b>DUPONT&nbsp;&nbsp;Jean</b></font></td>
+          <td class="papi_r"><font color="#808080">1541 F</font></td>
+          <td class="papi_c"><b>1 - 0</b></td>
+          <td class="papi_l"><font color="#000000">MARTIN&nbsp;Paul</font></td>
+          <td class="papi_r"><font color="#808080">1450</font></td>
+          <td class="papi_c">&nbsp;1½</td>
         </tr>
-        <tr>
-          <td class="papi_liste_c">2</td>
-          <td class="papi_liste_f">1</td>
-          <td class="papi_liste_c"><span>LEFEBVRE  Alice</span></td>
-          <td class="papi_liste_f">1300</td>
-          <td class="papi_liste_c"></td>
-          <td class="papi_liste_f">EXEMPT</td>
-          <td class="papi_liste_c">0</td>
-          <td class="papi_liste_f">0</td>
+        <tr class="papi_liste_c">
+          <td class="papi_r">2</td>
+          <td class="papi_c">1</td>
+          <td class="papi_l"><span>LEFEBVRE  Alice</span></td>
+          <td class="papi_r">1300</td>
+          <td class="papi_c"></td>
+          <td class="papi_l">EXEMPT</td>
+          <td class="papi_r">0</td>
+          <td class="papi_c">0</td>
         </tr>
       </table>`;
 

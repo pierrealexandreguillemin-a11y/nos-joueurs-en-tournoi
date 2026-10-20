@@ -183,13 +183,17 @@ export function parseResults(
   const players: Player[] = [];
   const PLAYER_BOX = 'div.papi_joueur_box';
 
-  // FFE structure: Each player row contains a div.papi_joueur_box with nested sub-table
-  // See FFE-PARSER-REFERENCE.md for complete documentation
-  $('tr').filter((_, row) => {
-    return $(row).find(PLAYER_BOX).length > 0;
-  }).each((_, row) => {
+  // FFE structure: Each player row holds a div.papi_joueur_box (with nested sub-table)
+  // in one of its own cells. Match the box as a direct child of the row's cells only:
+  // the page-layout row wrapping the whole grid also *contains* every box.
+  // Reference markup: __fixtures__/ffe/68994-ga.html (parser.ffe-fixtures.test.ts)
+  const ownBoxCell = ($row: ReturnType<cheerio.CheerioAPI>) =>
+    $row.children('td').filter((_, td) => $(td).children(PLAYER_BOX).length > 0).first();
+
+  $('tr').filter((_, row) => ownBoxCell($(row)).length > 0).each((_, row) => {
+    const tdParent = ownBoxCell($(row));
     // Extract player name and filter by club
-    const playerDiv = $(row).find(PLAYER_BOX);
+    const playerDiv = tdParent.children(PLAYER_BOX);
     const nameRaw = playerDiv.find('b').first().text().trim();
     const name = cleanPlayerName(nameRaw);
 
@@ -225,9 +229,6 @@ export function parseResults(
 
     // Performance from outer row - RELATIVE indexing (last cell)
     // Outer cells structure: [...rounds..., Pts, Tr., Buch., Perf]
-    const tdParent = $(row).find('td').filter((_, td) => {
-      return $(td).find(PLAYER_BOX).length > 0;
-    }).first();
     const outerCells = tdParent.nextAll('td');
     const perfText = outerCells.length > 0
       ? $(outerCells[outerCells.length - 1]).text().trim()
@@ -244,7 +245,7 @@ export function parseResults(
       // Skip bye/exempt rows (only 4 cells instead of 13)
       if (resultCells.length < 6) return;
 
-      // Verified indices from FFE-PARSER-REFERENCE.md
+      // Indices verified on __fixtures__/ffe/68994-ga.html
       const roundNum = parseInt($(resultCells[0]).text().trim()) || 0; // Cell[0]
       const scoreText = $(resultCells[2]).text().trim();                // Cell[2]
       const opponentName = $(resultCells[5]).text().trim();             // Cell[5]
@@ -409,12 +410,10 @@ export function parsePairings(htmlRound: string): Pairing[] {
   const $ = cheerio.load(htmlRound);
   const pairings: Pairing[] = [];
 
-  $('tr').each((_, row) => {
-    const $row = $(row);
-    const cells = $row.find('td').filter((_, td) => {
-      const cls = $(td).attr('class') || '';
-      return cls.includes('papi_liste_f') || cls.includes('papi_liste_c');
-    });
+  // FFE round pages put the stripe class on the row: <tr class=papi_liste_f|c>,
+  // cells carry papi_r/c/l (see __fixtures__/ffe/68994-round09.html)
+  $('tr.papi_liste_f, tr.papi_liste_c').each((_, row) => {
+    const cells = $(row).children('td');
 
     if (cells.length < 8) return;
 
