@@ -27,7 +27,7 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 |---------------------|----------------|----------|
 | **Time behaviour** | Lazy loading composants (EventForm, ShareEventModal, DuplicateEventDialog), fetch parallele FFE (`Promise.all`) | `app/page.tsx` : `NextDynamic()`, `src/lib/scraper.ts` : `scrapeFFEPair()` |
 | **Resource utilization** | React.memo sur 4 sub-components PlayerTable, props slicing (validation par joueur, pas objet global) | `PlayerTable.tsx` : `memo(PlayerRow)`, `playerValidation: Record<number, boolean>` |
-| **Capacity** | Rate limiting Upstash (30 req/min scrape, 10 req/min events), body limit 1 MB | `proxy.ts`, `app/api/events/sync/route.ts` |
+| **Capacity** | Rate limiting Vercel WAF (30 req/60 s par IP sur `/api/*`, fenetre fixe), body limit 1 MB | Regle firewall du projet (dashboard Vercel), `app/api/events/sync/route.ts` |
 
 **Monitoring** : Vercel Analytics (Core Web Vitals : LCP, FID, CLS) via `<Analytics />` dans `app/layout.tsx`.
 
@@ -37,7 +37,7 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 
 | Sous-caracteristique | Implementation | Evidence |
 |---------------------|----------------|----------|
-| **Co-existence** | Namespace par club (`nos-joueurs:{slug}:*`) isole les donnees localStorage et Redis | `kv.test.ts` (21 tests), `storage.test.ts` (isolation inter-clubs), `integration.test.ts` |
+| **Co-existence** | Namespace par club (`nos-joueurs:{slug}:*`) isole les donnees localStorage et Postgres | `db.test.ts` (test "isolates clubs"), `storage.test.ts` (isolation inter-clubs), `integration.test.ts` |
 | **Interoperability** | browserslist (last 2 Chrome/Firefox/Safari/Edge), crypto.subtle guard | `package.json`, `src/lib/hmac.ts` : `isCryptoSubtleAvailable()` |
 
 ### 4. Usability (Utilisabilite)
@@ -55,7 +55,7 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 | Sous-caracteristique | Implementation | Evidence |
 |---------------------|----------------|----------|
 | **Maturity** | 531 tests (25 suites), pre-push gate bloquant, 0 warning ESLint | `.husky/pre-push` (6 gates) |
-| **Availability** | Fail-open rate limiter (Redis down -> pass-through) | `proxy.ts` : try/catch, `proxy.test.ts` : "fails open when Redis throws" |
+| **Availability** | Rate limiting au bord (WAF), independant de la base : une panne de stockage ne desactive plus la limitation (l'ancien limiteur Upstash etait fail-open, cf. `docs/CHECKUP-2026-10-20.md`) | Regle firewall du projet |
 | **Fault tolerance** | Erreurs FFE (404, 500, timeout) -> messages utilisateur, pas de crash | `scraper.test.ts` (8 tests), `TournamentTabs.test.tsx` : "handles API timeout error gracefully" |
 | **Recoverability** | localStorage persiste hors-ligne, sync cloud restaure les donnees | `storage.test.ts` (56 tests), `sync.test.ts` (12 tests) |
 
@@ -66,7 +66,7 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 | **Confidentiality** | CSP `frame-ancestors 'none'`, CORS restrictif, namespace isolation | `vercel.json` |
 | **Integrity** | HMAC-SHA256 anti-replay (5 min), Zod validation stricte, body limit 1 MB | `hmac.test.ts` (16 tests), `schemas.test.ts` (18 tests), `routes.test.ts` |
 | **Non-repudiation** | Token HMAC lie au slug + timestamp (tracabilite par club) | `src/lib/hmac.ts` |
-| **Accountability** | Vercel deploy logs, rate limit headers (`X-RateLimit-Remaining`) | `proxy.ts` |
+| **Accountability** | Vercel deploy logs, trafic de la regle WAF (Firewall > Traffic) | Dashboard Vercel |
 | **Authenticity** | SSRF prevention (whitelist hostname), HSTS preload | `app/api/scrape/route.test.ts` (5 tests) |
 
 ### 7. Maintainability (Maintenabilite)
@@ -161,7 +161,7 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 | HMAC anti-replay | `hmac.test.ts` | 16 tests (generation, verification, expiration, clock skew, crypto check) |
 | Zod validation API | `schemas.test.ts` | 28 tests (clubSlug, result, player, tournament, pairing, event, syncBody) |
 | SSRF prevention | `scrape/route.test.ts` | 5 tests (URL manquante, mal formee, hostname attaquant, sous-domaine) |
-| Rate limiting | `proxy.test.ts` | 6 tests (429, pass-through, fail-open, IP extraction) |
+| Rate limiting | aucun test automatise (regle WAF hors du code) | Mesure manuelle en prod le 2026-10-20 : 30 appels `/api/*` acceptes, 429 a partir du 31e en 60 s (`docs/CHECKUP-2026-10-20.md`) |
 | Body size limit | `events/routes.test.ts` | 1 test (413 si > 1MB) |
 | Slug validation | `events/routes.test.ts` | 2+ tests (slug invalide -> 400) |
 
@@ -169,7 +169,6 @@ Ce document trace la conformite du projet aux normes ISO/IEC applicables au logi
 
 | Exigence | Fichier test | Tests |
 |----------|-------------|-------|
-| Fail-open rate limiter | `proxy.test.ts` | 1 test ("fails open when Redis throws") |
 | Error handling FFE | `scraper.test.ts` | 8 tests (throwScrapeError) |
 | Timeout handling | `TournamentTabs.test.tsx` | 1 test ("handles API timeout error gracefully") |
 | localStorage persistence | `storage.test.ts` | 56 tests (CRUD, isolation, BVA) |

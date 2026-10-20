@@ -176,7 +176,7 @@ npm run test:coverage     # Avec couverture
 | `schemas.test.ts` | 28 | Schemas Zod : clubSlug, result, player, tournament, pairing, event, syncBody |
 | `validation.test.ts` | 46 | URLs FFE, noms evenements/tournois, SLUG_REGEX (8 patterns) |
 | `storage.test.ts` | 56 | CRUD, export/import, isolation inter-clubs, BVA limites, share URL encode/decode |
-| `kv.test.ts` | 21 | Namespace KV, isolation clubs, key generation, edge cases |
+| `db.test.ts` | 9 | Store Postgres : allers-retours, upsert, isolation clubs, `DATABASE_URL` manquante |
 | `club.test.ts` | 25 | Slugify determinisme, accents, BVA longueur, migration legacy, identity |
 | `calculations.test.ts` | 34 | Points, performance, Buchholz, tri, moyenne elo, stats resultats |
 | `formatters.test.ts` | 28 | Formatage noms, elo, scores, pourcentages, dates, club, ronde |
