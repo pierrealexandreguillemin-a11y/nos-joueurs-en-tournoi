@@ -17,6 +17,30 @@ npm run analyze         # Bundle analyzer
 npm run test:ffe        # Canary: parser contre les pages FFE live (avant une saison de tournois)
 ```
 
+## STANDING PROCEDURE — FIN DE SEGMENT (NON-NEGOCIABLE)
+
+Skill `project-session-end` (`.claude/skills/project-session-end/`) — deux modes :
+**T1-T5 → mode MEMO** (ecrire le memo) ; **« reprise » → mode RESUME** (relire sur disque, executer le
+bloc de reprise, ne jamais ecrire de memo).
+
+- **T1** tache > 30 min, ou > 5 appels d'outils, ou >= 1 commit
+- **T2 / T3** fatigue ALERT / STOP (table ci-dessous)
+- **T4** push sur `master` (= deploiement prod), changement de schema `db/schema.sql`, changement du parser FFE
+- **T5** l'utilisateur dit « session-end », « fin de session », « doc de reprise », « memo update », « STOP », « pause »
+
+Fatigue — **comptee, jamais estimee** ; une ligne en fin de message : `Fatigue: OK/ALERT/STOP — <indicateur>`.
+
+| Indicateur | OK | ALERT | STOP |
+|---|---|---|---|
+| Taches atomiques livrees dans la session | < 8 | 8-12 | >= 13 |
+| Contexte restant | > 30 % | 15-30 % | < 15 % |
+| Erreurs d'outil / relances | 0 | 1 | >= 2 relances du meme appel |
+| Tests rouges | 0 | 1 rouge corrige | 1 rouge non corrige |
+| Derives (doc/plan contredit par la realite) | 0 | 1 | >= 2 |
+| Contournements (gate, hook, regle) | 0 | 1 | >= 2 |
+
+ALERT : finir la tache en cours, memo, annoncer la pause. STOP : memo final, ne pas continuer sans l'utilisateur.
+
 ## Principes
 
 ### DRY (Don't Repeat Yourself)
@@ -153,7 +177,7 @@ test(scope): description     # Ajout/modification tests
 4. `jscpd --threshold 5` (duplication)
 5. `check:tokens:calibrate` puis `check:tokens` (design tokens — voir ci-dessous)
 6. `npm audit` (0 critical)
-7. `vitest run --reporter=dot --coverage --coverage.reporter=json` (571+ tests, dot reporter pour eviter stdout overflow Windows)
+7. `vitest run --reporter=dot --coverage --coverage.reporter=json` (561 tests au 2026-10-20, dot reporter pour eviter stdout overflow Windows)
 
 **Tout push qui echoue un gate est bloque.**
 
