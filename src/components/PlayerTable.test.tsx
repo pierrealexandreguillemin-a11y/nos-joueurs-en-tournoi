@@ -88,18 +88,16 @@ describe('PlayerTable', () => {
   });
 
   describe('Render Player Data', () => {
-    it('displays all players in the tournament', () => {
+    it.each([
+      ['all players in the tournament', 'Alice Dupont', 'Bob Martin'],
+      ['player ELO', '1500', '1400'],
+      ['Buchholz with 1 decimal place', '5.5', '4.0'],
+      ['performance ratings', '1450', '1350'],
+    ])('displays %s', (_label, first, second) => {
       render(<PlayerTable tournament={mockTournament} />);
 
-      expect(screen.getByText('Alice Dupont')).toBeInTheDocument();
-      expect(screen.getByText('Bob Martin')).toBeInTheDocument();
-    });
-
-    it('displays player ELO correctly', () => {
-      render(<PlayerTable tournament={mockTournament} />);
-
-      expect(screen.getByText('1500')).toBeInTheDocument();
-      expect(screen.getByText('1400')).toBeInTheDocument();
+      expect(screen.getByText(first)).toBeInTheDocument();
+      expect(screen.getByText(second)).toBeInTheDocument();
     });
 
     it('displays player ranking correctly', () => {
@@ -121,42 +119,18 @@ describe('PlayerTable', () => {
       expect(table).toHaveTextContent('Bob Martin');
     });
 
-    it('displays Buchholz with 1 decimal place', () => {
-      render(<PlayerTable tournament={mockTournament} />);
-
-      expect(screen.getByText('5.5')).toBeInTheDocument();
-      expect(screen.getByText('4.0')).toBeInTheDocument();
-    });
-
-    it('displays performance ratings', () => {
-      render(<PlayerTable tournament={mockTournament} />);
-
-      expect(screen.getByText('1450')).toBeInTheDocument();
-      expect(screen.getByText('1350')).toBeInTheDocument();
-    });
   });
 
   describe('Round Results Display', () => {
-    it('displays text score for victory (score=1)', () => {
+    // Component displays scores as text: "1", "0.5", "0"
+    it.each([
+      ['victory', '1'],
+      ['defeat', '0'],
+      ['draw', '0.5'],
+    ])('displays text score for %s (score=%s)', (_label, score) => {
       render(<PlayerTable tournament={mockTournament} />);
 
-      // Component displays scores as text: "1", "0.5", "0"
-      const table = screen.getByRole('table');
-      expect(table).toHaveTextContent('1');
-    });
-
-    it('displays text score for defeat (score=0)', () => {
-      render(<PlayerTable tournament={mockTournament} />);
-
-      const table = screen.getByRole('table');
-      expect(table).toHaveTextContent('0');
-    });
-
-    it('displays text score for draw (score=0.5)', () => {
-      render(<PlayerTable tournament={mockTournament} />);
-
-      const table = screen.getByRole('table');
-      expect(table).toHaveTextContent('0.5');
+      expect(screen.getByRole('table')).toHaveTextContent(score);
     });
 
     it('displays dash for missing results', () => {
@@ -223,7 +197,7 @@ describe('PlayerTable', () => {
 
       const checkboxes = screen.getAllByRole('checkbox');
       // Player1: 3 rounds, Player2: 2 rounds = 5 total checkboxes
-      expect(checkboxes.length).toBe(5);
+      expect(checkboxes).toHaveLength(5);
     });
 
     it('loads validation state from storage on mount', () => {
@@ -359,7 +333,7 @@ describe('PlayerTable', () => {
 
       // Should have 15 validation checkboxes
       const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes.length).toBe(15);
+      expect(checkboxes).toHaveLength(15);
     });
 
     it('handles missing Buchholz value', () => {

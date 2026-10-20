@@ -67,13 +67,13 @@ describe('club.ts', () => {
       const input = 'a'.repeat(39);
       const slug = slugifyClubName(input);
       expect(slug).toBe('a'.repeat(39));
-      expect(slug.length).toBe(39);
+      expect(slug).toHaveLength(39);
     });
 
     it('40 caractères → longueur exacte 40 (limite)', () => {
       const input = 'a'.repeat(40);
       const slug = slugifyClubName(input);
-      expect(slug.length).toBe(40);
+      expect(slug).toHaveLength(40);
     });
 
     it('41 caractères → tronqué à ≤ 40', () => {

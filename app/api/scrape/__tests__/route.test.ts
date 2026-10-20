@@ -34,20 +34,12 @@ describe('POST /api/scrape — URL validation (SSRF prevention)', () => {
     expect(res.status).toBe(400);
   });
 
-  it('403 si hostname est un domaine attaquant contenant echecs.asso.fr en substring', async () => {
-    const res = await POST(makeRequest({ url: 'https://attacker.com/?x=echecs.asso.fr' }));
-    expect(res.status).toBe(403);
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it('403 si hostname est un sous-domaine malveillant', async () => {
-    const res = await POST(makeRequest({ url: 'https://echecs.asso.fr.attacker.com/page' }));
-    expect(res.status).toBe(403);
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it('403 si hostname est totalement différent', async () => {
-    const res = await POST(makeRequest({ url: 'https://evil.com/data' }));
+  it.each([
+    ['un domaine attaquant contenant echecs.asso.fr en substring', 'https://attacker.com/?x=echecs.asso.fr'],
+    ['un sous-domaine malveillant', 'https://echecs.asso.fr.attacker.com/page'],
+    ['totalement différent', 'https://evil.com/data'],
+  ])('403 si hostname est %s', async (_label, url) => {
+    const res = await POST(makeRequest({ url }));
     expect(res.status).toBe(403);
     expect(mockFetch).not.toHaveBeenCalled();
   });

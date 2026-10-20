@@ -216,8 +216,7 @@ function TournamentPanel({
   useEffect(() => {
     if (tournament.pairingsRound !== prevRoundRef.current) {
       prevRoundRef.current = tournament.pairingsRound;
-      // Justification: Reset viewed state when new pairings round is detected
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // Reset viewed state when a new pairings round is detected
       setHasViewedPairings(false);
     }
   }, [tournament.pairingsRound]);

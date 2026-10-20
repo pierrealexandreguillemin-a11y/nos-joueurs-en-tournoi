@@ -647,7 +647,7 @@ describe('TournamentTabs', () => {
       render(<TournamentTabs event={singleTournamentEvent} onEventUpdate={mockOnEventUpdate} />);
 
       const tabs = screen.getAllByRole('tab');
-      expect(tabs.length).toBe(1);
+      expect(tabs).toHaveLength(1);
     });
 
     it('handles event with many tournaments (>5)', () => {
@@ -667,7 +667,7 @@ describe('TournamentTabs', () => {
       render(<TournamentTabs event={bigEvent} onEventUpdate={mockOnEventUpdate} />);
 
       const tabs = screen.getAllByRole('tab');
-      expect(tabs.length).toBe(10);
+      expect(tabs).toHaveLength(10);
     });
 
     it('handles concurrent refresh clicks gracefully', async () => {

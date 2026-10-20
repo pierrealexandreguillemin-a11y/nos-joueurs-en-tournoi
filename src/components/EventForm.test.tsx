@@ -67,7 +67,7 @@ describe('EventForm', () => {
 
       const buttons = screen.queryAllByRole('button');
       const removeButtons = buttons.filter((btn: HTMLElement) => btn.querySelector('.lucide-x'));
-      expect(removeButtons.length).toBe(0);
+      expect(removeButtons).toHaveLength(0);
     });
   });
 
@@ -117,7 +117,7 @@ describe('EventForm', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
 
-      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(2);
+      expect(screen.getAllByLabelText(/catégorie/i)).toHaveLength(2);
     });
 
     it('shows remove button when multiple tournaments exist', () => {
@@ -134,7 +134,7 @@ describe('EventForm', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
       fireEvent.click(screen.getByRole('button', { name: /ajouter un tournoi/i }));
-      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(2);
+      expect(screen.getAllByLabelText(/catégorie/i)).toHaveLength(2);
 
       const buttons = screen.getAllByRole('button');
       const removeButtons = buttons.filter((btn: HTMLElement) =>
@@ -145,13 +145,13 @@ describe('EventForm', () => {
 
       fireEvent.click(removeButtons[0]);
 
-      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(1);
+      expect(screen.getAllByLabelText(/catégorie/i)).toHaveLength(1);
     });
 
     it('does not remove last tournament when remove is attempted', () => {
       render(<EventForm onEventCreated={mockOnEventCreated} />);
 
-      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(1);
+      expect(screen.getAllByLabelText(/catégorie/i)).toHaveLength(1);
     });
 
     it('can add multiple tournaments (5+)', () => {
@@ -162,7 +162,7 @@ describe('EventForm', () => {
         fireEvent.click(addButton);
       }
 
-      expect(screen.getAllByLabelText(/catégorie/i).length).toBe(6);
+      expect(screen.getAllByLabelText(/catégorie/i)).toHaveLength(6);
     });
 
     it('updates tournament name correctly', () => {
@@ -258,7 +258,7 @@ describe('EventForm', () => {
       });
 
       const createdEvent = mockOnEventCreated.mock.calls[0][0] as Event;
-      expect(createdEvent.tournaments.length).toBe(1);
+      expect(createdEvent.tournaments).toHaveLength(1);
     });
   });
 
@@ -278,7 +278,7 @@ describe('EventForm', () => {
       expect(createdEvent).toHaveProperty('name', 'Test Event');
       expect(createdEvent).toHaveProperty('createdAt');
       expect(createdEvent).toHaveProperty('tournaments');
-      expect(createdEvent.tournaments.length).toBe(1);
+      expect(createdEvent.tournaments).toHaveLength(1);
     });
 
     it('generates unique event ID with timestamp format', async () => {
@@ -346,7 +346,7 @@ describe('EventForm', () => {
       });
 
       const createdEvent = mockOnEventCreated.mock.calls[0][0] as Event;
-      expect(createdEvent.tournaments.length).toBe(2);
+      expect(createdEvent.tournaments).toHaveLength(2);
       expect(createdEvent.tournaments[0].name).toBe('U12');
       expect(createdEvent.tournaments[1].name).toBe('U14');
     });
