@@ -33,45 +33,49 @@ export function exportEventFrom(
   return { version: '1.0', exportDate: new Date().toISOString(), event, validations: vals };
 }
 
+/**
+ * Same event under fresh event and tournament ids, validations remapped to the new tournament ids.
+ * Used to copy a duplicate, and to bring back an event the club deleted (its id is tombstoned).
+ */
+export function reidentifyExport(exported: ExportedEvent, nameSuffix = ''): ExportedEvent {
+  const { event, validations } = exported;
+  const tournaments = event.tournaments.map(t => ({ ...t, id: `tournament_${crypto.randomUUID()}` }));
+  const remapped: ValidationState = {};
+  event.tournaments.forEach((t, i) => {
+    if (validations[t.id]) remapped[tournaments[i].id] = validations[t.id];
+  });
+  return {
+    ...exported,
+    event: { ...event, id: `event_${crypto.randomUUID()}`, name: `${event.name}${nameSuffix}`, tournaments },
+    validations: remapped,
+  };
+}
+
 export function importEventInto(
   get: Getter, set: Setter, exportedData: ExportedEvent,
   options: { replaceIfExists: boolean; generateNewId?: boolean } = { replaceIfExists: false },
 ): { success: boolean; eventId: string; isDuplicate: boolean } {
   try {
     const data = get();
-    const { event, validations } = exportedData;
-    const existingIndex = data.events.findIndex(e => e.id === event.id);
+    const existingIndex = data.events.findIndex(e => e.id === exportedData.event.id);
     const isDuplicate = existingIndex >= 0;
-    let finalEvent = { ...event };
+    let imported = exportedData;
 
     if (isDuplicate) {
       if (options.replaceIfExists) {
-        data.events[existingIndex] = finalEvent;
+        data.events[existingIndex] = { ...exportedData.event };
       } else if (options.generateNewId) {
-        finalEvent = {
-          ...event,
-          id: `event_${crypto.randomUUID()}`,
-          name: `${event.name} (copie)`,
-          tournaments: event.tournaments.map(t => ({ ...t, id: `tournament_${crypto.randomUUID()}` })),
-        };
-        data.events.push(finalEvent);
+        imported = reidentifyExport(exportedData, ' (copie)');
+        data.events.push(imported.event);
       } else {
-        return { success: false, eventId: event.id, isDuplicate: true };
+        return { success: false, eventId: exportedData.event.id, isDuplicate: true };
       }
     } else {
-      data.events.push(finalEvent);
+      data.events.push({ ...exportedData.event });
     }
 
-    Object.entries(validations).forEach(([tid, tv]) => {
-      if (options.generateNewId && isDuplicate) {
-        const oldIdx = event.tournaments.findIndex(t => t.id === tid);
-        if (oldIdx >= 0 && finalEvent.tournaments[oldIdx]) {
-          data.validations[finalEvent.tournaments[oldIdx].id] = tv;
-        }
-      } else {
-        data.validations[tid] = tv;
-      }
-    });
+    Object.entries(imported.validations).forEach(([tid, tv]) => { data.validations[tid] = tv; });
+    const finalEvent = imported.event;
 
     data.currentEventId = finalEvent.id;
     set(data);
