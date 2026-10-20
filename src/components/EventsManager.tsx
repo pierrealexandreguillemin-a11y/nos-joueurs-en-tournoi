@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useMemo, useCallback } from 'react';
-import { Trash2, CheckCircle2, Download, Upload, Share2, CloudDownload, CloudUpload } from 'lucide-react';
+import { Trash2, CheckCircle2, Download, Upload, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -27,7 +27,6 @@ import {
   createClubStorage,
   type ExportedEvent,
 } from '@/lib/storage';
-import { syncToCloud, fetchFromCloud } from '@/lib/sync';
 import { exportedEventSchema } from '@/lib/schemas';
 import dynamic from 'next/dynamic';
 const ShareEventModal = dynamic(() => import('@/components/ShareEventModal'), { ssr: false });
@@ -47,10 +46,9 @@ interface EventCardProps {
   onSwitch: (eventId: string) => void;
   onExport: (eventId: string) => void;
   onDelete: (eventId: string) => void;
-  onCloudUpload: () => void;
 }
 
-function EventCard({ event, isCurrent, onSwitch, onExport, onDelete, onCloudUpload }: EventCardProps) {
+function EventCard({ event, isCurrent, onSwitch, onExport, onDelete }: EventCardProps) {
   return (
     <Card
       className={`p-4 cursor-pointer transition-all ${
@@ -82,7 +80,6 @@ function EventCard({ event, isCurrent, onSwitch, onExport, onDelete, onCloudUplo
           event={event}
           onExport={onExport}
           onDelete={onDelete}
-          onCloudUpload={onCloudUpload}
         />
       </div>
     </Card>
@@ -93,10 +90,9 @@ interface EventCardActionsProps {
   event: Event;
   onExport: (eventId: string) => void;
   onDelete: (eventId: string) => void;
-  onCloudUpload: () => void;
 }
 
-function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCardActionsProps) {
+function EventCardActions({ event, onExport, onDelete }: EventCardActionsProps) {
   return (
     <div className="flex gap-1">
       <div onClick={(e) => e.stopPropagation()}>
@@ -132,19 +128,6 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
       <Button
         variant="ghost"
         size="icon"
-        className="text-primary hover:text-primary/80 hover:bg-primary/10"
-        onClick={(e) => {
-          e.stopPropagation();
-          onCloudUpload();
-        }}
-        title="Envoyer vers le cloud"
-        aria-label="Envoyer vers le cloud"
-      >
-        <CloudUpload className="w-4 h-4" aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
         className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
         onClick={(e) => {
           e.stopPropagation();
@@ -161,11 +144,10 @@ function EventCardActions({ event, onExport, onDelete, onCloudUpload }: EventCar
 
 interface DialogHeaderBarProps {
   onImportClick: () => void;
-  onCloudDownload: () => void;
   onNewEvent: () => void;
 }
 
-function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogHeaderBarProps) {
+function DialogHeaderBar({ onImportClick, onNewEvent }: DialogHeaderBarProps) {
   return (
     <DialogHeader>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -187,16 +169,6 @@ function DialogHeaderBar({ onImportClick, onCloudDownload, onNewEvent }: DialogH
             aria-label="Importer depuis fichier JSON"
           >
             <Download className="w-4 h-4" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onCloudDownload}
-            className="glass-surface border-primary/30 hover:bg-primary/10"
-            title="Télécharger depuis le cloud"
-            aria-label="Télécharger depuis le cloud"
-          >
-            <CloudDownload className="w-4 h-4" aria-hidden="true" />
           </Button>
           <Button variant="gradient" onClick={onNewEvent}>
             Nouvel événement
@@ -222,7 +194,7 @@ function DeleteConfirmDialog({ open, onOpenChange, onConfirm }: DeleteConfirmDia
             Supprimer l&apos;événement ?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-primary/80">
-            Cette action est irréversible. Tous les tournois et données associés seront supprimés définitivement.
+            L&apos;événement et ses tournois seront supprimés pour tout le club, sur tous les téléphones. Cette action est irréversible.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -249,37 +221,6 @@ function downloadJsonFile(data: ExportedEvent) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-async function cloudDownload(clubSlug: string, onEventChange: () => void) {
-  try {
-    toast.info('Téléchargement depuis le cloud...');
-    const success = await fetchFromCloud(clubSlug);
-    if (success) {
-      toast.success('Événements téléchargés depuis le cloud avec succès !');
-      onEventChange();
-    } else {
-      toast.error('Échec du téléchargement depuis le cloud');
-    }
-  } catch (error) {
-    console.error('Cloud download error:', error);
-    toast.error('Erreur lors du téléchargement');
-  }
-}
-
-async function cloudUpload(clubSlug: string) {
-  try {
-    toast.info('Envoi vers le cloud...');
-    const success = await syncToCloud(clubSlug);
-    if (success) {
-      toast.success('Événements envoyés vers le cloud avec succès !');
-    } else {
-      toast.error('Échec de l\'envoi vers le cloud');
-    }
-  } catch (error) {
-    console.error('Cloud upload error:', error);
-    toast.error('Erreur lors de l\'envoi');
-  }
 }
 
 function useEventsManagerState(currentEventId: string, onEventChange: () => void) {
@@ -331,16 +272,6 @@ function useEventsManagerState(currentEventId: string, onEventChange: () => void
     toast.success('Événement exporté avec succès !');
   }, [storage]);
 
-  const handleCloudDownload = useCallback(
-    () => cloudDownload(clubSlug, onEventChange),
-    [clubSlug, onEventChange],
-  );
-
-  const handleCloudUpload = useCallback(
-    () => cloudUpload(clubSlug),
-    [clubSlug],
-  );
-
   return {
     open, setOpen,
     deleteDialogOpen, setDeleteDialogOpen,
@@ -349,7 +280,7 @@ function useEventsManagerState(currentEventId: string, onEventChange: () => void
     fileInputRef,
     clubSlug, storage, events,
     handleSwitchEvent, handleDeleteClick, handleDeleteConfirm,
-    handleExportEvent, handleCloudDownload, handleCloudUpload,
+    handleExportEvent,
   };
 }
 
@@ -435,7 +366,7 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
     fileInputRef,
     storage, events,
     handleSwitchEvent, handleDeleteClick, handleDeleteConfirm,
-    handleExportEvent, handleCloudDownload, handleCloudUpload,
+    handleExportEvent,
   } = useEventsManagerState(currentEventId, onEventChange);
 
   const {
@@ -459,7 +390,6 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
         >
           <DialogHeaderBar
             onImportClick={() => fileInputRef.current?.click()}
-            onCloudDownload={handleCloudDownload}
             onNewEvent={() => { setOpen(false); onNewEventClick(); }}
           />
           <input
@@ -486,7 +416,6 @@ export default function EventsManager({ currentEventId, onEventChange, onNewEven
                   onSwitch={handleSwitchEvent}
                   onExport={handleExportEvent}
                   onDelete={handleDeleteClick}
-                  onCloudUpload={handleCloudUpload}
                 />
               ))
             )}

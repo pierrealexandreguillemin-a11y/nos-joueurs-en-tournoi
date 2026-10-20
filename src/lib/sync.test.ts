@@ -1,305 +1,179 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createClubStorage } from './storage';
+import { cellKey, emptySyncMeta } from './sync-state';
+import { makeEvent } from '@/test/fixtures';
+import type { ServerState } from '@/types';
 
-// Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-import { syncToCloud, fetchFromCloud } from './sync';
+import { syncClub, startAutoSync, SYNC_DEBOUNCE_MS } from './sync';
 
-describe('sync.ts — QG-6: scope du sync', () => {
+const SLUG = 'hay-chess';
+const state = (s: Partial<ServerState> = {}): ServerState => ({ events: [], deletedEventIds: [], cells: [], ...s });
+const okResponse = (s: ServerState) => ({ ok: true, json: async () => ({ success: true, data: s }) });
+const lastBody = () => JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body as string);
+// crypto.subtle (HMAC token) settles outside the microtask queue: poll on real macrotasks
+const until = async (condition: () => boolean) => {
+  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setImmediate(resolve));
+};
+const stops: Array<() => void> = [];
+const autoSync = (onApplied: () => void) => {
+  const stop = startAutoSync(SLUG, onApplied);
+  stops.push(stop);
+  return stop;
+};
+const migrated = () => {
+  const storage = createClubStorage(SLUG);
+  storage.setSyncMeta({ ...emptySyncMeta(), migrated: true });
+  return storage;
+};
+
+describe('sync orchestrator', () => {
   beforeEach(() => {
     localStorage.clear();
     mockFetch.mockReset();
   });
 
-  describe('syncToCloud(clubSlug)', () => {
-    it('envoie clubSlug dans le body du POST', async () => {
-      // Set up localStorage with namespaced data
-      const storageData = JSON.stringify({
-        currentEventId: 'event-1',
-        events: [{ id: 'event-1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      });
-      localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', storageData);
+  afterEach(() => {
+    stops.splice(0).forEach(stop => stop());
+    vi.useRealTimers();
+  });
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, synced: 1 }),
-      });
+  it('first run marks everything dirty once', async () => {
+    localStorage.setItem(`nos-joueurs-en-tournoi:${SLUG}`, JSON.stringify({
+      currentEventId: 'e1', events: [makeEvent('e1', 'Open')], validations: { t1: { A: { round_1: true } } },
+    }));
+    mockFetch.mockResolvedValue(okResponse(state({ events: [makeEvent('e1', 'Open')] })));
 
-      await syncToCloud('hay-chess');
+    await syncClub(SLUG);
+
+    expect(lastBody()).toMatchObject({ clubSlug: SLUG, events: [{ id: 'e1' }], cells: [{ tournamentId: 't1', playerName: 'A', round: 1, value: true }] });
+    expect(createClubStorage(SLUG).getSyncMeta().migrated).toBe(true);
+  });
+
+  it('posts the push and merges the returned state', async () => {
+    const storage = migrated();
+    storage.setValidation('t1', 'A', 1, true);
+    mockFetch.mockResolvedValue(okResponse(state({ cells: [
+      { tournamentId: 't1', playerName: 'A', round: 1, value: true },
+      { tournamentId: 't1', playerName: 'B', round: 1, value: true },
+    ] })));
+
+    const result = await syncClub(SLUG);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockFetch.mock.calls[0][0]).toMatch(/\/api\/events\/sync$/);
+    expect(mockFetch.mock.calls[0][1].headers['X-Sync-Token']).toMatch(/^[0-9a-f]{64}:\d+$/);
+    expect(storage.getValidation('t1', 'B', 1)).toBe(true);
+    expect(storage.getSyncMeta().dirtyCells).toEqual({});
+  });
+
+  it('ack only what was sent', async () => {
+    const storage = migrated();
+    storage.setValidation('t1', 'A', 1, true);
+    mockFetch.mockImplementation(async () => {
+      storage.setValidation('t1', 'B', 1, true); // ticked while the request was in flight
+      return okResponse(state({ cells: [{ tournamentId: 't1', playerName: 'A', round: 1, value: true }] }));
+    });
+
+    await syncClub(SLUG);
+
+    expect(Object.keys(storage.getSyncMeta().dirtyCells)).toEqual([cellKey('t1', 'B', 1)]);
+    expect(storage.getValidation('t1', 'B', 1)).toBe(true);
+  });
+
+  it('keeps marks and returns ok:false on network error', async () => {
+    const storage = migrated();
+    storage.setValidation('t1', 'A', 1, true);
+    mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
+    expect(await syncClub(SLUG)).toEqual({ ok: false });
+    expect(Object.keys(storage.getSyncMeta().dirtyCells)).toEqual([cellKey('t1', 'A', 1)]);
+  });
+
+  it('keeps marks and returns ok:false on a non-2xx answer', async () => {
+    const storage = migrated();
+    storage.setValidation('t1', 'A', 1, true);
+    mockFetch.mockResolvedValue({ ok: false, status: 429, statusText: 'Too Many Requests', json: async () => ({}) });
+    expect(await syncClub(SLUG)).toEqual({ ok: false });
+    expect(Object.keys(storage.getSyncMeta().dirtyCells)).toEqual([cellKey('t1', 'A', 1)]);
+  });
+
+  it('uses GET /api/events/fetch when nothing is dirty', async () => {
+    migrated();
+    mockFetch.mockResolvedValue(okResponse(state({ events: [makeEvent('e2', 'From responsable')] })));
+    await syncClub(SLUG);
+    expect(mockFetch.mock.calls[0][0]).toMatch(/\/api\/events\/fetch\?clubSlug=hay-chess$/);
+    expect(createClubStorage(SLUG).getAllEvents().map(e => e.id)).toEqual(['e2']);
+  });
+
+  it('one sync in flight per club', async () => {
+    migrated();
+    let inFlight = 0;
+    let maxInFlight = 0;
+    mockFetch.mockImplementation(async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise(resolve => setTimeout(resolve, 5));
+      inFlight--;
+      return okResponse(state());
+    });
+    await Promise.all([syncClub(SLUG), syncClub(SLUG)]);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(maxInFlight).toBe(1);
+  });
+
+  describe('startAutoSync', () => {
+    it(`debounces bursts to one request after ${SYNC_DEBOUNCE_MS} ms`, async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const storage = migrated();
+      mockFetch.mockResolvedValue(okResponse(state()));
+      const onApplied = vi.fn();
+      autoSync(onApplied);
+
+      storage.setValidation('t1', 'A', 1, true);
+      storage.setValidation('t1', 'B', 1, true);
+      await vi.advanceTimersByTimeAsync(SYNC_DEBOUNCE_MS - 1);
+      await until(() => mockFetch.mock.calls.length > 0);
+      expect(mockFetch).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await until(() => onApplied.mock.calls.length > 0);
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      const [, options] = mockFetch.mock.calls[0];
-      const body = JSON.parse(options.body);
-      expect(body.clubSlug).toBe('hay-chess');
+      expect(lastBody().cells).toHaveLength(2);
+      expect(onApplied).toHaveBeenCalledTimes(1);
     });
 
-    it('lit le localStorage de la clé namespacée (pas la clé globale)', async () => {
-      // Legacy global data
-      localStorage.setItem('nos-joueurs-en-tournoi', JSON.stringify({
-        currentEventId: '',
-        events: [{ id: 'global-event', name: 'Global', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      // Namespaced data
-      localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', JSON.stringify({
-        currentEventId: 'event-1',
-        events: [{ id: 'event-1', name: 'Hay Event', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, synced: 1 }),
-      });
-
-      await syncToCloud('hay-chess');
-
-      const [, options] = mockFetch.mock.calls[0];
-      const body = JSON.parse(options.body);
-      // Should contain the namespaced event, NOT the global one
-      expect(body.events).toHaveLength(1);
-      expect(body.events[0].name).toBe('Hay Event');
+    it('ignores changes of another club', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      migrated();
+      autoSync(vi.fn());
+      createClubStorage('other-club').setValidation('t1', 'A', 1, true);
+      await vi.advanceTimersByTimeAsync(SYNC_DEBOUNCE_MS);
+      await until(() => mockFetch.mock.calls.length > 0);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
-  });
 
-  describe('fetchFromCloud(clubSlug)', () => {
-    it('passe clubSlug dans le query string du GET', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', JSON.stringify({
-        currentEventId: '',
-        events: [],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: { events: [], validations: {}, currentEventId: '' },
-        }),
-      });
-
-      await fetchFromCloud('hay-chess');
-
+    it('syncs on online event', async () => {
+      migrated();
+      mockFetch.mockResolvedValue(okResponse(state()));
+      autoSync(vi.fn());
+      window.dispatchEvent(new Event('online'));
+      await until(() => mockFetch.mock.calls.length > 0);
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      const [url] = mockFetch.mock.calls[0];
-      expect(url).toContain('clubSlug=hay-chess');
     });
 
-    it('écrit dans le localStorage de la clé namespacée (pas la clé globale)', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:hay-chess', JSON.stringify({
-        currentEventId: '',
-        events: [],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [{ id: 'remote-event', name: 'Remote', createdAt: '2024-01-01', tournaments: [] }],
-            validations: {},
-            currentEventId: 'remote-event',
-          },
-        }),
-      });
-
-      await fetchFromCloud('hay-chess');
-
-      // Namespaced key should have data
-      const namespacedData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:hay-chess')!);
-      expect(namespacedData.events.some((e: { name: string }) => e.name === 'Remote')).toBe(true);
-
-      // Global key should NOT have the remote data
-      const globalData = localStorage.getItem('nos-joueurs-en-tournoi');
-      if (globalData) {
-        const parsed = JSON.parse(globalData);
-        expect(parsed.events.some((e: { name: string }) => e.name === 'Remote')).toBe(false);
-      }
-    });
-
-    it('ne merge PAS des données d\'un autre club', async () => {
-      // Club B data in localStorage
-      localStorage.setItem('nos-joueurs-en-tournoi:club-b', JSON.stringify({
-        currentEventId: 'event-b',
-        events: [{ id: 'event-b', name: 'Event B', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      // Club A namespaced data
-      localStorage.setItem('nos-joueurs-en-tournoi:club-a', JSON.stringify({
-        currentEventId: '',
-        events: [],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [{ id: 'event-a', name: 'Event A Remote', createdAt: '2024-01-01', tournaments: [] }],
-            validations: {},
-            currentEventId: 'event-a',
-          },
-        }),
-      });
-
-      await fetchFromCloud('club-a');
-
-      // Club B data should be untouched
-      const clubBData = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:club-b')!);
-      expect(clubBData.events).toHaveLength(1);
-      expect(clubBData.events[0].name).toBe('Event B');
-    });
-  });
-
-  describe('error paths', () => {
-    it('syncToCloud retourne false si fetch throw', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: '', events: [], validations: {},
-      }));
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      const result = await syncToCloud('test-club');
-      expect(result).toBe(false);
-    });
-
-    it('syncToCloud retourne false si response 500', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: '', events: [], validations: {},
-      }));
-      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
-
-      const result = await syncToCloud('test-club');
-      expect(result).toBe(false);
-    });
-
-    it('fetchFromCloud retourne false si fetch throw', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: '', events: [], validations: {},
-      }));
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      const result = await fetchFromCloud('test-club');
-      expect(result).toBe(false);
-    });
-
-    it('fetchFromCloud retourne false si response 500', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: '', events: [], validations: {},
-      }));
-      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Internal Server Error' });
-
-      const result = await fetchFromCloud('test-club');
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('fetchFromCloud — decision table: merge', () => {
-    it('remote [A], local [] → merged = [A]', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: '', events: [], validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [{ id: 'e1', name: 'Remote', createdAt: '2024-01-01', tournaments: [] }],
-            validations: {},
-            currentEventId: 'e1',
-          },
-        }),
-      });
-
-      await fetchFromCloud('test-club');
-
-      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
-      expect(data.events).toHaveLength(1);
-      expect(data.events[0].name).toBe('Remote');
-    });
-
-    it('remote [], local [B] → merged = [B]', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: 'e2',
-        events: [{ id: 'e2', name: 'Local', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [],
-            validations: {},
-            currentEventId: '',
-          },
-        }),
-      });
-
-      await fetchFromCloud('test-club');
-
-      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
-      expect(data.events).toHaveLength(1);
-      expect(data.events[0].name).toBe('Local');
-    });
-
-    it('remote [A], local [B] → merged = [A, B]', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: 'e2',
-        events: [{ id: 'e2', name: 'Local', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [{ id: 'e1', name: 'Remote', createdAt: '2024-01-01', tournaments: [] }],
-            validations: {},
-            currentEventId: 'e1',
-          },
-        }),
-      });
-
-      await fetchFromCloud('test-club');
-
-      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
-      expect(data.events).toHaveLength(2);
-      expect(data.events.map((e: { name: string }) => e.name).sort()).toEqual(['Local', 'Remote']);
-    });
-
-    it('remote [A-v1], local [A-v2] → remote gagne', async () => {
-      localStorage.setItem('nos-joueurs-en-tournoi:test-club', JSON.stringify({
-        currentEventId: 'e1',
-        events: [{ id: 'e1', name: 'Local Version', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
-      }));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            events: [{ id: 'e1', name: 'Remote Version', createdAt: '2024-01-01', tournaments: [] }],
-            validations: {},
-            currentEventId: 'e1',
-          },
-        }),
-      });
-
-      await fetchFromCloud('test-club');
-
-      const data = JSON.parse(localStorage.getItem('nos-joueurs-en-tournoi:test-club')!);
-      expect(data.events).toHaveLength(1);
-      expect(data.events[0].name).toBe('Remote Version');
+    it('cleanup unsubscribes', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const storage = migrated();
+      const stop = autoSync(vi.fn());
+      stop();
+      storage.setValidation('t1', 'A', 1, true);
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(SYNC_DEBOUNCE_MS);
+      await until(() => mockFetch.mock.calls.length > 0);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 });

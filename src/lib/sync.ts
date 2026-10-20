@@ -1,98 +1,84 @@
 'use client';
 
-import { createClubStorage } from './storage';
+import { createClubStorage, subscribeLocalChanges } from './storage';
 import { generateSyncToken } from './hmac';
-import type { StorageData } from '@/types';
+import { ackPush, buildPush, markAllDirty, mergeServerState } from './sync-state';
+import type { ServerState, SyncPush } from '@/types';
+
+// Automatic club sync (docs/superpowers/specs/2026-10-20-auto-sync-light-design.md):
+// one request per trigger — POST /api/events/sync pushes what is dirty and answers with the full
+// server state; GET /api/events/fetch when nothing is dirty. Failed requests keep the marks.
+
+export const SYNC_DEBOUNCE_MS = 3000;
 
 const API_BASE = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
-/**
- * Sync local storage to the server store (/api/events/sync)
- */
-export async function syncToCloud(clubSlug: string): Promise<boolean> {
-  try {
-    const storage = createClubStorage(clubSlug);
-    const data = storage.getStorageData();
+const queues = new Map<string, Promise<{ ok: boolean }>>();
 
-    const token = await generateSyncToken(clubSlug);
-    const response = await fetch(`${API_BASE}/api/events/sync`, {
+const isEmpty = (push: SyncPush) => push.events.length + push.deletedEventIds.length + push.cells.length === 0;
+
+async function request(clubSlug: string, push: SyncPush): Promise<ServerState | null> {
+  const token = await generateSyncToken(clubSlug);
+  const response = isEmpty(push)
+    ? await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`, { headers: { 'X-Sync-Token': token } })
+    : await fetch(`${API_BASE}/api/events/sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Sync-Token': token,
-      },
-      body: JSON.stringify({ ...data, clubSlug }),
+      headers: { 'Content-Type': 'application/json', 'X-Sync-Token': token },
+      body: JSON.stringify({ clubSlug, ...push }),
     });
-
-    if (!response.ok) {
-      console.error('[Cloud Sync] Upload failed:', response.statusText, response.status);
-      return false;
-    }
-
-    await response.json();
-    return true;
-  } catch (error) {
-    console.error('[Cloud Sync] Upload error:', error);
-    return false;
+  if (!response.ok) {
+    console.error('[Cloud Sync] Request failed:', response.status, response.statusText);
+    return null;
   }
+  return (await response.json()).data as ServerState;
 }
 
-/**
- * Fetch data from the server store (/api/events/fetch) and merge with local storage
- */
-export async function fetchFromCloud(clubSlug: string): Promise<boolean> {
+async function runSync(clubSlug: string): Promise<{ ok: boolean }> {
   try {
-    const token = await generateSyncToken(clubSlug);
-    const response = await fetch(`${API_BASE}/api/events/fetch?clubSlug=${encodeURIComponent(clubSlug)}`, {
-      headers: { 'X-Sync-Token': token },
-    });
-
-    if (!response.ok) {
-      console.error('[Cloud Sync] Download failed:', response.statusText, response.status);
-      return false;
-    }
-
-    const result = await response.json();
-    const remoteData: StorageData = result.data;
-
-    // Get local data from namespaced storage
     const storage = createClubStorage(clubSlug);
-    const localData = storage.getStorageData();
+    let meta = storage.getSyncMeta();
+    if (!meta.migrated) {
+      meta = markAllDirty(storage.getStorageData(), meta);
+      storage.setSyncMeta(meta);
+    }
+    const { push, revs } = buildPush(storage.getStorageData(), meta);
+    const state = await request(clubSlug, push);
+    if (!state) return { ok: false };
 
-    // Merge logic: Remote is source of truth
-    // But keep local changes if newer
-    const mergedEvents = [...remoteData.events];
-
-    // Add local events that don't exist remotely (new creations not yet synced)
-    localData.events.forEach(localEvent => {
-      const existsRemotely = mergedEvents.some(e => e.id === localEvent.id);
-      if (!existsRemotely) {
-        mergedEvents.push(localEvent);
-      }
-    });
-
-    // Merge validations (union of both)
-    const mergedValidations = {
-      ...remoteData.validations,
-      ...localData.validations,
-    };
-
-    // Use remote current event ID if set, otherwise keep local
-    const mergedCurrentEventId = remoteData.currentEventId || localData.currentEventId;
-
-    const mergedData: StorageData = {
-      events: mergedEvents,
-      validations: mergedValidations,
-      currentEventId: mergedCurrentEventId,
-    };
-
-    // Save merged data to namespaced localStorage
-    storage.setStorageData(mergedData);
-
-    return true;
+    // Re-read: the parent may have ticked while the request was in flight
+    const merged = mergeServerState(storage.getStorageData(), ackPush(storage.getSyncMeta(), revs), state);
+    storage.setStorageData(merged.data);
+    storage.setSyncMeta(merged.meta);
+    return { ok: true };
   } catch (error) {
-    console.error('[Cloud Sync] Download error:', error);
-    return false;
+    console.error('[Cloud Sync] Error:', error);
+    return { ok: false };
   }
 }
 
+/** Push what changed and pull the club's state; at most one request in flight per club */
+export function syncClub(clubSlug: string): Promise<{ ok: boolean }> {
+  const previous = queues.get(clubSlug) ?? Promise.resolve({ ok: true });
+  const next = previous.then(() => runSync(clubSlug));
+  queues.set(clubSlug, next);
+  return next;
+}
+
+/** Sync a few seconds after local changes, and when the network comes back. Returns the cleanup. */
+export function startAutoSync(clubSlug: string, onApplied: () => void): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const run = () => {
+    void syncClub(clubSlug).then(result => { if (result.ok) onApplied(); });
+  };
+  const unsubscribe = subscribeLocalChanges(slug => {
+    if (slug !== clubSlug) return;
+    clearTimeout(timer);
+    timer = setTimeout(run, SYNC_DEBOUNCE_MS);
+  });
+  window.addEventListener('online', run);
+  return () => {
+    unsubscribe();
+    clearTimeout(timer);
+    window.removeEventListener('online', run);
+  };
+}
