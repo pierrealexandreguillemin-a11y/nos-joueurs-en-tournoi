@@ -58,13 +58,24 @@ function cellValue(validations: ValidationState, cell: { tournamentId: string; p
   return validations[cell.tournamentId]?.[cell.playerName]?.[`round_${cell.round}`] ?? false;
 }
 
+/** What other phones need: the structure. FFE results stay on each phone and are not sent. */
+function withoutFfeData(event: Event): Event {
+  const structure: Event = { ...event };
+  delete structure.availableClubs;
+  return {
+    ...structure,
+    tournaments: event.tournaments.map(({ id, name, url }) => ({ id, name, url, lastUpdate: '', players: [] })),
+  };
+}
+
 export function buildPush(data: StorageData, meta: SyncMeta): { push: SyncPush; revs: SyncRevs } {
   const cells: ValidationCell[] = Object.keys(meta.dirtyCells).map(key => {
     const cell = parseCellKey(key);
     return { ...cell, value: cellValue(data.validations, cell) };
   });
+  const dirty = new Map(data.events.filter(e => e.id in meta.dirtyEvents).map(e => [e.id, withoutFfeData(e)]));
   return {
-    push: { events: data.events.filter(e => e.id in meta.dirtyEvents), deletedEventIds: [...meta.deletedEventIds], cells },
+    push: { events: [...dirty.values()], deletedEventIds: [...meta.deletedEventIds], cells },
     revs: { events: { ...meta.dirtyEvents }, cells: { ...meta.dirtyCells }, deletedEventIds: [...meta.deletedEventIds] },
   };
 }
@@ -95,6 +106,7 @@ export function markAllDirty(data: StorageData, meta: SyncMeta): SyncMeta {
 
 /** Server structure, local FFE data (results are refreshed by each phone, never shared) */
 function withLocalFfeData(remote: Event, local: Event): Event {
+  if (remote.clubName !== local.clubName) return remote; // club changed: the local results are another club's
   const localById = new Map(local.tournaments.map(t => [t.id, t]));
   const tournaments = remote.tournaments.map((t): Tournament => {
     const mine = localById.get(t.id);
@@ -105,7 +117,7 @@ function withLocalFfeData(remote: Event, local: Event): Event {
 }
 
 function mergeEvents(local: Event[], meta: SyncMeta, state: ServerState): { events: Event[]; meta: SyncMeta } {
-  const tombstones = new Set(state.deletedEventIds);
+  const tombstones = new Set([...state.deletedEventIds, ...meta.deletedEventIds]); // incl. deletions not yet pushed
   const remoteById = new Map(state.events.map(e => [e.id, e]));
   let next = meta;
   const kept = local.filter(e => !tombstones.has(e.id)).map(e => {
@@ -115,7 +127,7 @@ function mergeEvents(local: Event[], meta: SyncMeta, state: ServerState): { even
     return withLocalFfeData(remote, e);
   });
   const localIds = new Set(local.map(e => e.id));
-  const added = state.events.filter(e => !localIds.has(e.id));
+  const added = state.events.filter(e => !localIds.has(e.id) && !tombstones.has(e.id));
   for (const id of tombstones) {
     const dirtyEvents = { ...next.dirtyEvents };
     delete dirtyEvents[id];
@@ -135,11 +147,14 @@ function setCell(validations: ValidationState, cell: ValidationCell): void {
   validations[cell.tournamentId] = players;
 }
 
-function mergeCells(local: ValidationState, meta: SyncMeta, state: ServerState, droppedTournaments: Set<string>): ValidationState {
+function mergeCells(
+  local: ValidationState, meta: SyncMeta, state: ServerState, droppedTournaments: Set<string>, liveTournaments: Set<string>,
+): ValidationState {
   const validations: ValidationState = structuredClone(local);
   for (const tid of droppedTournaments) delete validations[tid];
   for (const cell of state.cells) {
-    if (!(cellKey(cell.tournamentId, cell.playerName, cell.round) in meta.dirtyCells)) setCell(validations, cell);
+    const orphan = !liveTournaments.has(cell.tournamentId); // its event was deleted
+    if (!orphan && !(cellKey(cell.tournamentId, cell.playerName, cell.round) in meta.dirtyCells)) setCell(validations, cell);
   }
   return validations;
 }
@@ -149,8 +164,10 @@ export function mergeServerState(data: StorageData, meta: SyncMeta, state: Serve
   const droppedTournaments = new Set(data.events.filter(e => tombstones.has(e.id)).flatMap(e => e.tournaments.map(t => t.id)));
   const merged = mergeEvents(data.events, meta, state);
   const currentEventId = merged.events.some(e => e.id === data.currentEventId) ? data.currentEventId : merged.events[0]?.id ?? '';
+  const liveTournaments = new Set(merged.events.flatMap(e => e.tournaments.map(t => t.id)));
+  const validations = mergeCells(data.validations, meta, state, droppedTournaments, liveTournaments);
   return {
-    data: { events: merged.events, validations: mergeCells(data.validations, meta, state, droppedTournaments), currentEventId },
+    data: { events: merged.events, validations, currentEventId },
     meta: { ...merged.meta, knownTombstones: [...state.deletedEventIds] },
   };
 }

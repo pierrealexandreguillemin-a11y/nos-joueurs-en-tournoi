@@ -18,7 +18,7 @@ export const playerSchema = z.object({
   tiebreak: z.number().optional(),
   buchholz: z.number().optional(),
   performance: z.number().optional(),
-  ranking: z.number().int().positive(),
+  ranking: z.number().int().nonnegative(), // parser falls back to 0 when FFE shows no rank
   validated: z.array(z.boolean()),
 });
 

@@ -109,9 +109,10 @@ describe('sync-state', () => {
     });
 
     it('server cells applied except dirty local cells', () => {
-      const data = makeStorageData({ validations: { t1: { A: { round_1: true }, B: { round_1: false } } } });
+      const events = [makeEvent('e1', 'A', { tournaments: [makeTournament({ id: 't1' }), makeTournament({ id: 't2' })] })];
+      const data = makeStorageData({ events, validations: { t1: { A: { round_1: true }, B: { round_1: false } } } });
       const meta = markCell(emptySyncMeta(), cellKey('t1', 'A', 1));
-      const { data: merged } = mergeServerState(data, meta, server({ cells: [
+      const { data: merged } = mergeServerState(data, meta, server({ events, cells: [
         { tournamentId: 't1', playerName: 'A', round: 1, value: false },
         { tournamentId: 't1', playerName: 'B', round: 1, value: true },
         { tournamentId: 't2', playerName: 'C', round: 4, value: true },
@@ -137,4 +138,55 @@ describe('sync-state', () => {
       expect(meta.migrated).toBe(true);
     });
   });
+
+  describe('final review fixes', () => {
+    it('I-1: buildPush strips FFE data from pushed events', () => {
+      const event = makeEvent('e1', 'Open', {
+        clubName: 'Hay Chess',
+        availableClubs: [{ name: 'Hay Chess', playerCount: 5 }],
+        tournaments: [makeTournament({ id: 't1', players: [makePlayer()], pairingsRound: 2, lastUpdate: 'x' })],
+      });
+      const { push } = buildPush(makeStorageData({ events: [event] }), markEvent(emptySyncMeta(), 'e1'));
+      expect(push.events[0].availableClubs).toBeUndefined();
+      expect(push.events[0].clubName).toBe('Hay Chess');
+      expect(push.events[0].tournaments[0]).toEqual({ id: 't1', name: 'U12', url: 'https://echecs.asso.fr/test', lastUpdate: '', players: [] });
+    });
+
+    it('I-5: buildPush sends each event id once', () => {
+      const data = makeStorageData({ events: [makeEvent('e1', 'First'), makeEvent('e1', 'Duplicate')] });
+      expect(buildPush(data, markEvent(emptySyncMeta(), 'e1')).push.events).toHaveLength(1);
+    });
+
+    it('I-2: a pending local tombstone wins over the server copy', () => {
+      const data = makeStorageData({ events: [makeEvent('e2', 'Kept')], currentEventId: 'e2' });
+      const meta = markDeleted(emptySyncMeta(), 'E', ['tE']);
+      const { data: merged } = mergeServerState(data, meta, server({
+        events: [makeEvent('E', 'Deleted here', { tournaments: [makeTournament({ id: 'tE' })] }), makeEvent('e2', 'Kept')],
+        cells: [{ tournamentId: 'tE', playerName: 'A', round: 1, value: true }],
+      }));
+      expect(merged.events.map(e => e.id)).toEqual(['e2']);
+      expect(merged.validations).toEqual({});
+    });
+
+    it('I-3: server cells of a tournament that belongs to no event are ignored', () => {
+      const data = makeStorageData({ events: [makeEvent('e1', 'A', { tournaments: [makeTournament({ id: 't1' })] })] });
+      const { data: merged } = mergeServerState(data, emptySyncMeta(), server({
+        events: [makeEvent('e1', 'A', { tournaments: [makeTournament({ id: 't1' })] })],
+        cells: [
+          { tournamentId: 't1', playerName: 'A', round: 1, value: true },
+          { tournamentId: 'orphan', playerName: 'B', round: 1, value: true },
+        ],
+      }));
+      expect(merged.validations).toEqual({ t1: { A: { round_1: true } } });
+    });
+
+    it('I-4: a club change on the server drops the local FFE data', () => {
+      const local = makeEvent('e1', 'Open', { clubName: 'Old Club', tournaments: [makeTournament({ id: 't1', players: [makePlayer()] })] });
+      const remote = makeEvent('e1', 'Open', { clubName: 'New Club', tournaments: [makeTournament({ id: 't1' })] });
+      const { data } = mergeServerState(makeStorageData({ events: [local] }), emptySyncMeta(), server({ events: [remote] }));
+      expect(data.events[0].clubName).toBe('New Club');
+      expect(data.events[0].tournaments[0].players).toEqual([]);
+    });
+  });
+
 });

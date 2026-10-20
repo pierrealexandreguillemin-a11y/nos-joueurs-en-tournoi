@@ -49,13 +49,20 @@ async function upsertEvents(clubSlug: string, events: Event[]): Promise<void> {
   `;
 }
 
-/** Upsert ticks one by one: last write to reach the server wins per cell */
+/**
+ * Upsert ticks one by one: last write to reach the server wins per cell.
+ * Ticks of a deleted event's tournaments (sent late by another phone) are dropped.
+ */
 async function upsertCells(clubSlug: string, cells: ValidationCell[]): Promise<void> {
   await getSql()`
     INSERT INTO club_validations (club_slug, tournament_id, player_name, round, value)
     SELECT ${clubSlug}, c."tournamentId", c."playerName", c.round, c.value
     FROM jsonb_to_recordset(${JSON.stringify(cells)}::jsonb)
       AS c("tournamentId" text, "playerName" text, round int, value boolean)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM club_events e, jsonb_array_elements(e.data->'tournaments') AS t
+      WHERE e.club_slug = ${clubSlug} AND e.deleted_at IS NOT NULL AND t->>'id' = c."tournamentId"
+    )
     ON CONFLICT (club_slug, tournament_id, player_name, round)
     DO UPDATE SET value = EXCLUDED.value, updated_at = now()
   `;

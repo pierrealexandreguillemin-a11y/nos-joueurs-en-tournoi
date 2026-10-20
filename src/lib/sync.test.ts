@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createClubStorage } from './storage';
 import { cellKey, emptySyncMeta } from './sync-state';
-import { makeEvent } from '@/test/fixtures';
+import { makeEvent, makeTournament } from '@/test/fixtures';
 import type { ServerState } from '@/types';
 
 const mockFetch = vi.fn();
@@ -56,10 +56,13 @@ describe('sync orchestrator', () => {
   it('posts the push and merges the returned state', async () => {
     const storage = migrated();
     storage.setValidation('t1', 'A', 1, true);
-    mockFetch.mockResolvedValue(okResponse(state({ cells: [
-      { tournamentId: 't1', playerName: 'A', round: 1, value: true },
-      { tournamentId: 't1', playerName: 'B', round: 1, value: true },
-    ] })));
+    mockFetch.mockResolvedValue(okResponse(state({
+      events: [makeEvent('e1', 'Open', { tournaments: [makeTournament({ id: 't1' })] })],
+      cells: [
+        { tournamentId: 't1', playerName: 'A', round: 1, value: true },
+        { tournamentId: 't1', playerName: 'B', round: 1, value: true },
+      ],
+    })));
 
     const result = await syncClub(SLUG);
 
@@ -122,6 +125,30 @@ describe('sync orchestrator', () => {
     await Promise.all([syncClub(SLUG), syncClub(SLUG)]);
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(maxInFlight).toBe(1);
+  });
+
+  it('I-1: still pulls when the push is refused, and keeps the marks', async () => {
+    const storage = migrated();
+    storage.setValidation('t1', 'A', 1, true);
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 400, statusText: 'Bad Request', json: async () => ({}) })
+      .mockResolvedValueOnce(okResponse(state({ events: [makeEvent('e2', 'From responsable')] })));
+
+    expect(await syncClub(SLUG)).toEqual({ ok: false });
+    expect(mockFetch.mock.calls[1][0]).toMatch(/\/api\/events\/fetch\?clubSlug=hay-chess$/);
+    expect(storage.getAllEvents().map(e => e.id)).toEqual(['e2']);
+    expect(Object.keys(storage.getSyncMeta().dirtyCells)).toEqual([cellKey('t1', 'A', 1)]);
+  });
+
+  it('I-1: sends many dirty events in requests of at most 20, all acknowledged', async () => {
+    const storage = migrated();
+    for (let i = 0; i < 45; i++) storage.saveEvent(makeEvent(`e${i}`, `Open ${i}`));
+    mockFetch.mockImplementation(async () => okResponse(state({ events: storage.getAllEvents() })));
+
+    expect(await syncClub(SLUG)).toEqual({ ok: true });
+    const sizes = mockFetch.mock.calls.map(call => JSON.parse(call[1].body).events.length);
+    expect(sizes).toEqual([20, 20, 5]);
+    expect(storage.getSyncMeta().dirtyEvents).toEqual({});
   });
 
   describe('startAutoSync', () => {

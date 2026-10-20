@@ -164,6 +164,11 @@ describe('Zod schemas', () => {
     });
   });
 
+  it('playerSchema accepts ranking 0 (parser fallback when FFE has no rank)', () => {
+    const player = { name: 'A', elo: 1500, club: 'C', ranking: 0, currentPoints: 0, results: [], validated: [] };
+    expect(playerSchema.safeParse(player).success).toBe(true);
+  });
+
   describe('syncBodySchema', () => {
     const validBody = {
       clubSlug: 'hay-chess',

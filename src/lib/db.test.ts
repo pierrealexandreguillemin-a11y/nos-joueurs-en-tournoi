@@ -38,8 +38,12 @@ function upsertEvents(slug: string, json: string): Row[] {
   return [];
 }
 
-function upsertCells(slug: string, json: string): Row[] {
-  for (const c of JSON.parse(json) as Row[]) {
+function upsertCells(slug: string, json: string, sqlText: string): Row[] {
+  // Mirrors the SQL guard only if the statement carries it, so the test fails when db.ts drops it
+  const guarded = sqlText.includes('NOT EXISTS') && sqlText.includes('deleted_at IS NOT NULL');
+  const deadTournaments = !guarded ? [] : [...events.entries()]
+    .filter(([k, r]) => k.startsWith(`${slug}|`) && r.deleted).flatMap(([, r]) => tournamentIdsOf(r));
+  for (const c of (JSON.parse(json) as Row[]).filter(c => !deadTournaments.includes(c.tournamentId as string))) {
     cells.set(`${slug}|${c.tournamentId}|${c.playerName}|${c.round}`, {
       tournament_id: c.tournamentId, player_name: c.playerName, round: c.round, value: c.value,
     });
@@ -50,11 +54,11 @@ function upsertCells(slug: string, json: string): Row[] {
 const rowsOf = <T,>(map: Map<string, T>, slug: string) =>
   [...map.entries()].filter(([k]) => k.startsWith(`${slug}|`)).map(([, v]) => v);
 
-const handlers: Array<[string, (v: unknown[]) => Row[]]> = [
+const handlers: Array<[string, (v: unknown[], text: string) => Row[]]> = [
   ['INSERT INTO club_events (club_slug, event_id, data, deleted_at)', v => tombstone(v[0] as string, v[1] as string[])],
   ['DELETE FROM club_validations', v => deleteCellsOf(v[0] as string, v[2] as string[])],
   ['INSERT INTO club_events (club_slug, event_id, data)', v => upsertEvents(v[0] as string, v[1] as string)],
-  ['INSERT INTO club_validations', v => upsertCells(v[0] as string, v[1] as string)],
+  ['INSERT INTO club_validations', (v, text) => upsertCells(v[0] as string, v[1] as string, text)],
   ['SELECT data FROM club_events', v => rowsOf(events, v[0] as string).filter(r => !r.deleted).map(r => ({ data: r.data }))],
   ['SELECT event_id FROM club_events', v => [...events.entries()]
     .filter(([k, r]) => k.startsWith(`${v[0]}|`) && r.deleted).map(([k]) => ({ event_id: k.split('|')[1] }))],
@@ -65,7 +69,7 @@ function fakeSql(strings: TemplateStringsArray, ...values: unknown[]): Promise<R
   const text = strings.join('?').replace(/\s+/g, ' ').trim();
   queries.push(text);
   const handler = handlers.find(([prefix]) => text.startsWith(prefix));
-  return handler ? Promise.resolve(handler[1](values)) : Promise.reject(new Error(`unexpected query: ${text}`));
+  return handler ? Promise.resolve(handler[1](values, text)) : Promise.reject(new Error(`unexpected query: ${text}`));
 }
 
 const neonMock = vi.fn(() => fakeSql);
@@ -121,6 +125,14 @@ describe('db', () => {
     await applySync('club-b', push({ deletedEventIds: ['e9'] }));
     expect(await getServerState('club-b')).toEqual({ events: [], deletedEventIds: ['e9'], cells: [] });
     expect((await getServerState('club-a')).deletedEventIds).toEqual([]);
+  });
+
+  it('I-3: ticks pushed after the event was deleted are not stored', async () => {
+    const e1 = makeEvent('e1', 'Open A', { tournaments: [makeTournament({ id: 't1' })] });
+    await applySync('club-a', push({ events: [e1] }));
+    await applySync('club-a', push({ deletedEventIds: ['e1'] }));
+    await applySync('club-a', push({ cells: [cell('t1', 'LATE PARENT', 1, true)] }));
+    expect((await getServerState('club-a')).cells).toEqual([]);
   });
 
   it('does not query for an empty push', async () => {
