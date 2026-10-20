@@ -168,19 +168,34 @@ describe('Zod schemas', () => {
     const validBody = {
       clubSlug: 'hay-chess',
       events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-      validations: {},
+      deletedEventIds: ['e0'],
+      cells: [{ tournamentId: 't1', playerName: 'DUPONT JEAN', round: 1, value: true }],
     };
+    const without = (o: Record<string, unknown>, key: string) =>
+      Object.fromEntries(Object.entries(o).filter(([k]) => k !== key));
+    const cellsOf = (n: number) => Array.from({ length: n }, (_, i) =>
+      ({ tournamentId: 't1', playerName: `P${i}`, round: 1, value: true }));
 
     it('accepts valid sync body', () => {
       expect(syncBodySchema.safeParse(validBody).success).toBe(true);
     });
 
-    it('accepts sync body with currentEventId', () => {
-      expect(syncBodySchema.safeParse({ ...validBody, currentEventId: 'e1' }).success).toBe(true);
+    it('accepts 5000 cells, rejects 5001', () => {
+      expect(syncBodySchema.safeParse({ ...validBody, cells: cellsOf(5000) }).success).toBe(true);
+      expect(syncBodySchema.safeParse({ ...validBody, cells: cellsOf(5001) }).success).toBe(false);
+    });
+
+    it('rejects round 0', () => {
+      const cells = [{ tournamentId: 't1', playerName: 'A', round: 0, value: true }];
+      expect(syncBodySchema.safeParse({ ...validBody, cells }).success).toBe(false);
+    });
+
+    it('rejects missing deletedEventIds', () => {
+      expect(syncBodySchema.safeParse(without(validBody, 'deletedEventIds')).success).toBe(false);
     });
 
     it('rejects missing events', () => {
-      expect(syncBodySchema.safeParse({ clubSlug: 'hay-chess', validations: {} }).success).toBe(false);
+      expect(syncBodySchema.safeParse(without(validBody, 'events')).success).toBe(false);
     });
 
     it('rejects invalid clubSlug', () => {

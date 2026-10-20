@@ -2,12 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateSyncToken } from '@/lib/hmac';
 
 // Mock db module
-vi.mock('@/lib/db', () => ({
-  saveEvents: vi.fn(async () => {}),
-  saveValidations: vi.fn(async () => {}),
-  saveCurrentEventId: vi.fn(async () => {}),
-  getStorageData: vi.fn(async () => ({ events: [], validations: {}, currentEventId: '' })),
-}));
+const { serverState, applySync, getServerState } = vi.hoisted(() => {
+  const state = { events: [], deletedEventIds: ['gone'], cells: [{ tournamentId: 't1', playerName: 'A', round: 1, value: true }] };
+  return { serverState: state, applySync: vi.fn(async () => {}), getServerState: vi.fn(async () => state) };
+});
+vi.mock('@/lib/db', () => ({ applySync, getServerState }));
 
 import { POST } from '../sync/route';
 import { GET } from '../fetch/route';
@@ -63,7 +62,8 @@ describe('API routes — QG-5: validation slug', () => {
       const req = makeSyncRequest({
         clubSlug: 'hay-chess',
         events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
+        deletedEventIds: [],
+          cells: [],
       });
       const res = await POST(req);
       expect(res.status).toBe(401);
@@ -74,7 +74,8 @@ describe('API routes — QG-5: validation slug', () => {
         {
           clubSlug: 'hay-chess',
           events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-          validations: {},
+          deletedEventIds: [],
+          cells: [],
         },
         { 'X-Sync-Token': 'bad-token' },
       );
@@ -88,7 +89,8 @@ describe('API routes — QG-5: validation slug', () => {
         {
           clubSlug: 'hay-chess',
           events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-          validations: {},
+          deletedEventIds: [],
+          cells: [],
         },
         { 'X-Sync-Token': token },
       );
@@ -96,11 +98,23 @@ describe('API routes — QG-5: validation slug', () => {
       expect(res.status).toBe(200);
     });
 
+    it('applique la poussee puis renvoie l etat serveur', async () => {
+      const token = await generateSyncToken('hay-chess');
+      const cells = [{ tournamentId: 't1', playerName: 'B', round: 2, value: false }];
+      const res = await POST(makeSyncRequest(
+        { clubSlug: 'hay-chess', events: [], deletedEventIds: ['e9'], cells },
+        { 'X-Sync-Token': token },
+      ));
+      expect(applySync).toHaveBeenCalledWith('hay-chess', { events: [], deletedEventIds: ['e9'], cells });
+      expect(await res.json()).toEqual({ success: true, data: serverState });
+    });
+
     it('400 si event sans id (Zod validation)', async () => {
       const req = makeSyncRequest({
         clubSlug: 'hay-chess',
         events: [{ name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-        validations: {},
+        deletedEventIds: [],
+          cells: [],
       });
       const res = await POST(req);
       expect(res.status).toBe(400);
@@ -112,17 +126,19 @@ describe('API routes — QG-5: validation slug', () => {
       const req = makeSyncRequest({
         clubSlug: 'hay-chess',
         events: 'not-an-array',
-        validations: {},
+        deletedEventIds: [],
+          cells: [],
       });
       const res = await POST(req);
       expect(res.status).toBe(400);
     });
 
-    it('400 si validations contient une valeur non-boolean (Zod validation)', async () => {
+    it('400 si une coche a une valeur non-boolean (Zod validation)', async () => {
       const req = makeSyncRequest({
         clubSlug: 'hay-chess',
-        events: [{ id: 'e1', name: 'Test', createdAt: '2024-01-01', tournaments: [] }],
-        validations: { t1: { player1: { round_1: 'oui' } } },
+        events: [],
+        deletedEventIds: [],
+        cells: [{ tournamentId: 't1', playerName: 'A', round: 1, value: 'oui' }],
       });
       const res = await POST(req);
       expect(res.status).toBe(400);
@@ -170,6 +186,8 @@ describe('API routes — QG-5: validation slug', () => {
       const req = makeFetchRequest({ clubSlug: 'hay-chess' }, { 'X-Sync-Token': token });
       const res = await GET(req);
       expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ success: true, data: serverState });
+      expect(getServerState).toHaveBeenCalledWith('hay-chess');
     });
   });
 });

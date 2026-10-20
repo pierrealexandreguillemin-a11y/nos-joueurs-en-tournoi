@@ -81,6 +81,30 @@ export interface StorageData {
   validations: ValidationState;
 }
 
+// Cloud sync (docs/superpowers/specs/2026-10-20-auto-sync-light-design.md)
+
+/** One validation tick: tournament × player × round */
+export interface ValidationCell {
+  tournamentId: string;
+  playerName: string;
+  round: number;
+  value: boolean;
+}
+
+/** What a phone sends: only what changed locally */
+export interface SyncPush {
+  events: Event[];
+  deletedEventIds: string[];
+  cells: ValidationCell[];
+}
+
+/** What the server holds for a club */
+export interface ServerState {
+  events: Event[];
+  deletedEventIds: string[];
+  cells: ValidationCell[];
+}
+
 // FFE HTML Parsing types
 export interface FFEPlayerRow {
   rank: number;

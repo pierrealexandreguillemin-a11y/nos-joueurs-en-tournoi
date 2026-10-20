@@ -1,121 +1,131 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { makeEvent } from '@/test/fixtures';
+import { makeEvent, makeTournament } from '@/test/fixtures';
+import type { SyncPush } from '@/types';
 
-// In-memory stand-in for the Neon tagged-template client. It recognises the five
-// statements of db.ts and applies their upsert semantics, so round trips are tested
-// rather than SQL strings. The real SQL is exercised against Neon in production
-// (see docs/CHECKUP-2026-10-20.md).
+// In-memory stand-in for the Neon tagged-template client. It recognises the statements of db.ts
+// and applies their semantics, so round trips are tested rather than SQL strings. The real SQL is
+// exercised against Neon in production (docs/CHECKUP-2026-10-20.md).
 type Row = Record<string, unknown>;
-const events = new Map<string, Row>(); // key: slug|eventId
-const states = new Map<string, Row>(); // key: slug
+interface EventRow { data: Row; deleted: boolean }
+const events = new Map<string, EventRow>(); // slug|eventId
+const cells = new Map<string, Row>(); // slug|tournamentId|player|round
 const queries: string[] = [];
+
+const tournamentIdsOf = (row: EventRow | undefined): string[] =>
+  ((row?.data.tournaments as Row[] | undefined) ?? []).map(t => t.id as string);
+
+function tombstone(slug: string, ids: string[]): Row[] {
+  for (const id of ids) {
+    const prev = events.get(`${slug}|${id}`);
+    events.set(`${slug}|${id}`, { data: prev?.data ?? { tournaments: [] }, deleted: true });
+  }
+  return [];
+}
+
+function deleteCellsOf(slug: string, ids: string[]): Row[] {
+  const tids = ids.flatMap(id => tournamentIdsOf(events.get(`${slug}|${id}`)));
+  for (const key of [...cells.keys()]) {
+    if (tids.some(t => key.startsWith(`${slug}|${t}|`))) cells.delete(key);
+  }
+  return [];
+}
+
+function upsertEvents(slug: string, json: string): Row[] {
+  for (const e of JSON.parse(json) as Row[]) {
+    const prev = events.get(`${slug}|${e.id}`);
+    if (!prev?.deleted) events.set(`${slug}|${e.id}`, { data: e, deleted: false });
+  }
+  return [];
+}
+
+function upsertCells(slug: string, json: string): Row[] {
+  for (const c of JSON.parse(json) as Row[]) {
+    cells.set(`${slug}|${c.tournamentId}|${c.playerName}|${c.round}`, {
+      tournament_id: c.tournamentId, player_name: c.playerName, round: c.round, value: c.value,
+    });
+  }
+  return [];
+}
+
+const rowsOf = <T,>(map: Map<string, T>, slug: string) =>
+  [...map.entries()].filter(([k]) => k.startsWith(`${slug}|`)).map(([, v]) => v);
+
+const handlers: Array<[string, (v: unknown[]) => Row[]]> = [
+  ['INSERT INTO club_events (club_slug, event_id, data, deleted_at)', v => tombstone(v[0] as string, v[1] as string[])],
+  ['DELETE FROM club_validations', v => deleteCellsOf(v[0] as string, v[2] as string[])],
+  ['INSERT INTO club_events (club_slug, event_id, data)', v => upsertEvents(v[0] as string, v[1] as string)],
+  ['INSERT INTO club_validations', v => upsertCells(v[0] as string, v[1] as string)],
+  ['SELECT data FROM club_events', v => rowsOf(events, v[0] as string).filter(r => !r.deleted).map(r => ({ data: r.data }))],
+  ['SELECT event_id FROM club_events', v => [...events.entries()]
+    .filter(([k, r]) => k.startsWith(`${v[0]}|`) && r.deleted).map(([k]) => ({ event_id: k.split('|')[1] }))],
+  ['SELECT tournament_id, player_name, round, value FROM club_validations', v => rowsOf(cells, v[0] as string)],
+];
 
 function fakeSql(strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]> {
   const text = strings.join('?').replace(/\s+/g, ' ').trim();
   queries.push(text);
-
-  if (text.startsWith('INSERT INTO club_events')) {
-    const [slug, json] = values as [string, string];
-    for (const e of JSON.parse(json) as Row[]) events.set(`${slug}|${e.id}`, { data: e });
-    return Promise.resolve([]);
-  }
-  if (text.startsWith('SELECT data FROM club_events')) {
-    const [slug] = values as [string];
-    return Promise.resolve([...events.entries()].filter(([k]) => k.startsWith(`${slug}|`)).map(([, v]) => v));
-  }
-  if (text.startsWith('INSERT INTO club_state (club_slug, validations)')) {
-    const [slug, json] = values as [string, string];
-    states.set(slug, { current_event_id: '', ...states.get(slug), validations: JSON.parse(json) });
-    return Promise.resolve([]);
-  }
-  if (text.startsWith('INSERT INTO club_state (club_slug, current_event_id)')) {
-    const [slug, id] = values as [string, string];
-    states.set(slug, { validations: {}, ...states.get(slug), current_event_id: id });
-    return Promise.resolve([]);
-  }
-  if (text.startsWith('SELECT validations, current_event_id FROM club_state')) {
-    const [slug] = values as [string];
-    const row = states.get(slug);
-    return Promise.resolve(row ? [row] : []);
-  }
-  return Promise.reject(new Error(`unexpected query: ${text}`));
+  const handler = handlers.find(([prefix]) => text.startsWith(prefix));
+  return handler ? Promise.resolve(handler[1](values)) : Promise.reject(new Error(`unexpected query: ${text}`));
 }
 
 const neonMock = vi.fn(() => fakeSql);
 vi.mock('@neondatabase/serverless', () => ({ neon: neonMock }));
 
 process.env.DATABASE_URL = 'postgresql://user:pass@fake.neon.tech/db';
-const { saveEvents, getEvents, saveValidations, saveCurrentEventId, getStorageData } = await import('./db');
+const { applySync, getServerState } = await import('./db');
+
+const push = (p: Partial<SyncPush>): SyncPush => ({ events: [], deletedEventIds: [], cells: [], ...p });
+const cell = (tournamentId: string, playerName: string, round: number, value: boolean) =>
+  ({ tournamentId, playerName, round, value });
 
 describe('db', () => {
   beforeEach(() => {
     events.clear();
-    states.clear();
+    cells.clear();
     queries.length = 0;
   });
 
-  describe('saveEvents / getEvents', () => {
-    it('round-trips events of a club', async () => {
-      const e1 = makeEvent('e1', 'Open A');
-      const e2 = makeEvent('e2', 'Open B');
-      await saveEvents([e1, e2], 'club-a');
-
-      const result = await getEvents('club-a');
-      expect(result.map(e => e.id).sort()).toEqual(['e1', 'e2']);
-    });
-
-    it('writes all events in a single statement', async () => {
-      await saveEvents([makeEvent('e1', 'Open'), makeEvent('e2', 'Open'), makeEvent('e3', 'Open')], 'club-a');
-      expect(queries).toHaveLength(1);
-    });
-
-    it('updates an existing event instead of duplicating it', async () => {
-      await saveEvents([makeEvent('e1', 'Before')], 'club-a');
-      await saveEvents([makeEvent('e1', 'After')], 'club-a');
-
-      const result = await getEvents('club-a');
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('After');
-    });
-
-    it('does not query when there is nothing to save', async () => {
-      await saveEvents([], 'club-a');
-      expect(queries).toEqual([]);
-    });
-
-    it('isolates clubs', async () => {
-      await saveEvents([makeEvent('e1', 'Open')], 'club-a');
-      await saveEvents([makeEvent('e2', 'Open')], 'club-b');
-
-      expect((await getEvents('club-a')).map(e => e.id)).toEqual(['e1']);
-      expect((await getEvents('club-b')).map(e => e.id)).toEqual(['e2']);
-    });
+  it('applies events, then returns them', async () => {
+    await applySync('club-a', push({ events: [makeEvent('e1', 'Open A')] }));
+    const state = await getServerState('club-a');
+    expect(state.events.map(e => e.id)).toEqual(['e1']);
+    expect(state.deletedEventIds).toEqual([]);
   });
 
-  describe('getStorageData', () => {
-    it('returns empty data for an unknown club', async () => {
-      expect(await getStorageData('nobody')).toEqual({ events: [], validations: {}, currentEventId: '' });
-    });
+  it('tombstone wins over a later upsert', async () => {
+    await applySync('club-a', push({ events: [makeEvent('e1', 'Open A')] }));
+    await applySync('club-a', push({ deletedEventIds: ['e1'] }));
+    await applySync('club-a', push({ events: [makeEvent('e1', 'Stale copy')] }));
+    const state = await getServerState('club-a');
+    expect(state.events).toEqual([]);
+    expect(state.deletedEventIds).toEqual(['e1']);
+  });
 
-    it('combines events, validations and current event', async () => {
-      const validations = { t1: { 'DUPONT JEAN': { round_1: true } } };
-      await saveEvents([makeEvent('e1', 'Open')], 'club-a');
-      await saveValidations(validations, 'club-a');
-      await saveCurrentEventId('e1', 'club-a');
+  it("tombstone deletes the cells of the event's tournaments", async () => {
+    const e1 = makeEvent('e1', 'Open A', { tournaments: [makeTournament({ id: 't1' })] });
+    await applySync('club-a', push({ events: [e1], cells: [cell('t1', 'DUPONT JEAN', 1, true)] }));
+    await applySync('club-a', push({ deletedEventIds: ['e1'] }));
+    expect((await getServerState('club-a')).cells).toEqual([]);
+  });
 
-      const data = await getStorageData('club-a');
-      expect(data.events.map(e => e.id)).toEqual(['e1']);
-      expect(data.validations).toEqual(validations);
-      expect(data.currentEventId).toBe('e1');
-    });
+  it('cells upsert per cell', async () => {
+    await applySync('club-a', push({ cells: [cell('t1', 'A', 1, true)] }));
+    await applySync('club-a', push({ cells: [cell('t1', 'B', 1, true)] }));
+    await applySync('club-a', push({ cells: [cell('t1', 'A', 1, false)] }));
+    const byPlayer = Object.fromEntries((await getServerState('club-a')).cells.map(c => [c.playerName, c.value]));
+    expect(byPlayer).toEqual({ A: false, B: true });
+  });
 
-    it('keeps validations when only the current event changes', async () => {
-      const validations = { t1: { 'DUPONT JEAN': { round_1: true } } };
-      await saveValidations(validations, 'club-a');
-      await saveCurrentEventId('e2', 'club-a');
+  it('isolates clubs', async () => {
+    await applySync('club-a', push({ events: [makeEvent('e1', 'Open')], cells: [cell('t1', 'A', 1, true)] }));
+    await applySync('club-b', push({ deletedEventIds: ['e9'] }));
+    expect(await getServerState('club-b')).toEqual({ events: [], deletedEventIds: ['e9'], cells: [] });
+    expect((await getServerState('club-a')).deletedEventIds).toEqual([]);
+  });
 
-      expect((await getStorageData('club-a')).validations).toEqual(validations);
-    });
+  it('does not query for an empty push', async () => {
+    await applySync('club-a', push({}));
+    expect(queries).toEqual([]);
   });
 });
 
@@ -125,7 +135,7 @@ describe('db without DATABASE_URL', () => {
     const saved = process.env.DATABASE_URL;
     delete process.env.DATABASE_URL;
     const fresh = await import('./db');
-    await expect(fresh.getEvents('club-a')).rejects.toThrow('DATABASE_URL is not set');
+    await expect(fresh.getServerState('club-a')).rejects.toThrow('DATABASE_URL is not set');
     process.env.DATABASE_URL = saved;
   });
 });

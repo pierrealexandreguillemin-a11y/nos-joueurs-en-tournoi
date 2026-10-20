@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
-import { getStorageData } from '@/lib/db';
+import { getServerState } from '@/lib/db';
 import { verifySyncToken } from '@/lib/hmac';
 import { clubSlugSchema } from '@/lib/schemas';
 
@@ -10,7 +10,7 @@ export function OPTIONS() {
 
 /**
  * GET /api/events/fetch?clubSlug=xxx
- * Fetch all events from the Postgres store for a specific club
+ * Pull the club's full server state (events, tombstones, validation cells)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all data from the Postgres store
-    const data = await getStorageData(clubSlug);
+    const data = await getServerState(clubSlug);
 
     return NextResponse.json(
       {

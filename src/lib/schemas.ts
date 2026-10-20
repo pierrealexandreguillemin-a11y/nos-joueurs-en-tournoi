@@ -64,9 +64,18 @@ export const scrapeBodySchema = z.object({
   url: z.string().url().max(2048),
 });
 
+/** One validation tick (tournament × player × round) — see ValidationCell in @/types */
+export const validationCellSchema = z.object({
+  tournamentId: z.string().min(1).max(100),
+  playerName: z.string().min(1).max(200),
+  round: z.number().int().min(1).max(99),
+  value: z.boolean(),
+});
+
+/** Push of one phone: only what changed locally (docs/superpowers/specs/2026-10-20-auto-sync-light-design.md) */
 export const syncBodySchema = z.object({
   clubSlug: clubSlugSchema,
   events: z.array(eventSchema).max(50),
-  validations: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.boolean()))),
-  currentEventId: z.string().optional(),
+  deletedEventIds: z.array(z.string().min(1).max(100)).max(200),
+  cells: z.array(validationCellSchema).max(5000),
 });

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError } from '@/lib/api-error';
-import { saveEvents, saveValidations, saveCurrentEventId } from '@/lib/db';
+import { applySync, getServerState } from '@/lib/db';
 import { verifySyncToken } from '@/lib/hmac';
 import { syncBodySchema } from '@/lib/schemas';
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }
-import type { ValidationState } from '@/types';
 
 /**
  * POST /api/events/sync
- * Sync events from client to the Postgres store
+ * Push what changed on a phone, answer with the club's full server state (push + pull in one request)
  */
 const MAX_BODY_SIZE = 1_048_576; // 1 MB
 
@@ -44,8 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clubSlug, events, currentEventId } = parsed.data;
-    const validations: ValidationState = parsed.data.validations;
+    const { clubSlug, events, deletedEventIds, cells } = parsed.data;
 
     // Verify HMAC token
     const token = req.headers.get('X-Sync-Token');
@@ -53,22 +51,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Save all data to the Postgres store in parallel
-    await Promise.all([
-      saveEvents(events, clubSlug),
-      validations && Object.keys(validations).length > 0
-        ? saveValidations(validations, clubSlug)
-        : Promise.resolve(),
-      currentEventId ? saveCurrentEventId(currentEventId, clubSlug) : Promise.resolve(),
-    ]);
+    await applySync(clubSlug, { events, deletedEventIds, cells });
+    const data = await getServerState(clubSlug);
 
-    return NextResponse.json(
-      {
-        success: true,
-        synced: events.length,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {
     return apiError('/sync', error);
   }
