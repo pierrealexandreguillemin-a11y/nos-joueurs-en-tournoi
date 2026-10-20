@@ -104,7 +104,7 @@ src/
     ViewToggle.tsx        # Toggle segmente Resultats / Appariements (aria-pressed)
     PairingsTable.tsx     # Table appariements du club (table, couleur, adversaire, elo)
     EventForm.tsx         # Formulaire creation evenement (lazy-loaded)
-    EventsManager.tsx     # Gestion multi-evenements + sync cloud
+    EventsManager.tsx     # Gestion multi-evenements (suppression = pour tout le club)
     ShareEventModal.tsx   # Partage par QR code (lazy-loaded)
     DuplicateEventDialog.tsx # Dialog import doublon (lazy-loaded)
     ClubSelector.tsx      # Selection du club FFE
@@ -125,7 +125,9 @@ src/
     schemas.ts            # Schemas Zod (validation API routes)
     validation.ts         # Regles metier (SLUG_REGEX, URLs FFE, noms)
     db.ts                 # Client Postgres (Neon) namespace par club
-    sync.ts               # Sync localStorage <-> API serveur (merge strategy)
+    sync.ts               # Sync automatique : syncClub (push+pull) + startAutoSync
+    sync-state.ts         # Marques de synchro et fusion avec l'etat serveur (pur)
+    storage-sync.ts       # Ecritures marquees du stockage club
     storage.ts            # Facade storage (re-exports core + share)
     storage-core.ts       # CRUD localStorage namespace par club
     storage-share.ts      # Encode/decode events pour partage URL (lz-string)
@@ -181,7 +183,9 @@ npm run test:coverage     # Avec couverture
 | `calculations.test.ts` | 34 | Points, performance, Buchholz, tri, moyenne elo, stats resultats |
 | `formatters.test.ts` | 28 | Formatage noms, elo, scores, pourcentages, dates, club, ronde |
 | `parser.test.ts` | 46 | Parser HTML FFE (Stats, Ls, Ga, Rondes), clubs, resultats, appariements, filterClubPairings |
-| `sync.test.ts` | 13 | Sync cloud POST/GET, merge strategy, error paths |
+| `sync.test.ts` | 11 | Orchestrateur : migration, push+pull, accuse partiel, echecs, une requete a la fois, debounce, online |
+| `sync-state.test.ts` | 12 | Marques, accuse par revision, fusion (FFE local, tombstones, coches) |
+| `storage-sync-marks.test.ts` | 9 | Ecritures marquees, saveEventLocal, reimport d'un evenement supprime |
 | `scraper.test.ts` | 8 | Scraping FFE, erreurs contextuelles |
 | `utils.test.ts` | 11 | Merge class names, gestion Tailwind conflicts |
 | `random.test.ts` | 7 | Distribution, unicite, plage [0,1) |

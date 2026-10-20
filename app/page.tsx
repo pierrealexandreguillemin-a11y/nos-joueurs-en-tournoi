@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import NextDynamic from 'next/dynamic';
 import { toast } from 'sonner';
@@ -27,6 +27,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Toaster } from 'sonner';
 import type { Event } from '@/types';
 import type { ExportedEvent } from '@/lib/storage';
+import useClubAutoSync from '@/hooks/useClubAutoSync';
 
 const HalftoneWaves = NextDynamic(() => import('@/components/HalftoneWaves'), {
   ssr: false,
@@ -192,6 +193,19 @@ function useHomePage() {
   }, [isLoaded, identity]);
 
   useShareURLImport(identity, setCurrentEvent, setShowEventForm, setPendingImport, setDuplicateDialogOpen);
+
+  // After each automatic sync, show what the server brought (responsable's events, other parents' ticks).
+  // The creation form closes only if it was open because there was no event yet.
+  const hadEventRef = useRef(false);
+  useEffect(() => { hadEventRef.current = !!currentEvent; }, [currentEvent]);
+  const handleSyncApplied = useCallback(() => {
+    const storage = getStorage();
+    if (!storage) return;
+    const event = storage.getCurrentEvent();
+    if (!hadEventRef.current && event) setShowEventForm(false);
+    setCurrentEvent(event);
+  }, [getStorage]);
+  useClubAutoSync(identity?.clubSlug ?? '', handleSyncApplied);
 
   const handleEventCreated = (event: Event) => {
     const storage = getStorage();

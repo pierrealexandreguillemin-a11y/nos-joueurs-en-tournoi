@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { parseFFePages, getListUrl, getResultsUrl, getStatsUrl, getRoundUrl, parseStatsClubs, parsePairings, detectCurrentRound } from '@/lib/parser';
 import { scrapeFFE, scrapeFFEPair } from '@/lib/scraper';
 import { createClubStorage } from '@/lib/storage';
+import { syncClub } from '@/lib/sync';
 import { useClub } from '@/contexts/ClubContext';
 import type { Event, Tournament, Pairing } from '@/types';
 import type { ClubStorage } from '@/lib/storage';
@@ -170,7 +171,8 @@ interface SyncSetters {
 /** Hook for FFE fetch / refresh callbacks */
 function useFetchCallbacks(
   event: Event,
-  commitEvent: (e: Event) => void,
+  commitResults: (e: Event) => void,
+  syncAfterRefresh: () => Promise<void>,
   { setLoading, setError }: SyncSetters,
 ) {
   const fetchClubs = useCallback(async (tournament: Tournament) => {
@@ -186,7 +188,7 @@ function useFetchCallbacks(
         throw new Error('Aucun club détecté. Le tournoi n\'a peut-être pas encore commencé.');
       }
 
-      commitEvent({ ...event, availableClubs: clubs });
+      commitResults({ ...event, availableClubs: clubs });
       toast.success(`${clubs.length} club(s) détecté(s)`);
     } catch (err) {
       console.error('Error fetching clubs:', err);
@@ -194,7 +196,7 @@ function useFetchCallbacks(
     } finally {
       setLoading(null);
     }
-  }, [event, commitEvent, setLoading, setError]);
+  }, [event, commitResults, setLoading, setError]);
 
   const fetchResults = useCallback(async (tournament: Tournament) => {
     if (!event.clubName) return;
@@ -209,7 +211,7 @@ function useFetchCallbacks(
         throw new Error(`Aucun joueur « ${event.clubName} » trouvé. Vérifiez le nom du club ou laissez-le vide pour utiliser la détection automatique.`);
       }
 
-      commitEvent({
+      commitResults({
         ...event,
         tournaments: event.tournaments.map(t =>
           t.id === tournament.id ? updatedTournament : t
@@ -222,7 +224,7 @@ function useFetchCallbacks(
     } finally {
       setLoading(null);
     }
-  }, [event, commitEvent, setLoading, setError]);
+  }, [event, commitResults, setLoading, setError]);
 
   const handleRefresh = useCallback(async (tournament: Tournament) => {
     if (!event.clubName) {
@@ -230,7 +232,8 @@ function useFetchCallbacks(
     } else {
       await fetchResults(tournament);
     }
-  }, [event.clubName, fetchClubs, fetchResults]);
+    await syncAfterRefresh();
+  }, [event.clubName, fetchClubs, fetchResults, syncAfterRefresh]);
 
   return { handleRefresh };
 }
@@ -239,6 +242,7 @@ function useFetchCallbacks(
 function useClubSelectCallback(
   event: Event,
   commitEvent: (e: Event) => void,
+  commitResults: (e: Event) => void,
   { setLoading, setError }: SyncSetters,
 ) {
   return useCallback(async (clubName: string) => {
@@ -259,7 +263,7 @@ function useClubSelectCallback(
           ),
         };
 
-        commitEvent(currentEvent);
+        commitResults(currentEvent);
       } catch (err) {
         console.error('Error auto-refreshing after club selection:', err);
         setError(err instanceof Error ? err.message : UNKNOWN_ERROR);
@@ -267,7 +271,7 @@ function useClubSelectCallback(
         setLoading(null);
       }
     }
-  }, [event, commitEvent, setLoading, setError]);
+  }, [event, commitEvent, commitResults, setLoading, setError]);
 }
 
 export default function useTournamentSync({ event, onEventUpdate }: UseTournamentSyncOptions) {
@@ -279,14 +283,29 @@ export default function useTournamentSync({ event, onEventUpdate }: UseTournamen
   const clubSlug = identity?.clubSlug || '';
   const storage = useMemo(() => clubSlug ? createClubStorage(clubSlug) : null, [clubSlug]);
 
+  /** Club choice / reset: shared with the other phones */
   const commitEvent = useCallback((updatedEvent: Event) => {
     storage?.saveEvent(updatedEvent);
     onEventUpdate(updatedEvent);
   }, [onEventUpdate, storage]);
 
+  /** FFE results: every phone refreshes its own, never pushed */
+  const commitResults = useCallback((updatedEvent: Event) => {
+    storage?.saveEventLocal(updatedEvent);
+    onEventUpdate(updatedEvent);
+  }, [onEventUpdate, storage]);
+
+  /** "Actualiser" also pulls what the responsable and the other parents changed */
+  const syncAfterRefresh = useCallback(async () => {
+    if (!storage) return;
+    const result = await syncClub(clubSlug);
+    const current = storage.getCurrentEvent();
+    if (result.ok && current) onEventUpdate(current);
+  }, [clubSlug, storage, onEventUpdate]);
+
   const syncSetters = { setLoading, setError };
-  const { handleRefresh } = useFetchCallbacks(event, commitEvent, syncSetters);
-  const handleClubSelect = useClubSelectCallback(event, commitEvent, syncSetters);
+  const { handleRefresh } = useFetchCallbacks(event, commitResults, syncAfterRefresh, syncSetters);
+  const handleClubSelect = useClubSelectCallback(event, commitEvent, commitResults, syncSetters);
 
   const {
     changeClubDialogOpen, playerCount,

@@ -27,6 +27,7 @@ const mockSaveEvent = vi.fn();
 const mockClearTournamentValidations = vi.fn();
 const mockStorageInstance = {
   saveEvent: mockSaveEvent,
+  saveEventLocal: mockSaveEvent,
   getStorageData: vi.fn(() => ({ events: [], validations: {}, currentEventId: '' })),
   getAllEvents: vi.fn(() => []),
   getCurrentEvent: vi.fn(() => null),
@@ -48,6 +49,8 @@ const mockStorageInstance = {
 vi.mock('@/lib/storage', () => ({
   createClubStorage: vi.fn(() => mockStorageInstance),
 }));
+// Auto-sync after Actualiser is covered by useTournamentSync.test.ts; no network here
+vi.mock('@/lib/sync', () => ({ syncClub: vi.fn(async () => ({ ok: false })) }));
 vi.mock('@/contexts/ClubContext', () => ({
   useClub: vi.fn(() => ({
     identity: { clubName: 'Test Club', clubSlug: 'test-club', createdAt: '2025-01-01' },

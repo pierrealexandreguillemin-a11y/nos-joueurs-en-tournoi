@@ -154,14 +154,25 @@ Cliquez sur **Gerer les evenements** pour :
 
 ---
 
-## 9. Synchronisation cloud (optionnel)
+## 9. Synchronisation entre parents (automatique)
 
-Vous pouvez sauvegarder vos donnees dans le cloud pour les retrouver sur un autre appareil :
+Tous les telephones qui utilisent le meme nom de club partagent les memes evenements et les memes coches.
+Il n'y a rien a faire :
 
-- **Envoyer vers le cloud** : icone nuage avec fleche vers le haut, dans la liste des evenements
-- **Telecharger depuis le cloud** : icone nuage avec fleche vers le bas, dans la barre d'outils du gestionnaire
+- **A l'ouverture de l'application** et a chaque **Actualiser**, l'application recupere ce que les autres ont fait :
+  evenements crees ou supprimes par le responsable, coches des autres parents.
+- **Quelques secondes apres chaque modification** (une coche, un evenement), elle envoie vos changements.
+- **Sans reseau**, tout continue de fonctionner sur votre telephone ; vos changements partent des que le reseau revient
+  (ou a la prochaine ouverture / au prochain Actualiser).
 
-La synchronisation se fait manuellement, a votre initiative.
+Bon a savoir :
+
+- Chaque parent coche ses joueurs : deux parents qui cochent des joueurs differents ne s'effacent jamais.
+  Si deux personnes modifient la meme case, c'est la derniere modification arrivee qui compte.
+- Les resultats FFE ne sont pas partages : chacun appuie sur Actualiser et obtient les memes resultats.
+- **Supprimer un evenement le supprime pour tout le club**, sur tous les telephones. C'est en principe le role du responsable.
+- L'application a besoin du reseau pour **s'ouvrir**. Deja ouverte, elle continue de fonctionner si le reseau coupe :
+  gardez-la ouverte pendant le tournoi.
 
 ---
 

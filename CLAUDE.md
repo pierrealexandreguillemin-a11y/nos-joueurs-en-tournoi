@@ -252,10 +252,17 @@ Postgres:         club_events (club_slug, event_id) + club_state (club_slug)
 
 ### Sync strategy
 
-- **Push** : `syncToCloud(clubSlug)` envoie le localStorage vers `/api/events/sync` (manuel, bouton)
-- **Pull** : `fetchFromCloud(clubSlug)` recupere `/api/events/fetch` et merge
-- **Merge** (pull) : union des events par ID, version **distante** prioritaire si conflit
-  (`fetchFromCloud` part du distant et n'ajoute que les events locaux absents du serveur)
+Automatique depuis le 2026-10-20 — spec `docs/superpowers/specs/2026-10-20-auto-sync-light-design.md`.
+
+- **Declencheurs** : ouverture de l'app (`useClubAutoSync`), « Actualiser » (`useTournamentSync`),
+  3 s apres une modification locale et evenement `online` (`startAutoSync`, `src/lib/sync.ts`)
+- **Une requete par declencheur** : `POST /api/events/sync` pousse ce qui est marque et renvoie l'etat serveur
+  complet ; `GET /api/events/fetch` si rien n'est marque. Echec = marques conservees, reessai au declencheur suivant
+- **Marques** (`src/lib/storage-sync.ts`, `src/lib/sync-state.ts`) : `saveEvent`, `deleteEvent`, `setValidation`,
+  `clearTournamentValidations`, `importEvent` marquent ; **`saveEventLocal` (rafraichissement FFE) ne marque pas**.
+  Chaque marque a une revision : l'accuse d'un envoi n'efface pas une modification faite pendant l'envoi
+- **Fusion** : evenements = structure du serveur + donnees FFE locales ; coches cellule par cellule (derniere
+  arrivee gagne) ; tombstones serveur (`club_events.deleted_at`) prioritaires ; `currentEventId` propre a chaque telephone
 
 ### Lazy loading
 

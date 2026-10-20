@@ -42,13 +42,20 @@ vi.mock('@/lib/parser', () => ({
 
 // Mock storage
 const mockSaveEvent = vi.fn();
+const mockSaveEventLocal = vi.fn();
 const mockClearTournamentValidations = vi.fn();
+const mockGetCurrentEvent = vi.fn();
 vi.mock('@/lib/storage', () => ({
   createClubStorage: () => ({
     saveEvent: mockSaveEvent,
+    saveEventLocal: mockSaveEventLocal,
     clearTournamentValidations: mockClearTournamentValidations,
+    getCurrentEvent: mockGetCurrentEvent,
   }),
 }));
+
+const mockSyncClub = vi.fn();
+vi.mock('@/lib/sync', () => ({ syncClub: (...args: unknown[]) => mockSyncClub(...args) }));
 
 // Import AFTER mocks
 import useTournamentSync from './useTournamentSync';
@@ -81,6 +88,8 @@ describe('useTournamentSync', () => {
     mockIdentity = { clubName: 'Test Club', clubSlug: 'test-club', createdAt: '2024-01-01' };
     // Default: pairings fetch returns empty (silent fail-open)
     mockParsePairings.mockReturnValue([]);
+    mockSyncClub.mockResolvedValue({ ok: true });
+    mockGetCurrentEvent.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -565,7 +574,9 @@ describe('useTournamentSync', () => {
 
   // ── commitEvent persistence ───────────────────────────────────────────
 
-  it('commitEvent persiste dans le storage et notifie onEventUpdate', async () => {
+  // ── FFE refresh stays local; club choice is shared (auto-sync design) ──
+
+  it('rafraichissement FFE : sauvegarde locale, sans marque de synchro', async () => {
     const clubs: ClubInfo[] = [{ name: 'Hay Chess', playerCount: 5 }];
     mockScrapeFFE.mockResolvedValueOnce('<html>stats</html>');
     mockParseStatsClubs.mockReturnValueOnce(clubs);
@@ -577,7 +588,40 @@ describe('useTournamentSync', () => {
       await result.current.handleRefresh(event.tournaments[0]);
     });
 
-    expect(mockSaveEvent).toHaveBeenCalled();
+    expect(mockSaveEventLocal).toHaveBeenCalled();
+    expect(mockSaveEvent).not.toHaveBeenCalled();
     expect(onEventUpdate).toHaveBeenCalled();
+  });
+
+  it('Actualiser lance une synchro du club apres le rafraichissement', async () => {
+    mockScrapeFFE.mockResolvedValueOnce('<html>stats</html>');
+    mockParseStatsClubs.mockReturnValueOnce([{ name: 'Hay Chess', playerCount: 5 }]);
+    const fromServer = makeTestEvent({ name: 'Renamed by responsable' });
+    mockGetCurrentEvent.mockReturnValue(fromServer);
+
+    const event = makeTestEvent();
+    const { result } = renderSync(event);
+    await act(async () => {
+      await result.current.handleRefresh(event.tournaments[0]);
+    });
+
+    expect(mockSyncClub).toHaveBeenCalledTimes(1);
+    expect(mockSyncClub).toHaveBeenCalledWith('test-club');
+    expect(onEventUpdate).toHaveBeenLastCalledWith(fromServer);
+  });
+
+  it('choix du club : partage via saveEvent, resultats FFE en local', async () => {
+    mockScrapeFFEPair.mockResolvedValue(['<html>list</html>', '<html>results</html>']);
+    mockParseFFePages.mockReturnValue({ players: [], currentRound: 0 });
+
+    const event = makeTestEvent({ availableClubs: [{ name: 'Hay Chess', playerCount: 5 }] });
+    const { result } = renderSync(event);
+    await act(async () => {
+      await result.current.handleClubSelect('Hay Chess');
+    });
+
+    expect(mockSaveEvent).toHaveBeenCalledTimes(1);
+    expect((mockSaveEvent.mock.calls[0][0] as Event).clubName).toBe('Hay Chess');
+    expect(mockSaveEventLocal).toHaveBeenCalled();
   });
 });
